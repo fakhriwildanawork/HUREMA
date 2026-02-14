@@ -22,7 +22,17 @@ const LocationAdminForm: React.FC<LocationAdminFormProps> = ({ onClose, onSubmit
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    setFormData(prev => {
+      const newData = { ...prev, [name]: value };
+      
+      // Jika status diubah ke Milik Sendiri, kosongkan due_date
+      if (name === 'status' && value === 'Milik Sendiri') {
+        newData.due_date = '';
+      }
+      
+      return newData;
+    });
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -103,19 +113,22 @@ const LocationAdminForm: React.FC<LocationAdminFormProps> = ({ onClose, onSubmit
             </div>
           </div>
 
-          {formData.status !== 'Milik Sendiri' && (
-            <div className="space-y-1 animate-in slide-in-from-top-2 duration-200">
-              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Jatuh Tempo (PKS/Kontrak)</label>
-              <input
-                type="date"
-                required
-                name="due_date"
-                value={formData.due_date}
-                onChange={handleChange}
-                className="w-full px-3 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] focus:border-[#006E62] outline-none bg-white"
-              />
-            </div>
-          )}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Jatuh Tempo (PKS/Kontrak)</label>
+            <input
+              type="date"
+              required={formData.status !== 'Milik Sendiri'}
+              disabled={formData.status === 'Milik Sendiri'}
+              name="due_date"
+              value={formData.due_date}
+              onChange={handleChange}
+              className={`w-full px-3 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] focus:border-[#006E62] outline-none transition-colors ${
+                formData.status === 'Milik Sendiri' 
+                ? 'bg-gray-100 cursor-not-allowed text-gray-400' 
+                : 'bg-white'
+              }`}
+            />
+          </div>
 
           <div className="space-y-1">
             <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Keterangan / Catatan</label>
