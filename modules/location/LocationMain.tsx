@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, MapPin, Grid, List as ListIcon, Filter } from 'lucide-react';
+import { Plus, Search, MapPin, Grid, List as ListIcon, Filter, ArrowLeft } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { locationService } from '../../services/locationService';
 import { Location, LocationInput } from '../../types';
@@ -120,6 +120,26 @@ const LocationMain: React.FC = () => {
     return searchStr.includes(searchTerm.toLowerCase());
   });
 
+  // Render Halaman Detail jika ada lokasi terpilih
+  if (selectedLocationId) {
+    return (
+      <div className="animate-in fade-in slide-in-from-right duration-300">
+        <button 
+          onClick={() => setSelectedLocationId(null)}
+          className="mb-4 flex items-center gap-2 text-gray-500 hover:text-[#006E62] transition-colors font-bold text-xs uppercase"
+        >
+          <ArrowLeft size={16} /> Kembali ke Daftar
+        </button>
+        <LocationDetail
+          id={selectedLocationId}
+          onClose={() => setSelectedLocationId(null)}
+          onEdit={(loc) => { setSelectedLocationId(null); setEditingLocation(loc); setShowForm(true); }}
+          onDelete={(id) => handleDelete(id)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {isSaving && <LoadingSpinner />}
@@ -236,15 +256,6 @@ const LocationMain: React.FC = () => {
           onClose={() => { setShowForm(false); setEditingLocation(null); }}
           onSubmit={editingLocation ? (data) => handleUpdate(editingLocation.id, data) : handleCreate}
           initialData={editingLocation || undefined}
-        />
-      )}
-
-      {selectedLocationId && (
-        <LocationDetail
-          id={selectedLocationId}
-          onClose={() => setSelectedLocationId(null)}
-          onEdit={(loc) => { setSelectedLocationId(null); setEditingLocation(loc); setShowForm(true); }}
-          onDelete={(id) => handleDelete(id)}
         />
       )}
     </div>
