@@ -1,4 +1,3 @@
-
 import { GDRIVE_FOLDER_ID } from '../constants';
 
 export const config = {
@@ -24,7 +23,9 @@ async function getAccessToken(clientId: string, clientSecret: string, refreshTok
 
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.error_description || data.error || 'Gagal merefresh access token');
+    // Menangkap pesan detail dari Google (misal: "invalid_grant" jika refresh token salah/expired)
+    const detail = data.error_description || data.error || 'Unauthorized';
+    throw new Error(`Google Auth Error: ${detail}`);
   }
   return data.access_token;
 }
@@ -53,14 +54,14 @@ export default async function handler(req: Request) {
   }
 
   try {
-    // Menyesuaikan dengan variabel di Vercel (Smart Mapping)
-    const clientId = process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID;
-    const clientSecret = process.env.GOOGLE_CLIENT_SECRET || process.env.VITE_GOOGLE_CLIENT_SECRET;
-    const refreshToken = process.env.GOOGLE_REFRESH_TOKEN || process.env.VITE_GOOGLE_REFRESH_TOKEN;
+    // Menyesuaikan dengan variabel di Vercel (Smart Mapping + Trimming untuk keamanan)
+    const clientId = (process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || '').trim();
+    const clientSecret = (process.env.GOOGLE_CLIENT_SECRET || process.env.VITE_GOOGLE_CLIENT_SECRET || '').trim();
+    const refreshToken = (process.env.GOOGLE_REFRESH_TOKEN || process.env.VITE_GOOGLE_REFRESH_TOKEN || '').trim();
 
     if (!clientId || !clientSecret || !refreshToken) {
       return new Response(JSON.stringify({ 
-        error: 'Kredensial OAuth2 (ID, Secret, Refresh Token) belum diatur di Dashboard Vercel' 
+        error: 'Kredensial OAuth2 (ID, Secret, Refresh Token) belum lengkap di Dashboard Vercel' 
       }), { status: 500 });
     }
 
