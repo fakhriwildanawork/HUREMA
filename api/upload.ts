@@ -24,50 +24,62 @@ async function getAccessToken(email: string, privateKey: string) {
 
   const message = `${header}.${payload}`;
   
-  // Membersihkan format private key (mengangani newline)
-  const pemHeader = "-----BEGIN PRIVATE KEY-----";
-  const pemFooter = "-----END PRIVATE KEY-----";
-  const pemContents = privateKey
-    .replace(pemHeader, "")
-    .replace(pemFooter, "")
-    .replace(/\\n/g, "")
-    .replace(/\s/g, "");
+  // LOGIKA PEMBERSIHAN KEY YANG LEBIH KUAT
+  // 1. Hapus tanda kutip di awal/akhir jika ada (sering terjadi saat copy-paste)
+  let cleanedKey = privateKey.trim().replace(/^["']|["']$/g, '');
+  
+  // 2. Hapus header dan footer PEM secara spesifik
+  cleanedKey = cleanedKey
+    .replace(/-----BEGIN PRIVATE KEY-----/g, '')
+    .replace(/-----END PRIVATE KEY-----/g, '');
     
-  const binaryDerString = atob(pemContents);
-  const binaryDer = new Uint8Array(binaryDerString.length);
-  for (let i = 0; i < binaryDerString.length; i++) {
-    binaryDer[i] = binaryDerString.charCodeAt(i);
+  // 3. Hapus karakter escape newline (\n), baris baru asli, dan semua spasi
+  cleanedKey = cleanedKey
+    .replace(/\\n/g, '') // Menghapus \n literal
+    .replace(/[\r\n\s]/g, ''); // Menghapus enter dan spasi asli
+
+  try {
+    const binaryDerString = atob(cleanedKey);
+    const binaryDer = new Uint8Array(binaryDerString.length);
+    for (let i = 0; i < binaryDerString.length; i++) {
+      binaryDer[i] = binaryDerString.charCodeAt(i);
+    }
+
+    const key = await crypto.subtle.importKey(
+      'pkcs8',
+      binaryDer.buffer,
+      { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+
+    const signature = await crypto.subtle.sign(
+      'RSASSA-PKCS1-v1_5',
+      key,
+      new TextEncoder().encode(message)
+    );
+
+    const encodedSignature = btoa(String.fromCharCode(...new Uint8Array(signature)))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+
+    const jwt = `${message}.${encodedSignature}`;
+
+    const res = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error_description || data.error || 'Gagal mendapatkan access token');
+    }
+    return data.access_token;
+  } catch (err: any) {
+    throw new Error(`Format Private Key salah atau tidak valid: ${err.message}`);
   }
-
-  const key = await crypto.subtle.importKey(
-    'pkcs8',
-    binaryDer.buffer,
-    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
-
-  const signature = await crypto.subtle.sign(
-    'RSASSA-PKCS1-v1_5',
-    key,
-    new TextEncoder().encode(message)
-  );
-
-  const encodedSignature = btoa(String.fromCharCode(...new Uint8Array(signature)))
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
-
-  const jwt = `${message}.${encodedSignature}`;
-
-  const res = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
-  });
-
-  const data = await res.json();
-  return data.access_token;
 }
 
 export default async function handler(req: Request) {
@@ -80,7 +92,7 @@ export default async function handler(req: Request) {
     const privateKey = process.env.GOOGLE_PRIVATE_KEY;
 
     if (!serviceAccountEmail || !privateKey) {
-      return new Response(JSON.stringify({ error: 'Kredensial Service Account belum diatur di Environment Vercel' }), { status: 500 });
+      return new Response(JSON.stringify({ error: 'Kredensial Service Account belum diatur di Dashboard Vercel' }), { status: 500 });
     }
 
     const formData = await req.formData();
@@ -100,7 +112,7 @@ export default async function handler(req: Request) {
       mimeType: file.type,
     };
 
-    // 3. Gunakan Multipart Upload untuk efisiensi
+    // 3. Gunakan Multipart Upload
     const boundary = 'hurema_boundary';
     const metadataPart = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n`;
     const mediaPart = `--${boundary}\r\nContent-Type: ${file.type}\r\n\r\n`;
