@@ -16,7 +16,8 @@ async function getAccessToken(email: string, privateKey: string) {
   
   const payload = btoa(JSON.stringify({
     iss: email,
-    scope: 'https://www.googleapis.com/auth/drive.file',
+    // Mengubah scope menjadi full drive access untuk memastikan izin penulisan di folder yang dibagikan
+    scope: 'https://www.googleapis.com/auth/drive',
     aud: 'https://oauth2.googleapis.com/token',
     exp,
     iat,
@@ -24,19 +25,13 @@ async function getAccessToken(email: string, privateKey: string) {
 
   const message = `${header}.${payload}`;
   
-  // LOGIKA PEMBERSIHAN KEY YANG LEBIH KUAT
-  // 1. Hapus tanda kutip di awal/akhir jika ada (sering terjadi saat copy-paste)
+  // LOGIKA PEMBERSIHAN KEY
   let cleanedKey = privateKey.trim().replace(/^["']|["']$/g, '');
-  
-  // 2. Hapus header dan footer PEM secara spesifik
   cleanedKey = cleanedKey
     .replace(/-----BEGIN PRIVATE KEY-----/g, '')
-    .replace(/-----END PRIVATE KEY-----/g, '');
-    
-  // 3. Hapus karakter escape newline (\n), baris baru asli, dan semua spasi
-  cleanedKey = cleanedKey
-    .replace(/\\n/g, '') // Menghapus \n literal
-    .replace(/[\r\n\s]/g, ''); // Menghapus enter dan spasi asli
+    .replace(/-----END PRIVATE KEY-----/g, '')
+    .replace(/\\n/g, '')
+    .replace(/[\r\n\s]/g, '');
 
   try {
     const binaryDerString = atob(cleanedKey);
@@ -102,17 +97,14 @@ export default async function handler(req: Request) {
       return new Response(JSON.stringify({ error: 'Tidak ada file yang dikirim' }), { status: 400 });
     }
 
-    // 1. Ambil Access Token dari Google
     const accessToken = await getAccessToken(serviceAccountEmail, privateKey);
 
-    // 2. Siapkan Metadata untuk Google Drive
     const metadata = {
       name: file.name,
       parents: [GDRIVE_FOLDER_ID],
       mimeType: file.type,
     };
 
-    // 3. Gunakan Multipart Upload
     const boundary = 'hurema_boundary';
     const metadataPart = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n`;
     const mediaPart = `--${boundary}\r\nContent-Type: ${file.type}\r\n\r\n`;
@@ -126,7 +118,8 @@ export default async function handler(req: Request) {
       ...new TextEncoder().encode(closingPart),
     ]);
 
-    const driveResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
+    // Menambahkan ?supportsAllDrives=true untuk mengizinkan upload ke folder yang dibagikan (Shared with me)
+    const driveResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id&supportsAllDrives=true', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${accessToken}`,
