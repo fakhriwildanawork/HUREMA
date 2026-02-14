@@ -8,7 +8,8 @@ export const COLORS = {
 
 export const GDRIVE_FOLDER_ID = "1vL82ItStGxRXWvupbpmjeZbZe80IXHqF";
 
-// Environment variables expectation
+// Environment variables expectation (Server Side / Vercel Dashboard)
+// GOOGLE_SERVICE_ACCOUNT_EMAIL
+// GOOGLE_PRIVATE_KEY
 // VITE_SUPABASE_URL
 // VITE_SUPABASE_ANON_KEY
-// VITE_GOOGLE_CLIENT_ID
