@@ -39,13 +39,17 @@ const LocationMain: React.FC = () => {
     setIsSaving(true);
     // Optimistic UI update
     const tempId = Math.random().toString(36).substring(7);
-    const optimisticLocation: Location = { ...input, id: tempId, created_at: new Date().toISOString() };
+    const optimisticLocation: Location = { 
+      ...input, 
+      id: tempId, 
+      created_at: new Date().toISOString(),
+      search_all: `${input.name} ${input.address}` // basic optimistic search string
+    };
     setLocations([optimisticLocation, ...locations]);
     setShowForm(false);
 
     try {
       const created = await locationService.create(input);
-      // Replace optimistic item with actual from DB
       setLocations(prev => prev.map(loc => loc.id === tempId ? created : loc));
       Swal.fire({
         title: 'Berhasil!',
@@ -109,10 +113,11 @@ const LocationMain: React.FC = () => {
     }
   };
 
-  const filteredLocations = locations.filter(loc => 
-    loc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    loc.city.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Pencarian Pintar menggunakan search_all (Client-side filtering as fallback)
+  const filteredLocations = locations.filter(loc => {
+    const searchStr = loc.search_all || `${loc.name} ${loc.address} ${loc.city} ${loc.location_type}`;
+    return searchStr.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   return (
     <div className="space-y-6">
@@ -123,7 +128,7 @@ const LocationMain: React.FC = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
           <input
             type="text"
-            placeholder="Cari lokasi atau kota..."
+            placeholder="Cari (Nama, Alamat, Jenis, Kota)..."
             className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#006E62] focus:border-transparent transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -165,7 +170,7 @@ const LocationMain: React.FC = () => {
       ) : filteredLocations.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-gray-400">
           <MapPin size={48} strokeWidth={1} className="mb-4" />
-          <p className="text-lg">Tidak ada data lokasi ditemukan.</p>
+          <p className="text-lg">Data tidak ditemukan.</p>
         </div>
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -177,12 +182,14 @@ const LocationMain: React.FC = () => {
             >
               <div className="flex justify-between items-start mb-2">
                 <h3 className="font-bold text-[#006E62] group-hover:text-[#005a50] line-clamp-1">{location.name}</h3>
-                <MapPin size={16} className="text-[#00FFE4]" />
+                <span className="text-[9px] font-bold text-gray-400 border border-gray-100 px-1.5 py-0.5 rounded uppercase">{location.location_type || 'Lokasi'}</span>
               </div>
-              <p className="text-sm text-gray-500 mb-2 line-clamp-1">{location.address}</p>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-gray-400 bg-gray-50 px-2 py-0.5 rounded">{location.city}</span>
-                <span className="text-[10px] uppercase font-bold tracking-wider text-gray-400 bg-gray-50 px-2 py-0.5 rounded">{location.province}</span>
+              <p className="text-xs text-gray-500 mb-3 line-clamp-1">{location.address}</p>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                  <MapPin size={10} /> {location.city}
+                </div>
+                <div className="text-[10px] text-gray-300">R: {location.radius}m</div>
               </div>
             </div>
           ))}
@@ -192,10 +199,10 @@ const LocationMain: React.FC = () => {
           <table className="w-full text-left">
             <thead className="bg-gray-50 text-xs font-bold text-gray-500 uppercase">
               <tr>
-                <th className="px-6 py-3">Nama Lokasi</th>
-                <th className="px-6 py-3">Alamat</th>
-                <th className="px-6 py-3">Kota</th>
-                <th className="px-6 py-3">Provinsi</th>
+                <th className="px-6 py-3">Nama & Jenis</th>
+                <th className="px-6 py-3">Alamat & Kota</th>
+                <th className="px-6 py-3">Telepon</th>
+                <th className="px-6 py-3 text-right">Radius</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -205,10 +212,16 @@ const LocationMain: React.FC = () => {
                   onClick={() => setSelectedLocationId(location.id)}
                   className="hover:bg-gray-50 cursor-pointer transition-colors"
                 >
-                  <td className="px-6 py-4 font-semibold text-[#006E62]">{location.name}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{location.address}</td>
-                  <td className="px-6 py-4 text-sm text-gray-500">{location.city}</td>
-                  <td className="px-6 py-4 text-sm text-gray-500">{location.province}</td>
+                  <td className="px-6 py-4">
+                    <div className="font-bold text-[#006E62]">{location.name}</div>
+                    <div className="text-[9px] text-gray-400 uppercase font-bold">{location.location_type}</div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="text-xs text-gray-600 truncate max-w-xs">{location.address}</div>
+                    <div className="text-[10px] text-gray-400 font-bold uppercase">{location.city}</div>
+                  </td>
+                  <td className="px-6 py-4 text-xs text-gray-500">{location.phone || '-'}</td>
+                  <td className="px-6 py-4 text-xs text-right font-bold text-gray-400">{location.radius}m</td>
                 </tr>
               ))}
             </tbody>

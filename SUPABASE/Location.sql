@@ -6,42 +6,59 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE IF NOT EXISTS locations (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
+    location_type TEXT,
     address TEXT NOT NULL,
     city TEXT NOT NULL,
     province TEXT NOT NULL,
     zip_code TEXT,
+    phone TEXT,
+    latitude NUMERIC,
+    longitude NUMERIC,
+    radius INTEGER DEFAULT 100,
     description TEXT,
+    search_all TEXT,
     image_google_id TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Function to handle search_all indexing
+CREATE OR REPLACE FUNCTION update_location_search_all()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.search_all := 
+        COALESCE(NEW.name, '') || ' ' || 
+        COALESCE(NEW.location_type, '') || ' ' || 
+        COALESCE(NEW.address, '') || ' ' || 
+        COALESCE(NEW.city, '') || ' ' || 
+        COALESCE(NEW.province, '') || ' ' || 
+        COALESCE(NEW.phone, '');
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger for search_all
+DROP TRIGGER IF EXISTS trg_update_location_search_all ON locations;
+CREATE TRIGGER trg_update_location_search_all
+BEFORE INSERT OR UPDATE ON locations
+FOR EACH ROW
+EXECUTE FUNCTION update_location_search_all();
+
 -- Enable Row Level Security
 ALTER TABLE locations ENABLE ROW LEVEL SECURITY;
 
--- Create Public Read Policy
-CREATE POLICY "Allow public read access" 
-ON locations FOR SELECT 
-TO public 
-USING (true);
+-- Create Public Policies
+DROP POLICY IF EXISTS "Allow public read access" ON locations;
+CREATE POLICY "Allow public read access" ON locations FOR SELECT TO public USING (true);
 
--- Create Public Insert Policy
-CREATE POLICY "Allow public insert" 
-ON locations FOR INSERT 
-TO public 
-WITH CHECK (true);
+DROP POLICY IF EXISTS "Allow public insert" ON locations;
+CREATE POLICY "Allow public insert" ON locations FOR INSERT TO public WITH CHECK (true);
 
--- Create Public Update Policy
-CREATE POLICY "Allow public update" 
-ON locations FOR UPDATE 
-TO public 
-USING (true);
+DROP POLICY IF EXISTS "Allow public update" ON locations;
+CREATE POLICY "Allow public update" ON locations FOR UPDATE TO public USING (true);
 
--- Create Public Delete Policy
-CREATE POLICY "Allow public delete" 
-ON locations FOR DELETE 
-TO public 
-USING (true);
+DROP POLICY IF EXISTS "Allow public delete" ON locations;
+CREATE POLICY "Allow public delete" ON locations FOR DELETE TO public USING (true);
 
 -- Function to handle updated_at
 CREATE OR REPLACE FUNCTION handle_updated_at()
@@ -53,6 +70,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Trigger for updated_at
+DROP TRIGGER IF EXISTS set_updated_at ON locations;
 CREATE TRIGGER set_updated_at
 BEFORE UPDATE ON locations
 FOR EACH ROW

@@ -2,6 +2,7 @@
   "name": "HUREMA",
   "description": "Sistem Manajemen Sumber Daya dengan integrasi Supabase dan Google Drive untuk penyimpanan data lokasi dan dokumen.",
   "requestFramePermissions": [
-    "camera"
+    "camera",
+    "geolocation"
   ]
 }
