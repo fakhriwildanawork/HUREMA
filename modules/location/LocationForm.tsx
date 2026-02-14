@@ -126,14 +126,19 @@ const LocationForm: React.FC<LocationFormProps> = ({ onClose, onSubmit, initialD
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // 1. Instant Optimistic Preview
+    const localUrl = URL.createObjectURL(file);
+    setPreviewUrl(localUrl);
+
     try {
       setUploading(true);
+      // 2. Perform background upload
       const fileId = await googleDriveService.uploadFile(file);
       setFormData(prev => ({ ...prev, image_google_id: fileId }));
-      setPreviewUrl(URL.createObjectURL(file));
     } catch (error) {
       console.error(error);
-      alert('Gagal mengunggah gambar');
+      setPreviewUrl(null); // Revert optimistic UI on failure
+      alert(error instanceof Error ? error.message : 'Gagal mengunggah gambar');
     } finally {
       setUploading(false);
     }
@@ -257,7 +262,7 @@ const LocationForm: React.FC<LocationFormProps> = ({ onClose, onSubmit, initialD
                   <img 
                     src={previewUrl || googleDriveService.getFileUrl(formData.image_google_id!)} 
                     alt="Preview" 
-                    className="w-full h-full object-cover"
+                    className={`w-full h-full object-cover ${uploading ? 'opacity-50' : ''}`}
                   />
                   <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                     <label className="cursor-pointer text-white p-2">
@@ -265,6 +270,11 @@ const LocationForm: React.FC<LocationFormProps> = ({ onClose, onSubmit, initialD
                       <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} disabled={uploading} />
                     </label>
                   </div>
+                  {uploading && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <label className={`w-20 h-20 border-2 border-dashed border-gray-200 rounded flex flex-col items-center justify-center cursor-pointer hover:border-[#006E62] hover:bg-gray-50 transition-all ${uploading ? 'animate-pulse' : ''}`}>

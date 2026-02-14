@@ -8,6 +8,10 @@ class GoogleDriveService {
   private accessToken: string | null = null;
 
   async initAuth(): Promise<string> {
+    if (typeof google === 'undefined') {
+      throw new Error('Google Identity Services (GSI) belum dimuat. Silakan muat ulang halaman atau tunggu sebentar.');
+    }
+
     return new Promise((resolve, reject) => {
       const client = google.accounts.oauth2.initTokenClient({
         client_id: (import.meta as any).env.VITE_GOOGLE_CLIENT_ID,
@@ -35,9 +39,12 @@ class GoogleDriveService {
       parents: [GDRIVE_FOLDER_ID],
     };
 
-    const formData = new FormData();
-    formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-    formData.append('file', file);
+    // Constructing manual multipart/related body for Google Drive API v3
+    const boundary = 'hurema_upload_boundary';
+    const header = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n--${boundary}\r\nContent-Type: ${file.type}\r\n\r\n`;
+    const footer = `\r\n--${boundary}--`;
+
+    const body = new Blob([header, file, footer], { type: 'multipart/related; boundary=' + boundary });
 
     const response = await fetch(
       'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',
@@ -46,12 +53,13 @@ class GoogleDriveService {
         headers: {
           Authorization: `Bearer ${this.accessToken}`,
         },
-        body: formData,
+        body: body,
       }
     );
 
     if (!response.ok) {
-      throw new Error('Gagal mengunggah file ke Google Drive');
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error?.message || 'Gagal mengunggah file ke Google Drive');
     }
 
     const result = await response.json();
@@ -59,7 +67,7 @@ class GoogleDriveService {
   }
 
   getFileUrl(fileId: string): string {
-    // In a real scenario, you might need a public proxy or specific drive link
+    // URL format used for direct image preview from Google Drive
     return `https://lh3.googleusercontent.com/d/${fileId}=s1600`;
   }
 }
