@@ -38,14 +38,15 @@ const LocationMain: React.FC = () => {
   const handleCreate = async (input: LocationInput) => {
     setIsSaving(true);
     // Optimistic UI update
-    const tempId = Math.random().toString(36).substring(7);
+    const tempId = `temp-${Math.random().toString(36).substring(7)}`;
     const optimisticLocation: Location = { 
       ...input, 
       id: tempId, 
       created_at: new Date().toISOString(),
-      search_all: `${input.name} ${input.address}` // basic optimistic search string
+      search_all: `${input.name} ${input.location_type} ${input.address} ${input.city}`.toLowerCase()
     };
-    setLocations([optimisticLocation, ...locations]);
+    
+    setLocations(prev => [optimisticLocation, ...prev]);
     setShowForm(false);
 
     try {
@@ -72,6 +73,7 @@ const LocationMain: React.FC = () => {
       const updated = await locationService.update(id, input);
       setLocations(prev => prev.map(loc => loc.id === id ? updated : loc));
       setEditingLocation(null);
+      setShowForm(false);
       Swal.fire({
         title: 'Terupdate!',
         text: 'Data lokasi berhasil diperbarui.',
@@ -113,10 +115,9 @@ const LocationMain: React.FC = () => {
     }
   };
 
-  // Pencarian Pintar menggunakan search_all (Client-side filtering as fallback)
   const filteredLocations = locations.filter(loc => {
-    const searchStr = loc.search_all || `${loc.name} ${loc.address} ${loc.city} ${loc.location_type}`;
-    return searchStr.toLowerCase().includes(searchTerm.toLowerCase());
+    const searchStr = (loc.search_all || `${loc.name} ${loc.address} ${loc.city} ${loc.location_type}`).toLowerCase();
+    return searchStr.includes(searchTerm.toLowerCase());
   });
 
   return (
@@ -129,7 +130,7 @@ const LocationMain: React.FC = () => {
           <input
             type="text"
             placeholder="Cari (Nama, Alamat, Jenis, Kota)..."
-            className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#006E62] focus:border-transparent transition-all"
+            className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#006E62] focus:border-transparent transition-all text-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -158,7 +159,7 @@ const LocationMain: React.FC = () => {
             className="flex items-center gap-2 bg-[#006E62] text-white px-4 py-2 rounded-md hover:bg-[#005a50] transition-colors shadow-sm"
           >
             <Plus size={18} />
-            <span className="font-medium">Tambah</span>
+            <span className="font-medium text-sm">Tambah</span>
           </button>
         </div>
       </div>
@@ -172,7 +173,6 @@ const LocationMain: React.FC = () => {
           <MapPin size={48} strokeWidth={1} className="mb-4" />
           <p className="text-lg">Data tidak ditemukan.</p>
         </div>
-      /* FIX: viewMode is a state variable string, not a function. Replaced 'viewMode("grid")' with 'viewMode === "grid"'. */
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredLocations.map(location => (
@@ -182,10 +182,10 @@ const LocationMain: React.FC = () => {
               className="group bg-white border border-gray-100 p-4 rounded-md shadow-sm hover:shadow-md transition-all cursor-pointer border-l-4 border-l-transparent hover:border-l-[#006E62]"
             >
               <div className="flex justify-between items-start mb-2">
-                <h3 className="font-bold text-[#006E62] group-hover:text-[#005a50] line-clamp-1">{location.name}</h3>
+                <h3 className="font-bold text-[#006E62] group-hover:text-[#005a50] line-clamp-1 text-sm">{location.name}</h3>
                 <span className="text-[9px] font-bold text-gray-400 border border-gray-100 px-1.5 py-0.5 rounded uppercase">{location.location_type || 'Lokasi'}</span>
               </div>
-              <p className="text-xs text-gray-500 mb-3 line-clamp-1">{location.address}</p>
+              <p className="text-[11px] text-gray-500 mb-3 line-clamp-1">{location.address}</p>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-[10px] text-gray-400 font-bold uppercase tracking-wider">
                   <MapPin size={10} /> {location.city}
@@ -196,9 +196,9 @@ const LocationMain: React.FC = () => {
           ))}
         </div>
       ) : (
-        <div className="bg-white border border-gray-100 rounded-md overflow-hidden shadow-sm">
-          <table className="w-full text-left">
-            <thead className="bg-gray-50 text-xs font-bold text-gray-500 uppercase">
+        <div className="bg-white border border-gray-100 rounded-md overflow-hidden shadow-sm overflow-x-auto">
+          <table className="w-full text-left min-w-[600px]">
+            <thead className="bg-gray-50 text-[10px] font-bold text-gray-500 uppercase">
               <tr>
                 <th className="px-6 py-3">Nama & Jenis</th>
                 <th className="px-6 py-3">Alamat & Kota</th>
@@ -214,11 +214,11 @@ const LocationMain: React.FC = () => {
                   className="hover:bg-gray-50 cursor-pointer transition-colors"
                 >
                   <td className="px-6 py-4">
-                    <div className="font-bold text-[#006E62]">{location.name}</div>
+                    <div className="font-bold text-[#006E62] text-xs">{location.name}</div>
                     <div className="text-[9px] text-gray-400 uppercase font-bold">{location.location_type}</div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-xs text-gray-600 truncate max-w-xs">{location.address}</div>
+                    <div className="text-[11px] text-gray-600 truncate max-w-xs">{location.address}</div>
                     <div className="text-[10px] text-gray-400 font-bold uppercase">{location.city}</div>
                   </td>
                   <td className="px-6 py-4 text-xs text-gray-500">{location.phone || '-'}</td>

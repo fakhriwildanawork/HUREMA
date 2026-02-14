@@ -1,12 +1,15 @@
+
 import { GDRIVE_FOLDER_ID } from '../constants';
 
 export const config = {
   runtime: 'edge',
 };
 
-/**
- * Mendapatkan Access Token baru menggunakan Refresh Token secara otomatis.
- */
+function cleanCredential(val: string | undefined): string {
+  if (!val) return '';
+  return val.trim().replace(/^["']|["']$/g, '');
+}
+
 async function getAccessToken(clientId: string, clientSecret: string, refreshToken: string) {
   const params = new URLSearchParams();
   params.append('client_id', clientId);
@@ -20,46 +23,23 @@ async function getAccessToken(clientId: string, clientSecret: string, refreshTok
     body: params.toString(),
   });
 
-  // Ambil teks mentah dulu untuk jaga-jaga jika bukan JSON (misal 401 HTML)
   const responseText = await res.text();
   let data;
   try {
     data = JSON.parse(responseText);
   } catch (e) {
-    data = { error: 'Invalid JSON response', raw: responseText };
+    data = { error: 'Invalid JSON', raw: responseText };
   }
   
   if (!res.ok) {
-    // LOG UNTUK VERCEL DASHBOARD > LOGS
-    console.error(`GOOGLE_TOKEN_EXCHANGE_FAILURE [Status: ${res.status}]:`, responseText);
-    
-    // Memberikan informasi yang lebih spesifik ke UI
-    const detail = data.error_description || data.error || `HTTP ${res.status}`;
-    throw new Error(`Google Auth Error: ${detail}`);
+    console.error(`GOOGLE_TOKEN_ERROR [${res.status}]:`, responseText);
+    let customMessage = data.error_description || data.error || 'Gagal autentikasi Google';
+    if (data.error === 'invalid_grant') {
+      customMessage = 'Refresh Token tidak valid atau sudah kadaluarsa.';
+    }
+    throw new Error(`Google Auth Error: ${customMessage}`);
   }
   return data.access_token;
-}
-
-/**
- * Mengatur izin file menjadi publik.
- */
-async function setFilePermission(fileId: string, accessToken: string) {
-  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      role: 'reader',
-      type: 'anyone',
-    }),
-  });
-
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    console.error('SET_PERMISSION_ERROR:', JSON.stringify(errorData));
-  }
 }
 
 export default async function handler(req: Request) {
@@ -68,19 +48,13 @@ export default async function handler(req: Request) {
   }
 
   try {
-    // Pengambilan variabel dengan Trimming ekstra dan logging keberadaan variabel
-    const clientId = (process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || '').trim();
-    const clientSecret = (process.env.GOOGLE_CLIENT_SECRET || process.env.VITE_GOOGLE_CLIENT_SECRET || '').trim();
-    const refreshToken = (process.env.GOOGLE_REFRESH_TOKEN || process.env.VITE_GOOGLE_REFRESH_TOKEN || '').trim();
+    const clientId = cleanCredential(process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID);
+    const clientSecret = cleanCredential(process.env.GOOGLE_CLIENT_SECRET || process.env.VITE_GOOGLE_CLIENT_SECRET);
+    const refreshToken = cleanCredential(process.env.GOOGLE_REFRESH_TOKEN || process.env.VITE_GOOGLE_REFRESH_TOKEN);
 
     if (!clientId || !clientSecret || !refreshToken) {
-      console.error('MISSING_ENV_VARS:', { 
-        hasId: !!clientId, 
-        hasSecret: !!clientSecret, 
-        hasToken: !!refreshToken 
-      });
       return new Response(JSON.stringify({ 
-        error: 'Kredensial OAuth2 belum lengkap di Vercel. Pastikan redeploy sudah dilakukan.' 
+        error: 'Kredensial OAuth2 belum lengkap di Vercel.' 
       }), { status: 500 });
     }
 
@@ -91,11 +65,10 @@ export default async function handler(req: Request) {
       return new Response(JSON.stringify({ error: 'Tidak ada file yang dikirim' }), { status: 400 });
     }
 
-    // Mendapatkan token akses
     const accessToken = await getAccessToken(clientId, clientSecret, refreshToken);
 
     const metadata = {
-      name: file.name,
+      name: `HUREMA_${Date.now()}_${file.name}`,
       parents: [GDRIVE_FOLDER_ID],
       mimeType: file.type,
     };
@@ -106,7 +79,7 @@ export default async function handler(req: Request) {
     const closingPart = `\r\n--${boundary}--`;
 
     const fileBuffer = await file.arrayBuffer();
-    const body = new Uint8Array([
+    const bodyArr = new Uint8Array([
       ...new TextEncoder().encode(metadataPart),
       ...new TextEncoder().encode(mediaPart),
       ...new Uint8Array(fileBuffer),
@@ -119,25 +92,20 @@ export default async function handler(req: Request) {
         Authorization: `Bearer ${accessToken}`,
         'Content-Type': `multipart/related; boundary=${boundary}`,
       },
-      body: body,
+      body: bodyArr,
     });
 
     const driveData = await driveResponse.json();
 
     if (!driveResponse.ok) {
-      console.error('DRIVE_UPLOAD_ERROR:', JSON.stringify(driveData));
-      return new Response(JSON.stringify({ error: driveData.error?.message || 'Gagal upload ke Drive' }), { status: driveResponse.status });
+      return new Response(JSON.stringify({ error: 'Gagal mengunggah ke Google Drive', detail: driveData }), { status: 500 });
     }
-
-
-    await setFilePermission(driveData.id, accessToken);
 
     return new Response(JSON.stringify({ id: driveData.id }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
-  } catch (error: any) {
-    console.error('API Upload Error:', error);
-    return new Response(JSON.stringify({ error: error.message || 'Internal Server Error' }), { status: 500 });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Internal Server Error' }), { status: 500 });
   }
 }
