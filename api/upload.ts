@@ -129,6 +129,7 @@ export default async function handler(req: Request) {
       return new Response(JSON.stringify({ error: driveData.error?.message || 'Gagal upload ke Drive' }), { status: driveResponse.status });
     }
 
+
     await setFilePermission(driveData.id, accessToken);
 
     return new Response(JSON.stringify({ id: driveData.id }), {
