@@ -6,8 +6,8 @@ import { locationService } from '../../services/locationService';
 import { Location, LocationInput } from '../../types';
 import LocationForm from './LocationForm';
 import LocationDetail from './LocationDetail';
-import { CardSkeleton } from '../../components/Skeleton';
-import LoadingSpinner from '../../components/LoadingSpinner';
+import { CardSkeleton } from '../../components/Common/Skeleton';
+import LoadingSpinner from '../../components/Common/LoadingSpinner';
 
 const LocationMain: React.FC = () => {
   const [locations, setLocations] = useState<Location[]>([]);
@@ -172,6 +172,7 @@ const LocationMain: React.FC = () => {
           <MapPin size={48} strokeWidth={1} className="mb-4" />
           <p className="text-lg">Data tidak ditemukan.</p>
         </div>
+      /* FIX: viewMode is a state variable string, not a function. Replaced 'viewMode("grid")' with 'viewMode === "grid"'. */
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredLocations.map(location => (
