@@ -22,8 +22,12 @@ async function getAccessToken(clientId: string, clientSecret: string, refreshTok
   });
 
   const data = await res.json();
+  
   if (!res.ok) {
-    // Menangkap pesan detail dari Google (misal: "invalid_grant" jika refresh token salah/expired)
+    // LOG DEEP DIAGNOSIS: Ini akan muncul di Dashboard Vercel > Logs
+    // Membantu Anda melihat apakah masalahnya "invalid_grant" (expired) atau "invalid_client" (ID/Secret salah)
+    console.error('GOOGLE_OAUTH_RESPONSE_DEBUG:', JSON.stringify(data));
+    
     const detail = data.error_description || data.error || 'Unauthorized';
     throw new Error(`Google Auth Error: ${detail}`);
   }
@@ -35,7 +39,7 @@ async function getAccessToken(clientId: string, clientSecret: string, refreshTok
  * Diperlukan agar URL lh3.googleusercontent.com dapat menampilkan gambar di UI.
  */
 async function setFilePermission(fileId: string, accessToken: string) {
-  await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -46,6 +50,11 @@ async function setFilePermission(fileId: string, accessToken: string) {
       type: 'anyone',
     }),
   });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    console.error('SET_PERMISSION_ERROR:', JSON.stringify(errorData));
+  }
 }
 
 export default async function handler(req: Request) {
@@ -106,6 +115,7 @@ export default async function handler(req: Request) {
     const driveData = await driveResponse.json();
 
     if (!driveResponse.ok) {
+      console.error('DRIVE_UPLOAD_RESPONSE_ERROR:', JSON.stringify(driveData));
       return new Response(JSON.stringify({ error: driveData.error?.message || 'Gagal upload ke Drive' }), { status: driveResponse.status });
     }
 
