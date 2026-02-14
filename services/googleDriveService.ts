@@ -7,6 +7,10 @@ declare var google: any;
 class GoogleDriveService {
   private accessToken: string | null = null;
 
+  hasToken(): boolean {
+    return !!this.accessToken;
+  }
+
   async initAuth(): Promise<string> {
     if (typeof google === 'undefined') {
       throw new Error('Google Identity Services (GSI) belum dimuat. Silakan muat ulang halaman atau tunggu sebentar.');
@@ -18,20 +22,25 @@ class GoogleDriveService {
         reject(new Error('Proses otorisasi terlalu lama. Pastikan jendela popup Google tidak terblokir oleh browser.'));
       }, 60000);
 
-      const client = google.accounts.oauth2.initTokenClient({
-        client_id: (import.meta as any).env.VITE_GOOGLE_CLIENT_ID,
-        scope: 'https://www.googleapis.com/auth/drive.file',
-        callback: (response: any) => {
-          clearTimeout(authTimeout);
-          if (response.error) {
-            reject(response);
-            return;
-          }
-          this.accessToken = response.access_token;
-          resolve(response.access_token);
-        },
-      });
-      client.requestAccessToken();
+      try {
+        const client = google.accounts.oauth2.initTokenClient({
+          client_id: (import.meta as any).env.VITE_GOOGLE_CLIENT_ID,
+          scope: 'https://www.googleapis.com/auth/drive.file',
+          callback: (response: any) => {
+            clearTimeout(authTimeout);
+            if (response.error) {
+              reject(new Error(response.error_description || response.error || 'Otorisasi Google gagal'));
+              return;
+            }
+            this.accessToken = response.access_token;
+            resolve(response.access_token);
+          },
+        });
+        client.requestAccessToken();
+      } catch (err) {
+        clearTimeout(authTimeout);
+        reject(err);
+      }
     });
   }
 

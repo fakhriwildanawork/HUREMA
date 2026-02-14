@@ -135,13 +135,19 @@ const LocationForm: React.FC<LocationFormProps> = ({ onClose, onSubmit, initialD
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // 1. Instant Optimistic Preview
+    // 1. Instant Optimistic Preview (Langsung muncul tanpa delay)
     const localUrl = URL.createObjectURL(file);
     setPreviewUrl(localUrl);
 
     try {
       setUploading(true);
-      // 2. Perform background upload
+      
+      // 2. Memberikan jeda 400ms sebelum memanggil Google Auth/Drive API
+      // Jeda ini krusial agar browser benar-benar menutup dialog file chooser
+      // sehingga window.open (popup Google) tidak dianggap sebagai iklan/blokir.
+      await new Promise(resolve => setTimeout(resolve, 400));
+      
+      // 3. Perform background upload
       const fileId = await googleDriveService.uploadFile(file);
       setFormData(prev => ({ ...prev, image_google_id: fileId }));
     } catch (error) {
@@ -149,7 +155,7 @@ const LocationForm: React.FC<LocationFormProps> = ({ onClose, onSubmit, initialD
       setPreviewUrl(null); // Revert optimistic UI on failure
       alert(error instanceof Error ? error.message : 'Gagal mengunggah gambar');
     } finally {
-      // Pastikan uploading selalu set ke false di sini
+      // Pastikan uploading selalu set ke false di sini agar spinner berhenti
       setUploading(false);
     }
   };
