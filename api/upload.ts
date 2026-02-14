@@ -6,7 +6,6 @@ export const config = {
 
 /**
  * Mendapatkan Access Token baru menggunakan Refresh Token secara otomatis.
- * Ini memungkinkan aplikasi mengunggah file atas nama Anda tanpa perlu login interaktif.
  */
 async function getAccessToken(clientId: string, clientSecret: string, refreshToken: string) {
   const params = new URLSearchParams();
@@ -21,22 +20,28 @@ async function getAccessToken(clientId: string, clientSecret: string, refreshTok
     body: params.toString(),
   });
 
-  const data = await res.json();
+  // Ambil teks mentah dulu untuk jaga-jaga jika bukan JSON (misal 401 HTML)
+  const responseText = await res.text();
+  let data;
+  try {
+    data = JSON.parse(responseText);
+  } catch (e) {
+    data = { error: 'Invalid JSON response', raw: responseText };
+  }
   
   if (!res.ok) {
-    // LOG DEEP DIAGNOSIS: Ini akan muncul di Dashboard Vercel > Logs
-    // Membantu Anda melihat apakah masalahnya "invalid_grant" (expired) atau "invalid_client" (ID/Secret salah)
-    console.error('GOOGLE_OAUTH_RESPONSE_DEBUG:', JSON.stringify(data));
+    // LOG UNTUK VERCEL DASHBOARD > LOGS
+    console.error(`GOOGLE_TOKEN_EXCHANGE_FAILURE [Status: ${res.status}]:`, responseText);
     
-    const detail = data.error_description || data.error || 'Unauthorized';
+    // Memberikan informasi yang lebih spesifik ke UI
+    const detail = data.error_description || data.error || `HTTP ${res.status}`;
     throw new Error(`Google Auth Error: ${detail}`);
   }
   return data.access_token;
 }
 
 /**
- * Mengatur izin file menjadi publik (anyone with link can view).
- * Diperlukan agar URL lh3.googleusercontent.com dapat menampilkan gambar di UI.
+ * Mengatur izin file menjadi publik.
  */
 async function setFilePermission(fileId: string, accessToken: string) {
   const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
@@ -63,14 +68,19 @@ export default async function handler(req: Request) {
   }
 
   try {
-    // Menyesuaikan dengan variabel di Vercel (Smart Mapping + Trimming untuk keamanan)
+    // Pengambilan variabel dengan Trimming ekstra dan logging keberadaan variabel
     const clientId = (process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || '').trim();
     const clientSecret = (process.env.GOOGLE_CLIENT_SECRET || process.env.VITE_GOOGLE_CLIENT_SECRET || '').trim();
     const refreshToken = (process.env.GOOGLE_REFRESH_TOKEN || process.env.VITE_GOOGLE_REFRESH_TOKEN || '').trim();
 
     if (!clientId || !clientSecret || !refreshToken) {
+      console.error('MISSING_ENV_VARS:', { 
+        hasId: !!clientId, 
+        hasSecret: !!clientSecret, 
+        hasToken: !!refreshToken 
+      });
       return new Response(JSON.stringify({ 
-        error: 'Kredensial OAuth2 (ID, Secret, Refresh Token) belum lengkap di Dashboard Vercel' 
+        error: 'Kredensial OAuth2 belum lengkap di Vercel. Pastikan redeploy sudah dilakukan.' 
       }), { status: 500 });
     }
 
@@ -81,7 +91,7 @@ export default async function handler(req: Request) {
       return new Response(JSON.stringify({ error: 'Tidak ada file yang dikirim' }), { status: 400 });
     }
 
-    // Mendapatkan token akses secara otomatis (Server-to-Server)
+    // Mendapatkan token akses
     const accessToken = await getAccessToken(clientId, clientSecret, refreshToken);
 
     const metadata = {
@@ -115,11 +125,10 @@ export default async function handler(req: Request) {
     const driveData = await driveResponse.json();
 
     if (!driveResponse.ok) {
-      console.error('DRIVE_UPLOAD_RESPONSE_ERROR:', JSON.stringify(driveData));
+      console.error('DRIVE_UPLOAD_ERROR:', JSON.stringify(driveData));
       return new Response(JSON.stringify({ error: driveData.error?.message || 'Gagal upload ke Drive' }), { status: driveResponse.status });
     }
 
-    // SET PERMISSION: Membuat file dapat diakses publik agar bisa tampil di UI
     await setFilePermission(driveData.id, accessToken);
 
     return new Response(JSON.stringify({ id: driveData.id }), {
