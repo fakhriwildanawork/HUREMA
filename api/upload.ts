@@ -6,75 +6,27 @@ export const config = {
 };
 
 /**
- * Fungsi pembantu untuk membuat JWT (JSON Web Token) bagi Google OAuth2
- * menggunakan Service Account Private Key.
+ * Mendapatkan Access Token baru menggunakan Refresh Token secara otomatis.
+ * Ini memungkinkan aplikasi mengunggah file atas nama Anda tanpa perlu login interaktif.
  */
-async function getAccessToken(email: string, privateKey: string) {
-  const header = btoa(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
-  const iat = Math.floor(Date.now() / 1000);
-  const exp = iat + 3600;
-  
-  const payload = btoa(JSON.stringify({
-    iss: email,
-    // Mengubah scope menjadi full drive access untuk memastikan izin penulisan di folder yang dibagikan
-    scope: 'https://www.googleapis.com/auth/drive',
-    aud: 'https://oauth2.googleapis.com/token',
-    exp,
-    iat,
-  }));
+async function getAccessToken(clientId: string, clientSecret: string, refreshToken: string) {
+  const params = new URLSearchParams();
+  params.append('client_id', clientId);
+  params.append('client_secret', clientSecret);
+  params.append('refresh_token', refreshToken);
+  params.append('grant_type', 'refresh_token');
 
-  const message = `${header}.${payload}`;
-  
-  // LOGIKA PEMBERSIHAN KEY
-  let cleanedKey = privateKey.trim().replace(/^["']|["']$/g, '');
-  cleanedKey = cleanedKey
-    .replace(/-----BEGIN PRIVATE KEY-----/g, '')
-    .replace(/-----END PRIVATE KEY-----/g, '')
-    .replace(/\\n/g, '')
-    .replace(/[\r\n\s]/g, '');
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params.toString(),
+  });
 
-  try {
-    const binaryDerString = atob(cleanedKey);
-    const binaryDer = new Uint8Array(binaryDerString.length);
-    for (let i = 0; i < binaryDerString.length; i++) {
-      binaryDer[i] = binaryDerString.charCodeAt(i);
-    }
-
-    const key = await crypto.subtle.importKey(
-      'pkcs8',
-      binaryDer.buffer,
-      { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
-      false,
-      ['sign']
-    );
-
-    const signature = await crypto.subtle.sign(
-      'RSASSA-PKCS1-v1_5',
-      key,
-      new TextEncoder().encode(message)
-    );
-
-    const encodedSignature = btoa(String.fromCharCode(...new Uint8Array(signature)))
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
-
-    const jwt = `${message}.${encodedSignature}`;
-
-    const res = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
-    });
-
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data.error_description || data.error || 'Gagal mendapatkan access token');
-    }
-    return data.access_token;
-  } catch (err: any) {
-    throw new Error(`Format Private Key salah atau tidak valid: ${err.message}`);
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error_description || data.error || 'Gagal merefresh access token');
   }
+  return data.access_token;
 }
 
 export default async function handler(req: Request) {
@@ -83,11 +35,14 @@ export default async function handler(req: Request) {
   }
 
   try {
-    const serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-    const privateKey = process.env.GOOGLE_PRIVATE_KEY;
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
 
-    if (!serviceAccountEmail || !privateKey) {
-      return new Response(JSON.stringify({ error: 'Kredensial Service Account belum diatur di Dashboard Vercel' }), { status: 500 });
+    if (!clientId || !clientSecret || !refreshToken) {
+      return new Response(JSON.stringify({ 
+        error: 'Kredensial OAuth2 (ID, Secret, Refresh Token) belum diatur di Dashboard Vercel' 
+      }), { status: 500 });
     }
 
     const formData = await req.formData();
@@ -97,7 +52,8 @@ export default async function handler(req: Request) {
       return new Response(JSON.stringify({ error: 'Tidak ada file yang dikirim' }), { status: 400 });
     }
 
-    const accessToken = await getAccessToken(serviceAccountEmail, privateKey);
+    // Mendapatkan token akses secara otomatis (Server-to-Server)
+    const accessToken = await getAccessToken(clientId, clientSecret, refreshToken);
 
     const metadata = {
       name: file.name,
@@ -118,8 +74,7 @@ export default async function handler(req: Request) {
       ...new TextEncoder().encode(closingPart),
     ]);
 
-    // Menambahkan ?supportsAllDrives=true untuk mengizinkan upload ke folder yang dibagikan (Shared with me)
-    const driveResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id&supportsAllDrives=true', {
+    const driveResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${accessToken}`,
