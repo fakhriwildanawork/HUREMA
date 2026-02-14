@@ -34,6 +34,15 @@ const LocationForm: React.FC<LocationFormProps> = ({ onClose, onSubmit, initialD
   const mapRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
 
+  // Cleanup local preview URL when component unmounts or preview changes to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
   useEffect(() => {
     // Initialize map
     const defaultLat = formData.latitude || -6.200000;
@@ -140,6 +149,7 @@ const LocationForm: React.FC<LocationFormProps> = ({ onClose, onSubmit, initialD
       setPreviewUrl(null); // Revert optimistic UI on failure
       alert(error instanceof Error ? error.message : 'Gagal mengunggah gambar');
     } finally {
+      // Pastikan uploading selalu set ke false di sini
       setUploading(false);
     }
   };
