@@ -29,6 +29,24 @@ async function getAccessToken(clientId: string, clientSecret: string, refreshTok
   return data.access_token;
 }
 
+/**
+ * Mengatur izin file menjadi publik (anyone with link can view).
+ * Diperlukan agar URL lh3.googleusercontent.com dapat menampilkan gambar di UI.
+ */
+async function setFilePermission(fileId: string, accessToken: string) {
+  await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      role: 'reader',
+      type: 'anyone',
+    }),
+  });
+}
+
 export default async function handler(req: Request) {
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
@@ -88,6 +106,9 @@ export default async function handler(req: Request) {
     if (!driveResponse.ok) {
       return new Response(JSON.stringify({ error: driveData.error?.message || 'Gagal upload ke Drive' }), { status: driveResponse.status });
     }
+
+    // SET PERMISSION: Membuat file dapat diakses publik agar bisa tampil di UI
+    await setFilePermission(driveData.id, accessToken);
 
     return new Response(JSON.stringify({ id: driveData.id }), {
       status: 200,
