@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Save, Upload, FileText, Paperclip, ChevronDown, Calendar } from 'lucide-react';
+import { X, Save, Upload, FileText, Paperclip, ChevronDown, Calendar, CalendarClock } from 'lucide-react';
 import { locationService } from '../../services/locationService';
 import { googleDriveService } from '../../services/googleDriveService';
 import { accountService } from '../../services/accountService';
-import { Location } from '../../types';
+import { scheduleService } from '../../services/scheduleService';
+import { Location, Schedule } from '../../types';
 
 interface LogFormProps {
   type: 'career' | 'health';
@@ -23,6 +23,7 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
     grade: initialData?.grade || '',
     location_id: initialData?.location_id || '',
     location_name: initialData?.location_name || (initialData?.location?.name || ''),
+    schedule_id: (initialData as any)?.schedule_id || '',
     file_sk_id: initialData?.file_sk_id || '',
     // Health Fields
     mcu_status: initialData?.mcu_status || '',
@@ -34,6 +35,7 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
   });
 
   const [locations, setLocations] = useState<Location[]>([]);
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [suggestions, setSuggestions] = useState<{ positions: string[], grades: string[] }>({ positions: [], grades: [] });
   const [uploading, setUploading] = useState(false);
   
@@ -59,6 +61,15 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [type]);
 
+  // Effect to handle dynamic dependent schedule dropdown in Career Log
+  useEffect(() => {
+    if (type === 'career' && formData.location_id) {
+       scheduleService.getByLocation(formData.location_id).then(setSchedules);
+    } else {
+       setSchedules([]);
+    }
+  }, [type, formData.location_id]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     
@@ -67,7 +78,8 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
       setFormData(prev => ({ 
         ...prev, 
         location_id: value, 
-        location_name: selected ? selected.name : '' 
+        location_name: selected ? selected.name : '',
+        schedule_id: '' // Auto-reset schedule when location changes inside log
       }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
@@ -107,6 +119,7 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
         grade: formData.grade,
         location_id: formData.location_id,
         location_name: formData.location_name,
+        schedule_id: formData.schedule_id,
         file_sk_id: formData.file_sk_id
       };
     } else {
@@ -250,6 +263,23 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
                     {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
                   </select>
                   <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[9px] font-bold text-gray-500 uppercase">Jadwal Kerja Baru</label>
+                <div className="relative">
+                  <select 
+                    required 
+                    name="schedule_id" 
+                    value={formData.schedule_id} 
+                    onChange={handleChange} 
+                    disabled={!formData.location_id}
+                    className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded outline-none focus:ring-1 focus:ring-[#006E62] appearance-none bg-white disabled:bg-gray-50"
+                  >
+                    <option value="">-- {formData.location_id ? 'Pilih Jadwal' : 'Pilih Lokasi Terlebih Dahulu'} --</option>
+                    {schedules.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                  <CalendarClock size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 </div>
               </div>
               <div className="space-y-1">

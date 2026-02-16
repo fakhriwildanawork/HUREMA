@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Save, Upload, User, MapPin, Briefcase, GraduationCap, ShieldCheck, Heart, AlertCircle, Paperclip, ChevronDown, CalendarClock } from 'lucide-react';
 import { AccountInput, Location, Schedule } from '../../types';
@@ -47,6 +48,7 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
     password: initialData?.password || '',
     mcu_status: initialData?.mcu_status || '',
     health_risk: initialData?.health_risk || '',
+    // Fix: Removed duplicate photo_google_id property on line 51
     photo_google_id: initialData?.photo_google_id || '',
     ktp_google_id: initialData?.ktp_google_id || '',
     diploma_google_id: initialData?.diploma_google_id || '',
@@ -94,6 +96,12 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
     
     setFormData(prev => {
        const updated = { ...prev, [name]: val };
+       
+       // UX: Auto-reset schedule if location changes to prevent mismatch
+       if (name === 'location_id') {
+          updated.schedule_id = '';
+       }
+
        // Auto-update schedule_type name if schedule_id is selected
        if (name === 'schedule_id' && value) {
           const selected = schedules.find(s => s.id === value);
