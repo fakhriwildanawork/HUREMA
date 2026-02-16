@@ -29,24 +29,51 @@ export const careerService = {
       scheduleService.getAll()
     ]);
 
-    // 2. Gunakan ExcelJS untuk fitur Dropdown & Date Validation
+    // 2. Siapkan Workbook
     const workbook = new ExcelJS.Workbook();
-    
-    // Sheet Utama (Career_Import)
     const wsImport = workbook.addWorksheet('Career_Import');
-    
-    // Sheet Referensi
     const wsLoc = workbook.addWorksheet('Ref_Locations');
-    const wsSch = workbook.addWorksheet('Ref_Schedules');
+    const wsNamedRanges = workbook.addWorksheet('Ref_Data_Lists');
 
-    // 3. Isi Data Referensi ke sheet pembantu
-    wsLoc.addRow(['ID', 'Nama']);
-    locations.forEach(l => wsLoc.addRow([l.id, l.name]));
-    
-    wsSch.addRow(['ID', 'Nama']);
-    schedules.forEach(s => wsSch.addRow([s.id, s.name]));
+    // 3. Isi Data Referensi Lokasi & Buat Mapping Sanitasi untuk Named Range
+    // Kita gunakan ID urutan (LOC_0, LOC_1, dst) sebagai nama range agar aman dari karakter khusus
+    wsLoc.addRow(['ID', 'Nama Lokasi', 'Range_Name']);
+    locations.forEach((loc, idx) => {
+      wsLoc.addRow([loc.id, loc.name, `LOC_RANGE_${idx}`]);
+    });
 
-    // 4. Siapkan Sheet Utama (Career_Import)
+    // 4. Bangun Daftar Jadwal per Lokasi di Sheet Tersembunyi
+    // Setiap kolom di wsNamedRanges akan mewakili satu lokasi
+    locations.forEach((loc, locIdx) => {
+      const filteredSchedules = schedules.filter(s => 
+        s.location_ids && s.location_ids.includes(loc.id)
+      );
+      
+      const colLetter = wsNamedRanges.getColumn(locIdx + 1).letter;
+      const rangeName = `LOC_RANGE_${locIdx}`;
+      
+      if (filteredSchedules.length > 0) {
+        filteredSchedules.forEach((sch, schIdx) => {
+          wsNamedRanges.getCell(`${colLetter}${schIdx + 1}`).value = sch.name;
+        });
+        
+        // Daftarkan Named Range ke Workbook
+        const lastRow = filteredSchedules.length;
+        workbook.addDefinedName({
+          name: rangeName,
+          ranges: [`Ref_Data_Lists!$${colLetter}$1:$${colLetter}$${lastRow}`]
+        });
+      } else {
+        // Jika tidak ada jadwal, beri placeholder agar tidak error
+        wsNamedRanges.getCell(`${colLetter}1`).value = "(Tidak Ada Jadwal)";
+        workbook.addDefinedName({
+          name: rangeName,
+          ranges: [`Ref_Data_Lists!$${colLetter}$1:$${colLetter}$1`]
+        });
+      }
+    });
+
+    // 5. Siapkan Sheet Utama (Career_Import)
     const instructionText = "Hapus baris data akun/user yg tidak ingin diubah. Baris dengan (*) wajib diisi.";
     wsImport.addRow([instructionText]); // Baris 1
     wsImport.addRow(['']); // Baris 2 (Kosong)
@@ -69,24 +96,24 @@ export const careerService = {
     const headerRow = wsImport.getRow(3);
     headerRow.font = { bold: true };
 
-    // 5. Masukkan Data Akun (Kolom "Baru (*)" dikosongkan sesuai permintaan)
+    // 6. Masukkan Data Akun (Kosongkan kolom input baru)
     accounts.forEach(acc => {
       wsImport.addRow([
         acc.id,             // A
         acc.internal_nik,   // B
         acc.full_name,      // C
-        '',                 // D: Jabatan Baru (*) - Kosong
-        '',                 // E: Grade Baru (*) - Kosong
-        '',                 // F: Lokasi Baru (*) - Kosong
-        '',                 // G: Jadwal Baru (*) - Kosong
-        '',                 // H: Tanggal Efektif (*) - Kosong
+        '',                 // D
+        '',                 // E
+        '',                 // F: Lokasi
+        '',                 // G: Jadwal
+        '',                 // H: Tanggal
         '',                 // I
         ''                  // J
       ]);
     });
 
-    // 6. Terapkan Validasi Data
-    const maxRow = wsImport.rowCount + 500; // Proteksi untuk baris tambahan
+    // 7. Terapkan Validasi Data (Dropdown Cascading)
+    const maxRow = wsImport.rowCount + 500;
     
     for (let i = 4; i <= maxRow; i++) {
       // Dropdown Lokasi Baru (*) - Kolom F
@@ -99,14 +126,20 @@ export const careerService = {
         error: 'Pilih lokasi dari daftar yang tersedia.'
       };
       
-      // Dropdown Jadwal Baru (*) - Kolom G
+      /**
+       * Dropdown Jadwal Baru (*) - Kolom G (CASCADING)
+       * Menggunakan INDIRECT + VLOOKUP:
+       * 1. Cari nama lokasi di F[i]
+       * 2. Ambil "Range_Name" dari tabel di Ref_Locations kolom C
+       * 3. Jadikan "Range_Name" tersebut sebagai sumber list via INDIRECT
+       */
       wsImport.getCell(`G${i}`).dataValidation = {
         type: 'list',
         allowBlank: true,
-        formulae: [`Ref_Schedules!$B$2:$B$${schedules.length + 1}`],
+        formulae: [`=INDIRECT(VLOOKUP(F${i},Ref_Locations!$B$2:$C$${locations.length + 1},2,FALSE))`],
         showErrorMessage: true,
-        errorTitle: 'Input Tidak Valid',
-        error: 'Pilih jadwal dari daftar yang tersedia.'
+        errorTitle: 'Lokasi Belum Dipilih',
+        error: 'Pilih Lokasi Baru terlebih dahulu sebelum memilih Jadwal.'
       };
 
       // Validasi Tanggal Efektif (*) - Kolom H
@@ -116,23 +149,22 @@ export const careerService = {
         operator: 'greaterThan',
         showErrorMessage: true,
         allowBlank: true,
-        formulae: [new Date(1900, 0, 1)], // Memastikan input adalah tanggal
+        formulae: [new Date(1900, 0, 1)],
         errorTitle: 'Format Tanggal Salah',
         error: 'Harap masukkan tanggal yang valid dengan format YYYY-MM-DD.'
       };
-      // Format tampilan sel agar otomatis YYYY-MM-DD
       cellH.numFmt = 'yyyy-mm-dd';
     }
 
-    // Lebar Kolom agar rapi
+    // Lebar Kolom
     wsImport.columns.forEach((col, idx) => {
-      if (idx === 0) col.width = 20; // ID
-      else if (idx === 1) col.width = 15; // NIK
-      else if (idx === 2) col.width = 25; // Nama
+      if (idx === 0) col.width = 20;
+      else if (idx === 1) col.width = 15;
+      else if (idx === 2) col.width = 25;
       else col.width = 22;
     });
 
-    // 7. Unduh File
+    // 8. Unduh File
     const buffer = await workbook.xlsx.writeBuffer();
     const dataBlob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     saveAs(dataBlob, `HUREMA_Career_Template_${new Date().toISOString().split('T')[0]}.xlsx`);
@@ -147,10 +179,8 @@ export const careerService = {
           const workbook = XLSX.read(data, { type: 'array' });
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
           
-          // Header dimulai dari baris ke-3 karena ada instruksi di baris 1 & 2
           const jsonData = XLSX.utils.sheet_to_json(firstSheet, { range: 2 });
 
-          // Ambil referensi untuk mapping nama ke ID
           const [locations, schedules] = await Promise.all([
             locationService.getAll(),
             scheduleService.getAll()
@@ -160,10 +190,8 @@ export const careerService = {
             const loc = locations.find(l => l.name === row['Lokasi Baru (*)']);
             const sch = schedules.find(s => s.name === row['Jadwal Baru (*)']);
             
-            // Konversi tanggal dari format Excel jika perlu
             let effectiveDate = row['Tanggal Efektif (YYYY-MM-DD) (*)'];
             if (typeof effectiveDate === 'number') {
-              // Jika Excel mengirimkan serial number date
               const date = new Date((effectiveDate - 25569) * 86400 * 1000);
               effectiveDate = date.toISOString().split('T')[0];
             }
