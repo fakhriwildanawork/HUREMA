@@ -52,18 +52,15 @@ export const accountService = {
   },
 
   async getDistinctAttributes() {
-    const { data: positions } = await supabase.from('accounts').select('position');
-    const { data: grades } = await supabase.from('accounts').select('grade');
+    // Mengambil data unik hanya dari tabel account_career_logs sesuai permintaan user
     const { data: logPositions } = await supabase.from('account_career_logs').select('position');
     const { data: logGrades } = await supabase.from('account_career_logs').select('grade');
     
     const uniquePositions = Array.from(new Set([
-      ...(positions?.map(p => p.position) || []),
       ...(logPositions?.map(p => p.position) || [])
     ].filter(Boolean))).sort();
 
     const uniqueGrades = Array.from(new Set([
-      ...(grades?.map(g => g.grade) || []),
       ...(logGrades?.map(g => g.grade) || [])
     ].filter(Boolean))).sort();
     

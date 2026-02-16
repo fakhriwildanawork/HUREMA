@@ -110,6 +110,14 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
     }
   };
 
+  // Helper untuk menampilkan datalist secara otomatis saat input fokus
+  const triggerDatalist = (e: React.FocusEvent<HTMLInputElement>) => {
+    // Pada beberapa browser, mengubah value secara singkat memicu datalist muncul
+    const currentVal = e.target.value;
+    e.target.value = '';
+    e.target.value = currentVal;
+  };
+
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-40 p-4">
       <div className="bg-white rounded-md shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in duration-200">
@@ -150,8 +158,10 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
                       required 
                       list="career-pos-list"
                       name="position" 
+                      autoComplete="off"
                       value={formData.position} 
                       onChange={handleChange} 
+                      onFocus={triggerDatalist}
                       className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded outline-none focus:ring-1 focus:ring-[#006E62] pr-6" 
                       placeholder="Pilih atau Ketik"
                     />
@@ -167,8 +177,10 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
                     <input 
                       list="career-grade-list"
                       name="grade" 
+                      autoComplete="off"
                       value={formData.grade} 
                       onChange={handleChange} 
+                      onFocus={triggerDatalist}
                       className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded outline-none focus:ring-1 focus:ring-[#006E62] pr-6" 
                       placeholder="Pilih atau Ketik"
                     />
