@@ -1,18 +1,18 @@
 
 import React, { useState, useEffect } from 'react';
-import { Award, Search, Paperclip, UserCircle, Upload, FileText, Calendar, Plus, Trash2, Edit2 } from 'lucide-react';
+import { Award, Search, Paperclip, UserCircle, Upload, Calendar, FileUp, Download } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { certificationService } from '../../services/certificationService';
 import { googleDriveService } from '../../services/googleDriveService';
 import { AccountCertificationExtended } from '../../types';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
-import CertificationFormModal from './CertificationFormModal';
+import CertificationImportModal from './CertificationImportModal';
 
 const CertificationMain: React.FC = () => {
   const [certs, setCerts] = useState<AccountCertificationExtended[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showFormModal, setShowFormModal] = useState<{show: boolean, cert?: AccountCertificationExtended}>({show: false});
+  const [showImportModal, setShowImportModal] = useState(false);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -28,29 +28,6 @@ const CertificationMain: React.FC = () => {
       Swal.fire('Gagal', 'Gagal memuat data sertifikasi', 'error');
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    const result = await Swal.fire({
-      title: 'Hapus Sertifikasi?',
-      text: "Data ini akan dihapus permanen.",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#006E62',
-      cancelButtonColor: '#ef4444',
-      confirmButtonText: 'Ya, hapus!',
-      cancelButtonText: 'Batal'
-    });
-
-    if (result.isConfirmed) {
-      try {
-        await certificationService.delete(id);
-        setCerts(prev => prev.filter(c => c.id !== id));
-        Swal.fire('Terhapus!', 'Data sertifikasi telah dihapus.', 'success');
-      } catch (error) {
-        Swal.fire('Gagal', 'Gagal menghapus data', 'error');
-      }
     }
   };
 
@@ -125,12 +102,14 @@ const CertificationMain: React.FC = () => {
           />
         </div>
         
-        <button 
-          onClick={() => setShowFormModal({show: true})}
-          className="flex items-center gap-2 bg-[#006E62] text-white px-4 py-2 rounded-md hover:bg-[#005a50] transition-colors shadow-sm text-sm font-medium"
-        >
-          <Plus size={18} /> Tambah Sertifikasi
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => certificationService.downloadTemplate()} className="flex items-center gap-2 border border-gray-200 px-4 py-2 rounded-md hover:bg-gray-50 transition-colors text-sm font-medium text-gray-600">
+            <Download size={18} /> Unduh Template
+          </button>
+          <button onClick={() => setShowImportModal(true)} className="flex items-center gap-2 bg-[#006E62] text-white px-4 py-2 rounded-md hover:bg-[#005a50] transition-colors shadow-sm text-sm font-medium">
+            <FileUp size={18} /> Impor Massal
+          </button>
+        </div>
       </div>
 
       <div className="bg-white border border-gray-100 rounded-md overflow-hidden shadow-sm">
@@ -141,7 +120,6 @@ const CertificationMain: React.FC = () => {
               <th className="px-6 py-4">Sertifikasi</th>
               <th className="px-6 py-4">Tanggal</th>
               <th className="px-6 py-4">Dokumen</th>
-              <th className="px-6 py-4 text-center">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
@@ -188,12 +166,6 @@ const CertificationMain: React.FC = () => {
                       </label>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-center">
-                    <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => setShowFormModal({show: true, cert: c})} className="text-gray-300 hover:text-[#006E62]"><Edit2 size={14} /></button>
-                      <button onClick={() => handleDelete(c.id)} className="text-gray-300 hover:text-red-500"><Trash2 size={14} /></button>
-                    </div>
-                  </td>
                 </tr>
               ))
             )}
@@ -201,11 +173,10 @@ const CertificationMain: React.FC = () => {
         </table>
       </div>
 
-      {showFormModal.show && (
-        <CertificationFormModal 
-          onClose={() => setShowFormModal({show: false})} 
-          onSuccess={() => { setShowFormModal({show: false}); fetchCerts(); }}
-          initialData={showFormModal.cert}
+      {showImportModal && (
+        <CertificationImportModal 
+          onClose={() => setShowImportModal(false)} 
+          onSuccess={() => { setShowImportModal(false); fetchCerts(); }} 
         />
       )}
     </div>

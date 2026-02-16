@@ -32,9 +32,13 @@ const CertificationFormModal: React.FC<CertificationFormModalProps> = ({ onClose
   
   const typeRef = useRef<HTMLDivElement>(null);
 
+  // Menentukan apakah dropdown karyawan harus muncul
+  const isAccountPredefined = !!initialData?.account_id && !initialData?.id;
+
   useEffect(() => {
-    accountService.getAll().then(data => setAccounts(data as any));
-    // Fix: Explicitly wrap setExistingTypes in an arrow function to handle type conversion from inferred unknown[]
+    if (!isAccountPredefined) {
+       accountService.getAll().then(data => setAccounts(data as any));
+    }
     certificationService.getUniqueCertTypes().then((types: any) => setExistingTypes(types));
 
     const handleClickOutside = (event: MouseEvent) => {
@@ -93,7 +97,7 @@ const CertificationFormModal: React.FC<CertificationFormModalProps> = ({ onClose
       <div className="bg-white rounded-md shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in duration-200">
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
           <div>
-            <h3 className="text-base font-bold text-[#006E62]">{initialData ? 'Ubah' : 'Tambah'} Sertifikasi</h3>
+            <h3 className="text-base font-bold text-[#006E62]">{initialData?.id ? 'Ubah' : 'Tambah'} Sertifikasi</h3>
             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Pencatatan Dokumen Sertifikat</p>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
@@ -102,24 +106,26 @@ const CertificationFormModal: React.FC<CertificationFormModalProps> = ({ onClose
         </div>
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Pilih Karyawan</label>
-            <div className="relative">
-              <select 
-                required
-                name="account_id"
-                value={formData.account_id}
-                onChange={handleChange}
-                className="w-full px-3 py-2 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none bg-gray-50 appearance-none"
-              >
-                <option value="">-- Cari Karyawan --</option>
-                {accounts.map(acc => (
-                  <option key={acc.id} value={acc.id}>{acc.full_name} ({acc.internal_nik})</option>
-                ))}
-              </select>
-              <UserCircle className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
+          {!isAccountPredefined && (
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Pilih Karyawan</label>
+              <div className="relative">
+                <select 
+                  required
+                  name="account_id"
+                  value={formData.account_id}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none bg-gray-50 appearance-none"
+                >
+                  <option value="">-- Cari Karyawan --</option>
+                  {accounts.map(acc => (
+                    <option key={acc.id} value={acc.id}>{acc.full_name} ({acc.internal_nik})</option>
+                  ))}
+                </select>
+                <UserCircle className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">

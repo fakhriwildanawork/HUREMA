@@ -11,6 +11,7 @@ import { googleDriveService } from '../../services/googleDriveService';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
 import LogForm from './LogForm';
 import CertificationFormModal from '../certification/CertificationFormModal';
+import ContractFormModal from '../contract/ContractFormModal';
 
 interface AccountDetailProps {
   id: string;
@@ -29,6 +30,7 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
   const [isSaving, setIsSaving] = useState(false);
   const [showLogForm, setShowLogForm] = useState<{ type: 'career' | 'health', data?: any, isEdit?: boolean } | null>(null);
   const [showCertForm, setShowCertForm] = useState<{ show: boolean, data?: any }>({ show: false });
+  const [showContractForm, setShowContractForm] = useState<{ show: boolean, data?: any }>({ show: false });
 
   useEffect(() => {
     fetchData();
@@ -60,8 +62,6 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
     setIsSaving(true);
     const type = showLogForm?.type;
     const isEdit = showLogForm?.isEdit;
-    
-    // Optimistic UI Data
     const tempId = data.id || `temp-${Date.now()}`;
     const optimisticEntry = { ...data, id: tempId, change_date: data.change_date || new Date().toISOString() };
 
@@ -75,15 +75,7 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
           const created = await accountService.createCareerLog(data);
           setCareerLogs(prev => prev.map(l => l.id === tempId ? created : l));
         }
-        
-        // Sinkronisasi data utama akun lokal
-        setAccount(prev => prev ? { 
-          ...prev, 
-          position: data.position, 
-          grade: data.grade, 
-          location_id: data.location_id,
-          location: { ...prev.location, name: data.location_name }
-        } : null);
+        setAccount(prev => prev ? { ...prev, position: data.position, grade: data.grade, location_id: data.location_id, location: { ...prev.location, name: data.location_name } } : null);
       } else {
         if (isEdit) {
           const updated = await accountService.updateHealthLog(data.id, data);
@@ -93,15 +85,8 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
           const created = await accountService.createHealthLog(data);
           setHealthLogs(prev => prev.map(l => l.id === tempId ? created : l));
         }
-
-        // Sinkronisasi data utama akun lokal
-        setAccount(prev => prev ? { 
-          ...prev, 
-          mcu_status: data.mcu_status, 
-          health_risk: data.health_risk 
-        } : null);
+        setAccount(prev => prev ? { ...prev, mcu_status: data.mcu_status, health_risk: data.health_risk } : null);
       }
-      
       setShowLogForm(null);
       Swal.fire({ title: 'Berhasil!', text: `Riwayat telah ${isEdit ? 'diperbarui' : 'ditambahkan'}.`, icon: 'success', timer: 1000, showConfirmButton: false });
     } catch (error) {
@@ -138,6 +123,31 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
         Swal.fire('Terhapus!', 'Riwayat telah dihapus.', 'success');
       } catch (error) {
         Swal.fire('Gagal', 'Gagal menghapus data', 'error');
+      } finally {
+        setIsSaving(false);
+      }
+    }
+  };
+
+  const handleDeleteContract = async (contractId: string) => {
+    const result = await Swal.fire({
+      title: 'Hapus Kontrak?',
+      text: "Data kontrak akan dihapus permanen.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#006E62',
+      cancelButtonColor: '#ef4444',
+      confirmButtonText: 'Ya, hapus!'
+    });
+
+    if (result.isConfirmed) {
+      setIsSaving(true);
+      try {
+        await contractService.delete(contractId);
+        setContracts(prev => prev.filter(c => c.id !== contractId));
+        Swal.fire('Terhapus!', 'Kontrak telah dihapus.', 'success');
+      } catch (error) {
+        Swal.fire('Gagal', 'Gagal menghapus.', 'error');
       } finally {
         setIsSaving(false);
       }
@@ -186,9 +196,7 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
           </button>
         )}
       </div>
-      <div className="space-y-4">
-        {children}
-      </div>
+      <div className="space-y-4">{children}</div>
     </div>
   );
 
@@ -207,11 +215,7 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString('id-ID', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
+    return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
   };
 
   return (
@@ -224,9 +228,7 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
           {account.photo_google_id ? (
             <img src={googleDriveService.getFileUrl(account.photo_google_id)} className="w-full h-full object-cover" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-300">
-              <User size={48} />
-            </div>
+            <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-300"><User size={48} /></div>
           )}
         </div>
         
@@ -295,31 +297,37 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
                  ].map(item => (
                    <div key={item.id} className="flex items-center justify-between px-2 py-1.5 border border-gray-100 rounded bg-gray-50/50">
                       <span className="text-[9px] font-medium text-gray-600">{item.label}</span>
-                      <span className={`text-[8px] font-bold uppercase ${account[item.id as keyof Account] ? 'text-[#006E62]' : 'text-orange-500'}`}>
-                        {account[item.id as keyof Account] ? 'Terbatas' : 'Bebas'}
-                      </span>
+                      <span className={`text-[8px] font-bold uppercase ${account[item.id as keyof Account] ? 'text-[#006E62]' : 'text-orange-500'}`}>{account[item.id as keyof Account] ? 'Terbatas' : 'Bebas'}</span>
                    </div>
                  ))}
               </div>
            </div>
         </DetailSection>
 
-        <DetailSection icon={FileBadge} title="Riwayat Kontrak Kerja">
+        <DetailSection 
+          icon={FileBadge} 
+          title="Riwayat Kontrak Kerja"
+          onAdd={() => setShowContractForm({ show: true, data: { account_id: id } })}
+        >
            <div className="space-y-3">
             {contracts.length === 0 ? (
               <p className="text-[10px] text-gray-400 italic">Belum ada riwayat kontrak.</p>
             ) : (
               contracts.map(c => (
-                <div key={c.id} className="border-l-2 border-emerald-100 pl-3 py-1">
-                  <p className="text-[10px] font-bold text-[#006E62] leading-tight">{c.contract_number}</p>
-                  <p className="text-[9px] text-gray-500 font-medium uppercase tracking-tighter">{c.contract_type}</p>
-                  <div className="flex justify-between items-center mt-1">
-                    <p className="text-[8px] text-gray-400 uppercase font-bold">{formatDate(c.start_date)} - {c.end_date ? formatDate(c.end_date) : 'TETAP'}</p>
-                    {c.file_id && (
-                      <a href={googleDriveService.getFileUrl(c.file_id).replace('=s1600', '=s0')} target="_blank" rel="noreferrer" className="text-[#006E62] hover:text-[#005a50]">
-                        <Paperclip size={10} />
-                      </a>
-                    )}
+                <div key={c.id} className="flex group justify-between items-start border-l-2 border-emerald-100 pl-3 py-1 relative">
+                  <div className="flex-1 min-w-0 pr-4">
+                    <p className="text-[10px] font-bold text-[#006E62] leading-tight">{c.contract_number}</p>
+                    <p className="text-[9px] text-gray-500 font-medium uppercase tracking-tighter">{c.contract_type}</p>
+                    <div className="flex justify-between items-center mt-1">
+                      <p className="text-[8px] text-gray-400 uppercase font-bold">{formatDate(c.start_date)} - {c.end_date ? formatDate(c.end_date) : 'TETAP'}</p>
+                      {c.file_id && (
+                        <a href={googleDriveService.getFileUrl(c.file_id).replace('=s1600', '=s0')} target="_blank" rel="noreferrer" className="text-[#006E62] hover:text-[#005a50] flex items-center gap-0.5 text-[8px] font-bold"><Paperclip size={10} /> PDF</a>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => setShowContractForm({ show: true, data: c })} className="text-gray-300 hover:text-[#006E62]"><Edit2 size={12} /></button>
+                    <button onClick={() => handleDeleteContract(c.id)} className="text-gray-300 hover:text-red-500"><Trash2 size={12} /></button>
                   </div>
                 </div>
               ))
@@ -345,19 +353,13 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
                     <div className="flex items-center gap-2 mt-0.5">
                       <p className="text-[8px] text-gray-400 font-bold uppercase">{formatDate(cert.cert_date)}</p>
                       {cert.file_id && (
-                        <a href={googleDriveService.getFileUrl(cert.file_id).replace('=s1600', '=s0')} target="_blank" rel="noreferrer" className="text-[#006E62] hover:underline flex items-center gap-0.5 text-[8px] font-bold">
-                          <Paperclip size={8} /> FILE
-                        </a>
+                        <a href={googleDriveService.getFileUrl(cert.file_id).replace('=s1600', '=s0')} target="_blank" rel="noreferrer" className="text-[#006E62] hover:underline flex items-center gap-0.5 text-[8px] font-bold"><Paperclip size={8} /> FILE</a>
                       )}
                     </div>
                   </div>
                   <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => setShowCertForm({ show: true, data: cert })} className="text-gray-300 hover:text-[#006E62]">
-                      <Edit2 size={12} />
-                    </button>
-                    <button onClick={() => handleDeleteCert(cert.id)} className="text-gray-300 hover:text-red-500">
-                      <Trash2 size={12} />
-                    </button>
+                    <button onClick={() => setShowCertForm({ show: true, data: cert })} className="text-gray-300 hover:text-[#006E62]"><Edit2 size={12} /></button>
+                    <button onClick={() => handleDeleteCert(cert.id)} className="text-gray-300 hover:text-red-500"><Trash2 size={12} /></button>
                   </div>
                 </div>
               ))
@@ -383,20 +385,14 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
                     <div className="flex items-center gap-2 mt-0.5">
                       <p className="text-[8px] text-gray-300 font-bold uppercase">{formatDate(log.change_date)}</p>
                       {log.file_sk_id && (
-                        <a href={googleDriveService.getFileUrl(log.file_sk_id).replace('=s1600', '=s0')} target="_blank" rel="noreferrer" className="text-[#006E62] hover:underline flex items-center gap-0.5 text-[8px] font-bold">
-                          <Paperclip size={8} /> SK
-                        </a>
+                        <a href={googleDriveService.getFileUrl(log.file_sk_id).replace('=s1600', '=s0')} target="_blank" rel="noreferrer" className="text-[#006E62] hover:underline flex items-center gap-0.5 text-[8px] font-bold"><Paperclip size={8} /> SK</a>
                       )}
                     </div>
                     {log.notes && <p className="text-[9px] text-gray-400 italic mt-1 line-clamp-1">"{log.notes}"</p>}
                   </div>
                   <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => setShowLogForm({ type: 'career', data: log, isEdit: true })} className="text-gray-300 hover:text-[#006E62]">
-                      <Edit2 size={12} />
-                    </button>
-                    <button onClick={() => handleDeleteLog(log.id, 'career')} className="text-gray-300 hover:text-red-500">
-                      <Trash2 size={12} />
-                    </button>
+                    <button onClick={() => setShowLogForm({ type: 'career', data: log, isEdit: true })} className="text-gray-300 hover:text-[#006E62]"><Edit2 size={12} /></button>
+                    <button onClick={() => handleDeleteLog(log.id, 'career')} className="text-gray-300 hover:text-red-500"><Trash2 size={12} /></button>
                   </div>
                 </div>
               ))
@@ -422,19 +418,13 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
                     <div className="flex items-center gap-2 mt-0.5">
                       <p className="text-[8px] text-gray-300 font-bold uppercase">{formatDate(log.change_date)}</p>
                       {log.file_mcu_id && (
-                        <a href={googleDriveService.getFileUrl(log.file_mcu_id).replace('=s1600', '=s0')} target="_blank" rel="noreferrer" className="text-[#006E62] hover:underline flex items-center gap-0.5 text-[8px] font-bold">
-                          <Paperclip size={8} /> MCU
-                        </a>
+                        <a href={googleDriveService.getFileUrl(log.file_mcu_id).replace('=s1600', '=s0')} target="_blank" rel="noreferrer" className="text-[#006E62] hover:underline flex items-center gap-0.5 text-[8px] font-bold"><Paperclip size={8} /> MCU</a>
                       )}
                     </div>
                   </div>
                   <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => setShowLogForm({ type: 'health', data: log, isEdit: true })} className="text-gray-300 hover:text-[#006E62]">
-                      <Edit2 size={12} />
-                    </button>
-                    <button onClick={() => handleDeleteLog(log.id, 'health')} className="text-gray-300 hover:text-red-500">
-                      <Trash2 size={12} />
-                    </button>
+                    <button onClick={() => setShowLogForm({ type: 'health', data: log, isEdit: true })} className="text-gray-300 hover:text-[#006E62]"><Edit2 size={12} /></button>
+                    <button onClick={() => handleDeleteLog(log.id, 'health')} className="text-gray-300 hover:text-red-500"><Trash2 size={12} /></button>
                   </div>
                 </div>
               ))
@@ -445,9 +435,7 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
         <DetailSection icon={GraduationCap} title="Pendidikan & Dokumen">
            <div>
              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter mb-0.5">Pendidikan Terakhir</p>
-             <p className="text-xs text-gray-700 font-medium leading-tight">
-               {account.last_education} {account.major ? `- ${account.major}` : ''}
-             </p>
+             <p className="text-xs text-gray-700 font-medium leading-tight">{account.last_education} {account.major ? `- ${account.major}` : ''}</p>
            </div>
            <div className="grid grid-cols-1 gap-4 pt-2">
               <DataRow label="Scan Ijazah" value={account.diploma_google_id} isFile />
@@ -468,22 +456,15 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
       </div>
 
       {showLogForm && (
-        <LogForm 
-          type={showLogForm.type}
-          accountId={id}
-          initialData={showLogForm.data}
-          isEdit={showLogForm.isEdit}
-          onClose={() => setShowLogForm(null)}
-          onSubmit={handleLogSubmit}
-        />
+        <LogForm type={showLogForm.type} accountId={id} initialData={showLogForm.data} isEdit={showLogForm.isEdit} onClose={() => setShowLogForm(null)} onSubmit={handleLogSubmit} />
       )}
 
       {showCertForm.show && (
-        <CertificationFormModal 
-          onClose={() => setShowCertForm({ show: false })}
-          onSuccess={() => { setShowCertForm({ show: false }); fetchData(); }}
-          initialData={showCertForm.data}
-        />
+        <CertificationFormModal onClose={() => setShowCertForm({ show: false })} onSuccess={() => { setShowCertForm({ show: false }); fetchData(); }} initialData={showCertForm.data} />
+      )}
+
+      {showContractForm.show && (
+        <ContractFormModal onClose={() => setShowContractForm({ show: false })} onSuccess={() => { setShowContractForm({ show: false }); fetchData(); }} initialData={showContractForm.data} />
       )}
     </div>
   );
