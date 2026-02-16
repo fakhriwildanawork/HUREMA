@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { QRCodeSVG } from 'https://esm.sh/qrcode.react@4.1.0';
+import { QRCodeSVG } from 'qrcode.react';
 import { X, Edit2, Trash2, User, Phone, Mail, Calendar, MapPin, Briefcase, Shield, Heart, GraduationCap, Download, ExternalLink, Clock, Activity } from 'lucide-react';
 import { Account, CareerLog, HealthLog } from '../../types';
 import { accountService } from '../../services/accountService';

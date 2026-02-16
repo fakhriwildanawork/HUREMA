@@ -13,7 +13,8 @@
     "react": "^19.2.4",
     "lucide-react": "^0.564.0",
     "@supabase/supabase-js": "^2.95.3",
-    "sweetalert2": "^11.26.18"
+    "sweetalert2": "^11.26.18",
+    "qrcode.react": "^4.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
