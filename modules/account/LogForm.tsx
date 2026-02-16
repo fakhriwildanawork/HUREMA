@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Save, Upload, FileText, Paperclip } from 'lucide-react';
+import { X, Save, Upload, FileText, Paperclip, ChevronDown, Calendar } from 'lucide-react';
 import { locationService } from '../../services/locationService';
 import { googleDriveService } from '../../services/googleDriveService';
 import { accountService } from '../../services/accountService';
@@ -30,6 +30,7 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
     file_mcu_id: initialData?.file_mcu_id || '',
     // Common
     notes: initialData?.notes || '',
+    change_date: initialData?.change_date ? initialData.change_date.split('T')[0] : new Date().toISOString().split('T')[0],
   });
 
   const [locations, setLocations] = useState<Location[]>([]);
@@ -80,7 +81,8 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
     // Filtrasi Payload Akhir sebelum dikirim ke Service (Mencegah Error 400)
     let finalPayload: any = {
       account_id: formData.account_id,
-      notes: formData.notes
+      notes: formData.notes,
+      change_date: formData.change_date
     };
 
     if (type === 'career') {
@@ -124,32 +126,54 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          <div className="space-y-1">
+            <label className="text-[9px] font-bold text-gray-500 uppercase">Tanggal Perubahan</label>
+            <div className="relative">
+              <input 
+                type="date"
+                required 
+                name="change_date" 
+                value={formData.change_date} 
+                onChange={handleChange} 
+                className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded outline-none focus:ring-1 focus:ring-[#006E62] bg-gray-50" 
+              />
+            </div>
+          </div>
+
           {type === 'career' ? (
             <>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-[9px] font-bold text-gray-500 uppercase">Jabatan</label>
-                  <input 
-                    required 
-                    list="career-pos-list"
-                    name="position" 
-                    value={formData.position} 
-                    onChange={handleChange} 
-                    className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded outline-none focus:ring-1 focus:ring-[#006E62]" 
-                  />
+                  <div className="relative">
+                    <input 
+                      required 
+                      list="career-pos-list"
+                      name="position" 
+                      value={formData.position} 
+                      onChange={handleChange} 
+                      className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded outline-none focus:ring-1 focus:ring-[#006E62] pr-6" 
+                      placeholder="Pilih atau Ketik"
+                    />
+                    <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  </div>
                   <datalist id="career-pos-list">
                     {suggestions.positions.map(p => <option key={p} value={p} />)}
                   </datalist>
                 </div>
                 <div className="space-y-1">
                   <label className="text-[9px] font-bold text-gray-500 uppercase">Golongan</label>
-                  <input 
-                    list="career-grade-list"
-                    name="grade" 
-                    value={formData.grade} 
-                    onChange={handleChange} 
-                    className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded outline-none focus:ring-1 focus:ring-[#006E62]" 
-                  />
+                  <div className="relative">
+                    <input 
+                      list="career-grade-list"
+                      name="grade" 
+                      value={formData.grade} 
+                      onChange={handleChange} 
+                      className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded outline-none focus:ring-1 focus:ring-[#006E62] pr-6" 
+                      placeholder="Pilih atau Ketik"
+                    />
+                    <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  </div>
                   <datalist id="career-grade-list">
                     {suggestions.grades.map(g => <option key={g} value={g} />)}
                   </datalist>
@@ -157,10 +181,13 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
               </div>
               <div className="space-y-1">
                 <label className="text-[9px] font-bold text-gray-500 uppercase">Lokasi Penempatan</label>
-                <select required name="location_id" value={formData.location_id} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded outline-none focus:ring-1 focus:ring-[#006E62]">
-                  <option value="">-- Pilih Lokasi --</option>
-                  {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-                </select>
+                <div className="relative">
+                  <select required name="location_id" value={formData.location_id} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded outline-none focus:ring-1 focus:ring-[#006E62] appearance-none bg-white">
+                    <option value="">-- Pilih Lokasi --</option>
+                    {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                  </select>
+                  <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                </div>
               </div>
               <div className="space-y-1">
                 <label className="text-[9px] font-bold text-gray-500 uppercase">Dokumen SK (PDF/Gambar)</label>

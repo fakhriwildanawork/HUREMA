@@ -105,8 +105,8 @@ export type LocationInput = Omit<Location, 'id' | 'created_at' | 'updated_at' | 
 export type LocationAdminInput = Omit<LocationAdministration, 'id' | 'created_at'>;
 // FIX: Exclude 'location' from AccountInput to prevent trying to insert non-existent column
 export type AccountInput = Omit<Account, 'id' | 'created_at' | 'updated_at' | 'search_all' | 'location'>;
-export type CareerLogInput = Omit<CareerLog, 'id' | 'change_date'> & { location_id?: string };
-export type HealthLogInput = Omit<HealthLog, 'id' | 'change_date'>;
+export type CareerLogInput = Omit<CareerLog, 'id'> & { location_id?: string };
+export type HealthLogInput = Omit<HealthLog, 'id'>;
 
 export interface GoogleDriveFile {
   id: string;

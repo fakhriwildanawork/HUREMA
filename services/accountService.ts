@@ -171,8 +171,8 @@ export const accountService = {
   // Manual Log Management
   async createCareerLog(logInput: CareerLogInput) {
     // Filtrasi: Pastikan hanya kolom yang ada di tabel account_career_logs yang dikirim
-    const { account_id, position, grade, location_name, file_sk_id, notes, location_id } = logInput;
-    const payload = sanitizePayload({ account_id, position, grade, location_name, file_sk_id, notes });
+    const { account_id, position, grade, location_name, file_sk_id, notes, location_id, change_date } = logInput;
+    const payload = sanitizePayload({ account_id, position, grade, location_name, file_sk_id, notes, change_date });
     
     const { data, error } = await supabase
       .from('account_career_logs')
@@ -195,8 +195,8 @@ export const accountService = {
   },
 
   async updateCareerLog(id: string, logInput: Partial<CareerLogInput>) {
-    const { account_id, position, grade, location_name, file_sk_id, notes, location_id } = logInput;
-    const payload = sanitizePayload({ account_id, position, grade, location_name, file_sk_id, notes });
+    const { account_id, position, grade, location_name, file_sk_id, notes, location_id, change_date } = logInput;
+    const payload = sanitizePayload({ account_id, position, grade, location_name, file_sk_id, notes, change_date });
 
     const { data, error } = await supabase
       .from('account_career_logs')
@@ -231,8 +231,8 @@ export const accountService = {
 
   async createHealthLog(logInput: HealthLogInput) {
     // Filtrasi: Hapus field career (location_id, location_name) yang sering terbawa dari state form
-    const { account_id, mcu_status, health_risk, file_mcu_id, notes } = logInput;
-    const payload = sanitizePayload({ account_id, mcu_status, health_risk, file_mcu_id, notes });
+    const { account_id, mcu_status, health_risk, file_mcu_id, notes, change_date } = logInput;
+    const payload = sanitizePayload({ account_id, mcu_status, health_risk, file_mcu_id, notes, change_date });
 
     const { data, error } = await supabase
       .from('account_health_logs')
@@ -254,8 +254,8 @@ export const accountService = {
   },
 
   async updateHealthLog(id: string, logInput: Partial<HealthLogInput>) {
-    const { account_id, mcu_status, health_risk, file_mcu_id, notes } = logInput;
-    const payload = sanitizePayload({ account_id, mcu_status, health_risk, file_mcu_id, notes });
+    const { account_id, mcu_status, health_risk, file_mcu_id, notes, change_date } = logInput;
+    const payload = sanitizePayload({ account_id, mcu_status, health_risk, file_mcu_id, notes, change_date });
 
     const { data, error } = await supabase
       .from('account_health_logs')
