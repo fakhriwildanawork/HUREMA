@@ -36,15 +36,27 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
   const [locations, setLocations] = useState<Location[]>([]);
   const [suggestions, setSuggestions] = useState<{ positions: string[], grades: string[] }>({ positions: [], grades: [] });
   const [uploading, setUploading] = useState(false);
+  
+  // Custom Dropdown States
+  const [showPosDropdown, setShowPosDropdown] = useState(false);
+  const [showGradeDropdown, setShowGradeDropdown] = useState(false);
 
-  const posInputRef = useRef<HTMLInputElement>(null);
-  const gradeInputRef = useRef<HTMLInputElement>(null);
+  const posRef = useRef<HTMLDivElement>(null);
+  const gradeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (type === 'career') {
       locationService.getAll().then(setLocations);
     }
     accountService.getDistinctAttributes().then(setSuggestions);
+
+    // Close dropdowns on click outside
+    const handleClickOutside = (event: MouseEvent) => {
+      if (posRef.current && !posRef.current.contains(event.target as Node)) setShowPosDropdown(false);
+      if (gradeRef.current && !gradeRef.current.contains(event.target as Node)) setShowGradeDropdown(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [type]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -113,16 +125,13 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
     }
   };
 
-  // Helper untuk menampilkan datalist secara otomatis saat input fokus atau klik icon
-  const triggerDatalist = (inputRef: React.RefObject<HTMLInputElement>) => {
-    if (inputRef.current) {
-      inputRef.current.focus();
-      // Trik untuk memicu munculnya datalist pada Chrome/Edge
-      const currentVal = inputRef.current.value;
-      inputRef.current.value = '';
-      inputRef.current.value = currentVal;
-    }
-  };
+  const filteredPositions = suggestions.positions.filter(p => 
+    p.toLowerCase().includes(formData.position.toLowerCase())
+  );
+
+  const filteredGrades = suggestions.grades.filter(g => 
+    g.toLowerCase().includes(formData.grade.toLowerCase())
+  );
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-40 p-4">
@@ -157,60 +166,80 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
           {type === 'career' ? (
             <>
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
+                <div className="space-y-1 relative" ref={posRef}>
                   <label className="text-[9px] font-bold text-gray-500 uppercase">Jabatan</label>
                   <div className="relative">
                     <input 
-                      ref={posInputRef}
                       required 
-                      list="career-pos-list"
                       name="position" 
-                      autoComplete="one-time-code"
+                      autoComplete="off"
                       value={formData.position} 
-                      onChange={handleChange} 
-                      onClick={() => triggerDatalist(posInputRef)}
-                      onFocus={() => triggerDatalist(posInputRef)}
+                      onChange={(e) => { handleChange(e); setShowPosDropdown(true); }}
+                      onFocus={() => setShowPosDropdown(true)}
                       className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded outline-none focus:ring-1 focus:ring-[#006E62] pr-7 bg-white" 
                       placeholder="Pilih atau Ketik"
                     />
                     <button 
                       type="button"
-                      onClick={() => triggerDatalist(posInputRef)}
+                      onClick={() => setShowPosDropdown(!showPosDropdown)}
                       className="absolute right-0 top-0 bottom-0 px-2 flex items-center text-gray-400 hover:text-[#006E62]"
                     >
                       <ChevronDown size={14} />
                     </button>
                   </div>
-                  <datalist id="career-pos-list">
-                    {suggestions.positions.map(p => <option key={p} value={p} />)}
-                  </datalist>
+                  {showPosDropdown && filteredPositions.length > 0 && (
+                    <div className="absolute z-[70] w-full mt-1 bg-white border border-gray-100 rounded shadow-lg max-h-40 overflow-y-auto">
+                      {filteredPositions.map(p => (
+                        <div 
+                          key={p} 
+                          className="px-3 py-2 text-xs hover:bg-gray-50 cursor-pointer text-gray-700"
+                          onClick={() => {
+                            setFormData(prev => ({ ...prev, position: p }));
+                            setShowPosDropdown(false);
+                          }}
+                        >
+                          {p}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1 relative" ref={gradeRef}>
                   <label className="text-[9px] font-bold text-gray-500 uppercase">Golongan</label>
                   <div className="relative">
                     <input 
-                      ref={gradeInputRef}
-                      list="career-grade-list"
                       name="grade" 
-                      autoComplete="one-time-code"
+                      autoComplete="off"
                       value={formData.grade} 
-                      onChange={handleChange} 
-                      onClick={() => triggerDatalist(gradeInputRef)}
-                      onFocus={() => triggerDatalist(gradeInputRef)}
+                      onChange={(e) => { handleChange(e); setShowGradeDropdown(true); }}
+                      onFocus={() => setShowGradeDropdown(true)}
                       className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded outline-none focus:ring-1 focus:ring-[#006E62] pr-7 bg-white" 
                       placeholder="Pilih atau Ketik"
                     />
                     <button 
                       type="button"
-                      onClick={() => triggerDatalist(gradeInputRef)}
+                      onClick={() => setShowGradeDropdown(!showGradeDropdown)}
                       className="absolute right-0 top-0 bottom-0 px-2 flex items-center text-gray-400 hover:text-[#006E62]"
                     >
                       <ChevronDown size={14} />
                     </button>
                   </div>
-                  <datalist id="career-grade-list">
-                    {suggestions.grades.map(g => <option key={g} value={g} />)}
-                  </datalist>
+                  {showGradeDropdown && filteredGrades.length > 0 && (
+                    <div className="absolute z-[70] w-full mt-1 bg-white border border-gray-100 rounded shadow-lg max-h-40 overflow-y-auto">
+                      {filteredGrades.map(g => (
+                        <div 
+                          key={g} 
+                          className="px-3 py-2 text-xs hover:bg-gray-50 cursor-pointer text-gray-700"
+                          onClick={() => {
+                            setFormData(prev => ({ ...prev, grade: g }));
+                            setShowGradeDropdown(false);
+                          }}
+                        >
+                          {g}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="space-y-1">
