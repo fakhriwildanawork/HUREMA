@@ -69,24 +69,6 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
     }
   };
 
-  const handleDeleteWarning = async (logId: string) => {
-    const res = await Swal.fire({ 
-      title: 'Hapus riwayat peringatan?', 
-      icon: 'warning', 
-      showCancelButton: true, 
-      confirmButtonColor: '#006E62',
-      confirmButtonText: 'Ya, Hapus'
-    });
-    if (res.isConfirmed) {
-      try {
-        setIsSaving(true);
-        await disciplineService.deleteWarning(logId);
-        setWarnings(prev => prev.filter(w => w.id !== logId));
-      } catch (e) { Swal.fire('Gagal', 'Gagal menghapus data', 'error'); }
-      finally { setIsSaving(false); }
-    }
-  };
-
   const handleLogSubmit = async (data: any) => {
     setIsSaving(true);
     const type = showLogForm?.type;
@@ -206,6 +188,25 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
       } finally {
         setIsSaving(false);
       }
+    }
+  };
+
+  const handleDeleteWarning = async (logId: string) => {
+    const res = await Swal.fire({ 
+      title: 'Hapus riwayat peringatan?', 
+      icon: 'warning', 
+      showCancelButton: true, 
+      confirmButtonColor: '#006E62',
+      confirmButtonText: 'Ya, Hapus'
+    });
+    if (res.isConfirmed) {
+      try {
+        setIsSaving(true);
+        await disciplineService.deleteWarning(logId);
+        setWarnings(prev => prev.filter(w => w.id !== logId));
+        Swal.fire('Terhapus', '', 'success');
+      } catch (e) { Swal.fire('Gagal', 'Gagal menghapus data', 'error'); }
+      finally { setIsSaving(false); }
     }
   };
 

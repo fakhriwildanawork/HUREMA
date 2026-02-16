@@ -142,42 +142,6 @@ export interface HealthLogExtended extends HealthLog {
   };
 }
 
-export interface WarningLog {
-  id: string;
-  account_id: string;
-  warning_type: 'Teguran' | 'SP1' | 'SP2' | 'SP3';
-  reason: string;
-  issue_date: string;
-  file_id?: string | null;
-  created_at?: string;
-}
-
-export interface WarningLogExtended extends WarningLog {
-  account?: {
-    full_name: string;
-    internal_nik: string;
-  };
-}
-
-export interface TerminationLog {
-  id: string;
-  account_id: string;
-  termination_type: 'Pemecatan' | 'Resign';
-  termination_date: string;
-  reason: string;
-  file_id?: string | null;
-  severance_amount?: number | null;
-  penalty_amount?: number | null;
-  created_at?: string;
-}
-
-export interface TerminationLogExtended extends TerminationLog {
-  account?: {
-    full_name: string;
-    internal_nik: string;
-  };
-}
-
 export interface AccountContract {
   id: string;
   account_id: string;
@@ -218,15 +182,52 @@ export interface AccountCertificationExtended extends AccountCertification {
   };
 }
 
+export interface WarningLog {
+  id: string;
+  account_id: string;
+  warning_type: 'Teguran' | 'SP1' | 'SP2' | 'SP3';
+  reason: string;
+  issue_date: string;
+  file_id?: string | null;
+  created_at?: string;
+}
+
+export interface WarningLogExtended extends WarningLog {
+  account?: {
+    full_name: string;
+    internal_nik: string;
+  };
+}
+
+export interface TerminationLog {
+  id: string;
+  account_id: string;
+  termination_type: 'Pemecatan' | 'Resign';
+  termination_date: string;
+  reason: string;
+  severance_amount: number;
+  penalty_amount: number;
+  file_id?: string | null;
+  created_at?: string;
+}
+
+export interface TerminationLogExtended extends TerminationLog {
+  account?: {
+    full_name: string;
+    internal_nik: string;
+  };
+}
+
 export type LocationInput = Omit<Location, 'id' | 'created_at' | 'updated_at' | 'search_all'>;
 export type LocationAdminInput = Omit<LocationAdministration, 'id' | 'created_at'>;
 export type AccountInput = Omit<Account, 'id' | 'created_at' | 'updated_at' | 'search_all' | 'location'>;
 export type CareerLogInput = Omit<CareerLog, 'id'>;
 export type HealthLogInput = Omit<HealthLog, 'id'>;
-export type WarningLogInput = Omit<WarningLog, 'id' | 'created_at'>;
-export type TerminationLogInput = Omit<TerminationLog, 'id' | 'created_at'>;
 export type AccountContractInput = Omit<AccountContract, 'id' | 'created_at' | 'updated_at'>;
 export type AccountCertificationInput = Omit<AccountCertification, 'id' | 'created_at' | 'updated_at'>;
+export type WarningLogInput = Omit<WarningLog, 'id' | 'created_at'>;
+export type TerminationLogInput = Omit<TerminationLog, 'id' | 'created_at'>;
+
 export type ScheduleInput = Omit<Schedule, 'id' | 'created_at' | 'updated_at' | 'rules' | 'location_ids'> & {
   rules: Omit<ScheduleRule, 'id' | 'schedule_id'>[];
   location_ids: string[];

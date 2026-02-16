@@ -6,12 +6,12 @@ import AccountMain from './modules/account/AccountMain';
 import ScheduleMain from './modules/schedule/ScheduleMain';
 import CareerLogMain from './modules/career/CareerLogMain';
 import HealthLogMain from './modules/health/HealthLogMain';
-import DisciplineMain from './modules/discipline/DisciplineMain';
 import ContractMain from './modules/contract/ContractMain';
 import CertificationMain from './modules/certification/CertificationMain';
+import DisciplineMain from './modules/discipline/DisciplineMain';
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'career' | 'health' | 'discipline' | 'contract' | 'certification' | 'settings'>('location');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'career' | 'health' | 'contract' | 'certification' | 'discipline' | 'settings'>('location');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const NavItem = ({ id, icon: Icon, label }: { id: any, icon: any, label: string }) => (
@@ -44,9 +44,9 @@ const App: React.FC = () => {
           <NavItem id="schedule" icon={CalendarClock} label="Manajemen Jadwal" />
           <NavItem id="career" icon={History} label="Log Karir" />
           <NavItem id="health" icon={Activity} label="Log Kesehatan" />
-          <NavItem id="discipline" icon={ShieldAlert} label="Peringatan & Keluar" />
           <NavItem id="contract" icon={FileBadge} label="Kontrak Kerja" />
           <NavItem id="certification" icon={Award} label="Sertifikasi" />
+          <NavItem id="discipline" icon={ShieldAlert} label="Peringatan & Keluar" />
           <NavItem id="settings" icon={Settings} label="Pengaturan" />
         </nav>
       </aside>
@@ -73,9 +73,9 @@ const App: React.FC = () => {
             <NavItem id="schedule" icon={CalendarClock} label="Manajemen Jadwal" />
             <NavItem id="career" icon={History} label="Log Karir" />
             <NavItem id="health" icon={Activity} label="Log Kesehatan" />
-            <NavItem id="discipline" icon={ShieldAlert} label="Peringatan & Keluar" />
             <NavItem id="contract" icon={FileBadge} label="Kontrak Kerja" />
             <NavItem id="certification" icon={Award} label="Sertifikasi" />
+            <NavItem id="discipline" icon={ShieldAlert} label="Peringatan & Keluar" />
             <NavItem id="settings" icon={Settings} label="Pengaturan" />
           </nav>
         </div>
@@ -94,9 +94,9 @@ const App: React.FC = () => {
                activeTab === 'schedule' ? 'Manajemen Jadwal' : 
                activeTab === 'career' ? 'Log Pergerakan Karir' : 
                activeTab === 'health' ? 'Log Kesehatan Karyawan' :
-               activeTab === 'discipline' ? 'Peringatan & Pemberhentian' :
                activeTab === 'contract' ? 'Manajemen Kontrak Kerja' : 
-               activeTab === 'certification' ? 'Daftar Sertifikasi Karyawan' : activeTab}
+               activeTab === 'certification' ? 'Daftar Sertifikasi Karyawan' : 
+               activeTab === 'discipline' ? 'Kedisiplinan & Exit Management' : activeTab}
             </h2>
           </div>
           <div className="flex items-center gap-4">
@@ -115,12 +115,12 @@ const App: React.FC = () => {
             <CareerLogMain />
           ) : activeTab === 'health' ? (
             <HealthLogMain />
-          ) : activeTab === 'discipline' ? (
-            <DisciplineMain />
           ) : activeTab === 'contract' ? (
             <ContractMain />
           ) : activeTab === 'certification' ? (
             <CertificationMain />
+          ) : activeTab === 'discipline' ? (
+            <DisciplineMain />
           ) : (
             <div className="flex items-center justify-center h-64 text-gray-400">
               <p>Modul "{activeTab}" sedang dalam pengembangan.</p>
