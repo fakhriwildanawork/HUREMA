@@ -29,13 +29,13 @@ export const careerService = {
       scheduleService.getAll()
     ]);
 
-    // 2. Gunakan ExcelJS untuk fitur Dropdown yang lebih canggih
+    // 2. Gunakan ExcelJS untuk fitur Dropdown & Date Validation
     const workbook = new ExcelJS.Workbook();
     
     // Sheet Utama (Career_Import)
     const wsImport = workbook.addWorksheet('Career_Import');
     
-    // Sheet Referensi (Disembunyikan jika perlu, tapi biarkan ada untuk kemudahan user)
+    // Sheet Referensi
     const wsLoc = workbook.addWorksheet('Ref_Locations');
     const wsSch = workbook.addWorksheet('Ref_Schedules');
 
@@ -65,29 +65,28 @@ export const careerService = {
     ];
     wsImport.addRow(headers); // Baris 3
 
-    // Styling Header agar lebih jelas
+    // Styling Header
     const headerRow = wsImport.getRow(3);
     headerRow.font = { bold: true };
 
-    // 5. Masukkan Data Akun yang sudah ada (untuk diperbarui)
+    // 5. Masukkan Data Akun (Kolom "Baru (*)" dikosongkan sesuai permintaan)
     accounts.forEach(acc => {
       wsImport.addRow([
-        acc.id,
-        acc.internal_nik,
-        acc.full_name,
-        acc.position,
-        acc.grade,
-        (acc as any).location?.name || '',
-        acc.schedule_type || '',
-        new Date().toISOString().split('T')[0],
-        '',
-        ''
+        acc.id,             // A
+        acc.internal_nik,   // B
+        acc.full_name,      // C
+        '',                 // D: Jabatan Baru (*) - Kosong
+        '',                 // E: Grade Baru (*) - Kosong
+        '',                 // F: Lokasi Baru (*) - Kosong
+        '',                 // G: Jadwal Baru (*) - Kosong
+        '',                 // H: Tanggal Efektif (*) - Kosong
+        '',                 // I
+        ''                  // J
       ]);
     });
 
-    // 6. Terapkan Data Validation (Dropdown) pada Kolom F (Lokasi) dan G (Jadwal)
-    // Berlaku dari baris 4 sampai n + 100 baris tambahan
-    const maxRow = wsImport.rowCount + 100;
+    // 6. Terapkan Validasi Data
+    const maxRow = wsImport.rowCount + 500; // Proteksi untuk baris tambahan
     
     for (let i = 4; i <= maxRow; i++) {
       // Dropdown Lokasi Baru (*) - Kolom F
@@ -109,6 +108,20 @@ export const careerService = {
         errorTitle: 'Input Tidak Valid',
         error: 'Pilih jadwal dari daftar yang tersedia.'
       };
+
+      // Validasi Tanggal Efektif (*) - Kolom H
+      const cellH = wsImport.getCell(`H${i}`);
+      cellH.dataValidation = {
+        type: 'date',
+        operator: 'greaterThan',
+        showErrorMessage: true,
+        allowBlank: true,
+        formulae: [new Date(1900, 0, 1)], // Memastikan input adalah tanggal
+        errorTitle: 'Format Tanggal Salah',
+        error: 'Harap masukkan tanggal yang valid dengan format YYYY-MM-DD.'
+      };
+      // Format tampilan sel agar otomatis YYYY-MM-DD
+      cellH.numFmt = 'yyyy-mm-dd';
     }
 
     // Lebar Kolom agar rapi
@@ -116,7 +129,7 @@ export const careerService = {
       if (idx === 0) col.width = 20; // ID
       else if (idx === 1) col.width = 15; // NIK
       else if (idx === 2) col.width = 25; // Nama
-      else col.width = 20;
+      else col.width = 22;
     });
 
     // 7. Unduh File
@@ -147,6 +160,14 @@ export const careerService = {
             const loc = locations.find(l => l.name === row['Lokasi Baru (*)']);
             const sch = schedules.find(s => s.name === row['Jadwal Baru (*)']);
             
+            // Konversi tanggal dari format Excel jika perlu
+            let effectiveDate = row['Tanggal Efektif (YYYY-MM-DD) (*)'];
+            if (typeof effectiveDate === 'number') {
+              // Jika Excel mengirimkan serial number date
+              const date = new Date((effectiveDate - 25569) * 86400 * 1000);
+              effectiveDate = date.toISOString().split('T')[0];
+            }
+
             return {
               account_id: row['Account ID (Hidden)'],
               full_name: row['Nama Karyawan'],
@@ -156,10 +177,10 @@ export const careerService = {
               location_id: loc?.id || null,
               location_name: row['Lokasi Baru (*)'],
               schedule_id: sch?.id || null,
-              change_date: row['Tanggal Efektif (YYYY-MM-DD) (*)'],
+              change_date: effectiveDate,
               notes: row['Keterangan'] || null,
               file_sk_link: row['Link SK Google Drive (Opsional)'] || null,
-              isValid: !!(row['Account ID (Hidden)'] && row['Jabatan Baru (*)'] && row['Lokasi Baru (*)'] && row['Tanggal Efektif (YYYY-MM-DD) (*)'])
+              isValid: !!(row['Account ID (Hidden)'] && row['Jabatan Baru (*)'] && row['Lokasi Baru (*)'] && effectiveDate)
             };
           });
 
