@@ -1,3 +1,4 @@
+
 import { supabase } from '../lib/supabase';
 import { Account, AccountInput, CareerLog, CareerLogInput, HealthLog, HealthLogInput } from '../types';
 
@@ -95,8 +96,8 @@ export const accountService = {
     return data as HealthLog[];
   },
 
-  async create(account: AccountInput & { file_sk_id?: string, file_mcu_id?: string }) {
-    const { file_sk_id, file_mcu_id, ...rest } = account;
+  async create(account: AccountInput & { file_sk_id?: string, file_mcu_id?: string, contract_initial?: any }) {
+    const { file_sk_id, file_mcu_id, contract_initial, ...rest } = account;
     const sanitizedAccount = sanitizePayload(rest);
     
     // 1. Insert ke tabel accounts
@@ -139,12 +140,25 @@ export const accountService = {
       notes: 'Initial Health Record'
     }]);
 
+    // 4. Otomatis buat kontrak awal jika ada
+    if (contract_initial && contract_initial.contract_number) {
+      await supabase.from('account_contracts').insert([{
+        account_id: newAccount.id,
+        contract_number: contract_initial.contract_number,
+        contract_type: contract_initial.contract_type || account.employee_type,
+        start_date: contract_initial.start_date || account.start_date,
+        end_date: contract_initial.end_date || account.end_date,
+        file_id: contract_initial.file_id || null,
+        notes: 'Initial Contract Record'
+      }]);
+    }
+
     return newAccount;
   },
 
   async update(id: string, account: Partial<AccountInput>) {
     // Pastikan field tambahan untuk log awal tidak ikut dikirim ke tabel accounts
-    const { file_sk_id, file_mcu_id, ...rest } = account as any;
+    const { file_sk_id, file_mcu_id, contract_initial, ...rest } = account as any;
     const sanitizedAccount = sanitizePayload(rest);
     
     const { data, error } = await supabase

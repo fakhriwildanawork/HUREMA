@@ -135,12 +135,32 @@ export interface HealthLog {
   change_date: string;
 }
 
+export interface AccountContract {
+  id: string;
+  account_id: string;
+  contract_number: string;
+  contract_type: string;
+  start_date: string;
+  end_date?: string | null;
+  file_id?: string | null;
+  notes?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface AccountContractExtended extends AccountContract {
+  account?: {
+    full_name: string;
+    internal_nik: string;
+  };
+}
+
 export type LocationInput = Omit<Location, 'id' | 'created_at' | 'updated_at' | 'search_all'>;
 export type LocationAdminInput = Omit<LocationAdministration, 'id' | 'created_at'>;
-// FIX: Exclude 'location' from AccountInput to prevent trying to insert non-existent column
 export type AccountInput = Omit<Account, 'id' | 'created_at' | 'updated_at' | 'search_all' | 'location'>;
 export type CareerLogInput = Omit<CareerLog, 'id'>;
 export type HealthLogInput = Omit<HealthLog, 'id'>;
+export type AccountContractInput = Omit<AccountContract, 'id' | 'created_at' | 'updated_at'>;
 export type ScheduleInput = Omit<Schedule, 'id' | 'created_at' | 'updated_at' | 'rules' | 'location_ids'> & {
   rules: Omit<ScheduleRule, 'id' | 'schedule_id'>[];
   location_ids: string[];
