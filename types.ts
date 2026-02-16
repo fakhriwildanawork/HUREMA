@@ -29,6 +29,29 @@ export interface LocationAdministration {
   created_at?: string;
 }
 
+export interface Schedule {
+  id: string;
+  name: string;
+  type: 1 | 2 | 3 | 4;
+  tolerance_minutes: number;
+  start_date?: string | null;
+  end_date?: string | null;
+  excluded_account_ids: string[];
+  created_at?: string;
+  updated_at?: string;
+  rules?: ScheduleRule[];
+  location_ids?: string[];
+}
+
+export interface ScheduleRule {
+  id: string;
+  schedule_id: string;
+  day_of_week?: number;
+  check_in_time?: string | null;
+  check_out_time?: string | null;
+  is_holiday: boolean;
+}
+
 export interface Account {
   id: string;
   // Identitas
@@ -57,6 +80,7 @@ export interface Account {
   position: string;
   grade: string;
   location_id: string | null; // Relasi ke Location (UUID)
+  schedule_id: string | null; // Relasi ke Schedule (UUID)
   // FIX: Added location property to support joined data from Supabase
   location?: any;
   employee_type: 'Tetap' | 'Kontrak' | 'Harian' | 'Magang';
@@ -107,6 +131,10 @@ export type LocationAdminInput = Omit<LocationAdministration, 'id' | 'created_at
 export type AccountInput = Omit<Account, 'id' | 'created_at' | 'updated_at' | 'search_all' | 'location'>;
 export type CareerLogInput = Omit<CareerLog, 'id'> & { location_id?: string };
 export type HealthLogInput = Omit<HealthLog, 'id'>;
+export type ScheduleInput = Omit<Schedule, 'id' | 'created_at' | 'updated_at' | 'rules' | 'location_ids'> & {
+  rules: Omit<ScheduleRule, 'id' | 'schedule_id'>[];
+  location_ids: string[];
+};
 
 export interface GoogleDriveFile {
   id: string;

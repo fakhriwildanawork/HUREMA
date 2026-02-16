@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Save, Upload, User, MapPin, Briefcase, GraduationCap, ShieldCheck, Heart, AlertCircle, Paperclip, ChevronDown } from 'lucide-react';
-import { AccountInput, Location } from '../../types';
+import { X, Save, Upload, User, MapPin, Briefcase, GraduationCap, ShieldCheck, Heart, AlertCircle, Paperclip, ChevronDown, CalendarClock } from 'lucide-react';
+import { AccountInput, Location, Schedule } from '../../types';
 import { googleDriveService } from '../../services/googleDriveService';
 import { locationService } from '../../services/locationService';
 import { accountService } from '../../services/accountService';
+import { scheduleService } from '../../services/scheduleService';
 
 interface AccountFormProps {
   onClose: () => void;
@@ -33,6 +33,7 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
     position: initialData?.position || '',
     grade: initialData?.grade || '',
     location_id: initialData?.location_id || '',
+    schedule_id: (initialData as any)?.schedule_id || '',
     employee_type: initialData?.employee_type || 'Tetap',
     start_date: initialData?.start_date || '',
     end_date: initialData?.end_date || '',
@@ -55,6 +56,7 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
   });
 
   const [locations, setLocations] = useState<Location[]>([]);
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [suggestions, setSuggestions] = useState<{ positions: string[], grades: string[] }>({ positions: [], grades: [] });
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
   
@@ -77,10 +79,28 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Effect to handle dynamic dependent schedule dropdown
+  useEffect(() => {
+    if (formData.location_id) {
+       scheduleService.getByLocation(formData.location_id).then(setSchedules);
+    } else {
+       setSchedules([]);
+    }
+  }, [formData.location_id]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     const val = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
-    setFormData(prev => ({ ...prev, [name]: val }));
+    
+    setFormData(prev => {
+       const updated = { ...prev, [name]: val };
+       // Auto-update schedule_type name if schedule_id is selected
+       if (name === 'schedule_id' && value) {
+          const selected = schedules.find(s => s.id === value);
+          if (selected) updated.schedule_type = selected.name;
+       }
+       return updated;
+    });
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: string) => {
@@ -433,8 +453,21 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
               <SectionHeader icon={ShieldCheck} title="Presensi & Keamanan" />
               <div className="space-y-3">
                  <div className="space-y-1">
-                    <Label>Jenis Jadwal</Label>
-                    <input name="schedule_type" value={formData.schedule_type} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
+                    <Label required>Pilih Jadwal Kerja</Label>
+                    <div className="relative">
+                      <select 
+                        required 
+                        name="schedule_id" 
+                        value={formData.schedule_id} 
+                        onChange={handleChange} 
+                        disabled={!formData.location_id}
+                        className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none bg-white disabled:bg-gray-50"
+                      >
+                        <option value="">-- {formData.location_id ? 'Pilih Jadwal' : 'Pilih Lokasi Terlebih Dahulu'} --</option>
+                        {schedules.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                      </select>
+                      <CalendarClock className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
+                    </div>
                  </div>
                  <div className="space-y-2 pt-2">
                     <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter mb-2">Batasan Radius Presensi</p>

@@ -1,11 +1,12 @@
 
 import React, { useState } from 'react';
-import { MapPin, LayoutDashboard, Settings, Menu, X, Users } from 'lucide-react';
+import { MapPin, LayoutDashboard, Settings, Menu, X, Users, CalendarClock } from 'lucide-react';
 import LocationMain from './modules/location/LocationMain';
 import AccountMain from './modules/account/AccountMain';
+import ScheduleMain from './modules/schedule/ScheduleMain';
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'settings'>('location');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'settings'>('location');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const NavItem = ({ id, icon: Icon, label }: { id: any, icon: any, label: string }) => (
@@ -35,6 +36,7 @@ const App: React.FC = () => {
           <NavItem id="dashboard" icon={LayoutDashboard} label="Beranda" />
           <NavItem id="account" icon={Users} label="Data Akun" />
           <NavItem id="location" icon={MapPin} label="Data Lokasi" />
+          <NavItem id="schedule" icon={CalendarClock} label="Manajemen Jadwal" />
           <NavItem id="settings" icon={Settings} label="Pengaturan" />
         </nav>
       </aside>
@@ -58,6 +60,7 @@ const App: React.FC = () => {
             <NavItem id="dashboard" icon={LayoutDashboard} label="Beranda" />
             <NavItem id="account" icon={Users} label="Data Akun" />
             <NavItem id="location" icon={MapPin} label="Data Lokasi" />
+            <NavItem id="schedule" icon={CalendarClock} label="Manajemen Jadwal" />
             <NavItem id="settings" icon={Settings} label="Pengaturan" />
           </nav>
         </div>
@@ -72,7 +75,8 @@ const App: React.FC = () => {
             </button>
             <h2 className="text-lg font-semibold capitalize text-gray-700">
               {activeTab === 'location' ? 'Manajemen Lokasi' : 
-               activeTab === 'account' ? 'Manajemen Akun' : activeTab}
+               activeTab === 'account' ? 'Manajemen Akun' : 
+               activeTab === 'schedule' ? 'Manajemen Jadwal' : activeTab}
             </h2>
           </div>
           <div className="flex items-center gap-4">
@@ -85,6 +89,8 @@ const App: React.FC = () => {
             <LocationMain />
           ) : activeTab === 'account' ? (
             <AccountMain />
+          ) : activeTab === 'schedule' ? (
+            <ScheduleMain />
           ) : (
             <div className="flex items-center justify-center h-64 text-gray-400">
               <p>Modul "{activeTab}" sedang dalam pengembangan.</p>
