@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
 import { CareerLogExtended } from '../types';
 import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { accountService } from './accountService';
 import { locationService } from './locationService';
@@ -28,9 +29,28 @@ export const careerService = {
       scheduleService.getAll()
     ]);
 
-    // 2. Siapkan Sheet Utama (Career_Import) dengan Instruksi
-    const instructionRow = ["INSTRUKSI: Hapus baris data akun/user yang tidak ingin diubah. Baris dengan (*) wajib diisi."];
-    const emptyRow = [""];
+    // 2. Gunakan ExcelJS untuk fitur Dropdown yang lebih canggih
+    const workbook = new ExcelJS.Workbook();
+    
+    // Sheet Utama (Career_Import)
+    const wsImport = workbook.addWorksheet('Career_Import');
+    
+    // Sheet Referensi (Disembunyikan jika perlu, tapi biarkan ada untuk kemudahan user)
+    const wsLoc = workbook.addWorksheet('Ref_Locations');
+    const wsSch = workbook.addWorksheet('Ref_Schedules');
+
+    // 3. Isi Data Referensi ke sheet pembantu
+    wsLoc.addRow(['ID', 'Nama']);
+    locations.forEach(l => wsLoc.addRow([l.id, l.name]));
+    
+    wsSch.addRow(['ID', 'Nama']);
+    schedules.forEach(s => wsSch.addRow([s.id, s.name]));
+
+    // 4. Siapkan Sheet Utama (Career_Import)
+    const instructionText = "Hapus baris data akun/user yg tidak ingin diubah. Baris dengan (*) wajib diisi.";
+    wsImport.addRow([instructionText]); // Baris 1
+    wsImport.addRow(['']); // Baris 2 (Kosong)
+    
     const headers = [
       'Account ID (Hidden)', 
       'NIK Internal', 
@@ -43,57 +63,66 @@ export const careerService = {
       'Keterangan', 
       'Link SK Google Drive (Opsional)'
     ];
+    wsImport.addRow(headers); // Baris 3
 
-    const importRows = accounts.map(acc => [
-      acc.id,
-      acc.internal_nik,
-      acc.full_name,
-      acc.position,
-      acc.grade,
-      (acc as any).location?.name || '',
-      acc.schedule_type || '',
-      new Date().toISOString().split('T')[0],
-      '',
-      ''
-    ]);
+    // Styling Header agar lebih jelas
+    const headerRow = wsImport.getRow(3);
+    headerRow.font = { bold: true };
 
-    const aoaData = [instructionRow, emptyRow, headers, ...importRows];
-    const wsImport = XLSX.utils.aoa_to_sheet(aoaData);
+    // 5. Masukkan Data Akun yang sudah ada (untuk diperbarui)
+    accounts.forEach(acc => {
+      wsImport.addRow([
+        acc.id,
+        acc.internal_nik,
+        acc.full_name,
+        acc.position,
+        acc.grade,
+        (acc as any).location?.name || '',
+        acc.schedule_type || '',
+        new Date().toISOString().split('T')[0],
+        '',
+        ''
+      ]);
+    });
 
-    // 3. Tambahkan Data Validation (Dropdown) - Range baris 4 sampai 500
-    // SheetJS Pro mendukung format ini, untuk versi open source kita set range referensi
-    const totalRows = aoaData.length + 50; 
+    // 6. Terapkan Data Validation (Dropdown) pada Kolom F (Lokasi) dan G (Jadwal)
+    // Berlaku dari baris 4 sampai n + 100 baris tambahan
+    const maxRow = wsImport.rowCount + 100;
     
-    // Properti !dataValidation (Hanya bekerja jika didukung oleh parser Excel pembaca)
-    (wsImport as any)['!dataValidation'] = [
-      {
-        range: `F4:F${totalRows}`, // Kolom Lokasi Baru (*)
+    for (let i = 4; i <= maxRow; i++) {
+      // Dropdown Lokasi Baru (*) - Kolom F
+      wsImport.getCell(`F${i}`).dataValidation = {
         type: 'list',
         allowBlank: true,
-        formula1: 'Ref_Locations!$B$2:$B$200'
-      },
-      {
-        range: `G4:G${totalRows}`, // Kolom Jadwal Baru (*)
+        formulae: [`Ref_Locations!$B$2:$B$${locations.length + 1}`],
+        showErrorMessage: true,
+        errorTitle: 'Input Tidak Valid',
+        error: 'Pilih lokasi dari daftar yang tersedia.'
+      };
+      
+      // Dropdown Jadwal Baru (*) - Kolom G
+      wsImport.getCell(`G${i}`).dataValidation = {
         type: 'list',
         allowBlank: true,
-        formula1: 'Ref_Schedules!$B$2:$B$200'
-      }
-    ];
+        formulae: [`Ref_Schedules!$B$2:$B$${schedules.length + 1}`],
+        showErrorMessage: true,
+        errorTitle: 'Input Tidak Valid',
+        error: 'Pilih jadwal dari daftar yang tersedia.'
+      };
+    }
 
-    // 4. Siapkan Sheet Referensi
-    const wsLoc = XLSX.utils.json_to_sheet(locations.map(l => ({ ID: l.id, Nama: l.name })));
-    const wsSch = XLSX.utils.json_to_sheet(schedules.map(s => ({ ID: s.id, Nama: s.name })));
+    // Lebar Kolom agar rapi
+    wsImport.columns.forEach((col, idx) => {
+      if (idx === 0) col.width = 20; // ID
+      else if (idx === 1) col.width = 15; // NIK
+      else if (idx === 2) col.width = 25; // Nama
+      else col.width = 20;
+    });
 
-    // 5. Buat Workbook
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, wsImport, 'Career_Import');
-    XLSX.utils.book_append_sheet(wb, wsLoc, 'Ref_Locations');
-    XLSX.utils.book_append_sheet(wb, wsSch, 'Ref_Schedules');
-
-    // 6. Generate Excel File
-    const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    saveAs(data, `HUREMA_Career_Template_${new Date().toISOString().split('T')[0]}.xlsx`);
+    // 7. Unduh File
+    const buffer = await workbook.xlsx.writeBuffer();
+    const dataBlob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(dataBlob, `HUREMA_Career_Template_${new Date().toISOString().split('T')[0]}.xlsx`);
   },
 
   async processImport(file: File) {

@@ -16,6 +16,7 @@
     "sweetalert2": "^11.26.18",
     "qrcode.react": "^4.1.0",
     "xlsx": "0.18.5",
+    "exceljs": "4.4.0",
     "file-saver": "2.0.5"
   },
   "devDependencies": {
