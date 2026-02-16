@@ -51,6 +51,16 @@ export const accountService = {
     return data;
   },
 
+  async getDistinctAttributes() {
+    const { data: positions } = await supabase.from('accounts').select('position');
+    const { data: grades } = await supabase.from('accounts').select('grade');
+    
+    const uniquePositions = Array.from(new Set(positions?.map(p => p.position).filter(Boolean))).sort();
+    const uniqueGrades = Array.from(new Set(grades?.map(g => g.grade).filter(Boolean))).sort();
+    
+    return { positions: uniquePositions, grades: uniqueGrades };
+  },
+
   async getCareerLogs(accountId: string) {
     const { data, error } = await supabase
       .from('account_career_logs')
@@ -73,8 +83,11 @@ export const accountService = {
     return data as HealthLog[];
   },
 
-  async create(account: AccountInput) {
-    const sanitizedAccount = sanitizePayload(account);
+  async create(account: AccountInput & { file_sk_id?: string, file_mcu_id?: string }) {
+    const { file_sk_id, file_mcu_id, ...rest } = account;
+    const sanitizedAccount = sanitizePayload(rest);
+    
+    // 1. Insert ke tabel accounts
     const { data, error } = await supabase
       .from('accounts')
       .insert([sanitizedAccount])
@@ -84,7 +97,35 @@ export const accountService = {
       console.error("SUPABASE_CREATE_ERROR:", error.message);
       throw error;
     }
-    return data[0] as Account;
+    
+    const newAccount = data[0] as Account;
+
+    // 2. Otomatis buat log karier awal
+    const { data: locData } = await supabase
+      .from('locations')
+      .select('name')
+      .eq('id', newAccount.location_id)
+      .single();
+
+    await supabase.from('account_career_logs').insert([{
+      account_id: newAccount.id,
+      position: newAccount.position,
+      grade: newAccount.grade,
+      location_name: locData?.name || '-',
+      file_sk_id: file_sk_id || null,
+      notes: 'Initial Career Record'
+    }]);
+
+    // 3. Otomatis buat log kesehatan awal
+    await supabase.from('account_health_logs').insert([{
+      account_id: newAccount.id,
+      mcu_status: newAccount.mcu_status,
+      health_risk: newAccount.health_risk,
+      file_mcu_id: file_mcu_id || null,
+      notes: 'Initial Health Record'
+    }]);
+
+    return newAccount;
   },
 
   async update(id: string, account: Partial<AccountInput>) {

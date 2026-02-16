@@ -1,18 +1,19 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Save, Upload, User, MapPin, Briefcase, GraduationCap, ShieldCheck, Heart, AlertCircle } from 'lucide-react';
+import { X, Save, Upload, User, MapPin, Briefcase, GraduationCap, ShieldCheck, Heart, AlertCircle, Paperclip } from 'lucide-react';
 import { AccountInput, Location } from '../../types';
 import { googleDriveService } from '../../services/googleDriveService';
 import { locationService } from '../../services/locationService';
+import { accountService } from '../../services/accountService';
 
 interface AccountFormProps {
   onClose: () => void;
-  onSubmit: (data: AccountInput) => void;
+  onSubmit: (data: any) => void;
   initialData?: Partial<AccountInput>;
 }
 
 const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialData }) => {
-  const [formData, setFormData] = useState<AccountInput>({
+  const [formData, setFormData] = useState<any>({
     full_name: initialData?.full_name || '',
     nik_ktp: initialData?.nik_ktp || '',
     gender: initialData?.gender || 'Laki-laki',
@@ -48,13 +49,18 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
     photo_google_id: initialData?.photo_google_id || '',
     ktp_google_id: initialData?.ktp_google_id || '',
     diploma_google_id: initialData?.diploma_google_id || '',
+    // Tambahan untuk log awal
+    file_sk_id: '',
+    file_mcu_id: ''
   });
 
   const [locations, setLocations] = useState<Location[]>([]);
+  const [suggestions, setSuggestions] = useState<{ positions: string[], grades: string[] }>({ positions: [], grades: [] });
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     locationService.getAll().then(setLocations);
+    accountService.getDistinctAttributes().then(setSuggestions);
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -67,7 +73,6 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validasi tipe file (Ekstra Proteksi)
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
     if (!allowedTypes.includes(file.type)) {
       alert('Hanya diperbolehkan mengunggah file Gambar (JPG, PNG, WEBP) atau PDF.');
@@ -76,12 +81,11 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
 
     try {
       setUploading(prev => ({ ...prev, [field]: true }));
-      // Service ini sekarang sudah menggunakan antrean (Sequential) internal
       const fileId = await googleDriveService.uploadFile(file);
       setFormData(prev => ({ ...prev, [field]: fileId }));
     } catch (error) {
       console.error(error);
-      alert(error instanceof Error ? error.message : 'Gagal mengunggah file. Harap periksa kredensial Google Drive di Vercel.');
+      alert(error instanceof Error ? error.message : 'Gagal mengunggah file.');
     } finally {
       setUploading(prev => ({ ...prev, [field]: false }));
     }
@@ -125,7 +129,7 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
         >
           <div className="bg-orange-50/50 border border-orange-100 p-2 rounded mb-4 flex items-center gap-2">
             <AlertCircle size={14} className="text-orange-400 shrink-0" />
-            <p className="text-[10px] text-orange-600 font-medium">Kolom bertanda <span className="text-red-500 font-bold">*</span> wajib diisi dengan benar.</p>
+            <p className="text-[10px] text-orange-600 font-medium">Kolom bertanda <span className="text-red-500 font-bold">*</span> wajib diisi dengan benar. Data Karier & Kesehatan akan otomatis dicatat sebagai Log Awal.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8">
@@ -257,13 +261,32 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
                     <Label required>Jabatan</Label>
-                    <input name="position" value={formData.position} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required />
+                    <input list="positions-list" name="position" value={formData.position} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required />
+                    <datalist id="positions-list">
+                      {suggestions.positions.map(p => <option key={p} value={p} />)}
+                    </datalist>
                   </div>
                   <div className="space-y-1">
                     <Label>Golongan</Label>
-                    <input name="grade" value={formData.grade} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
+                    <input list="grades-list" name="grade" value={formData.grade} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
+                    <datalist id="grades-list">
+                      {suggestions.grades.map(g => <option key={g} value={g} />)}
+                    </datalist>
                   </div>
                 </div>
+                {!initialData && (
+                  <div className="space-y-1 p-2 bg-gray-50 rounded border border-gray-100">
+                    <Label>Upload SK Awal (G-Drive)</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <label className="flex items-center gap-2 px-3 py-1.5 bg-white border border-dashed border-gray-300 rounded cursor-pointer hover:bg-gray-100 transition-colors flex-1 overflow-hidden">
+                        <Upload size={12} className="text-gray-400 shrink-0" />
+                        <span className="text-[10px] text-gray-500 truncate">{formData.file_sk_id ? 'SK Terpilih' : 'PDF/Gambar SK'}</span>
+                        <input type="file" className="hidden" accept="image/*,application/pdf" onChange={(e) => handleFileUpload(e, 'file_sk_id')} />
+                      </label>
+                      {uploading['file_sk_id'] && <div className="w-4 h-4 border-2 border-[#006E62] border-t-transparent rounded-full animate-spin"></div>}
+                    </div>
+                  </div>
+                )}
                 <div className="space-y-1">
                   <Label required>Jenis Karyawan</Label>
                   <select name="employee_type" value={formData.employee_type} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required>
@@ -371,6 +394,19 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
                     <Label>Risiko Kesehatan</Label>
                     <input name="health_risk" value={formData.health_risk} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
                  </div>
+                 {!initialData && (
+                  <div className="space-y-1 p-2 bg-gray-50 rounded border border-gray-100 mt-2">
+                    <Label>Upload Hasil MCU Awal</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <label className="flex items-center gap-2 px-3 py-1.5 bg-white border border-dashed border-gray-300 rounded cursor-pointer hover:bg-gray-100 transition-colors flex-1 overflow-hidden">
+                        <Upload size={12} className="text-gray-400 shrink-0" />
+                        <span className="text-[10px] text-gray-500 truncate">{formData.file_mcu_id ? 'Hasil MCU OK' : 'Upload PDF Hasil MCU'}</span>
+                        <input type="file" className="hidden" accept="image/*,application/pdf" onChange={(e) => handleFileUpload(e, 'file_mcu_id')} />
+                      </label>
+                      {uploading['file_mcu_id'] && <div className="w-4 h-4 border-2 border-[#006E62] border-t-transparent rounded-full animate-spin"></div>}
+                    </div>
+                  </div>
+                 )}
               </div>
             </div>
           </div>
