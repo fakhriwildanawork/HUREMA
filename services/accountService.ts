@@ -54,9 +54,18 @@ export const accountService = {
   async getDistinctAttributes() {
     const { data: positions } = await supabase.from('accounts').select('position');
     const { data: grades } = await supabase.from('accounts').select('grade');
+    const { data: logPositions } = await supabase.from('account_career_logs').select('position');
+    const { data: logGrades } = await supabase.from('account_career_logs').select('grade');
     
-    const uniquePositions = Array.from(new Set(positions?.map(p => p.position).filter(Boolean))).sort();
-    const uniqueGrades = Array.from(new Set(grades?.map(g => g.grade).filter(Boolean))).sort();
+    const uniquePositions = Array.from(new Set([
+      ...(positions?.map(p => p.position) || []),
+      ...(logPositions?.map(p => p.position) || [])
+    ].filter(Boolean))).sort();
+
+    const uniqueGrades = Array.from(new Set([
+      ...(grades?.map(g => g.grade) || []),
+      ...(logGrades?.map(g => g.grade) || [])
+    ].filter(Boolean))).sort();
     
     return { positions: uniquePositions, grades: uniqueGrades };
   },
@@ -129,7 +138,10 @@ export const accountService = {
   },
 
   async update(id: string, account: Partial<AccountInput>) {
-    const sanitizedAccount = sanitizePayload(account);
+    // Pastikan field tambahan untuk log awal tidak ikut dikirim ke tabel accounts
+    const { file_sk_id, file_mcu_id, ...rest } = account as any;
+    const sanitizedAccount = sanitizePayload(rest);
+    
     const { data, error } = await supabase
       .from('accounts')
       .update(sanitizedAccount)
@@ -158,18 +170,24 @@ export const accountService = {
 
   // Manual Log Management
   async createCareerLog(logInput: CareerLogInput) {
-    const { location_id, ...rest } = logInput;
+    // Filtrasi: Pastikan hanya kolom yang ada di tabel account_career_logs yang dikirim
+    const { account_id, position, grade, location_name, file_sk_id, notes, location_id } = logInput;
+    const payload = sanitizePayload({ account_id, position, grade, location_name, file_sk_id, notes });
+    
     const { data, error } = await supabase
       .from('account_career_logs')
-      .insert([sanitizePayload(rest)])
+      .insert([payload])
       .select();
 
-    if (error) throw error;
+    if (error) {
+      console.error("CAREER_LOG_CREATE_ERROR:", error.message);
+      throw error;
+    }
 
     // Sinkronisasi ke profil utama jika data karier berubah
-    await this.update(logInput.account_id, {
-      position: logInput.position,
-      grade: logInput.grade,
+    await this.update(account_id, {
+      position,
+      grade,
       location_id: location_id || null
     });
 
@@ -177,20 +195,24 @@ export const accountService = {
   },
 
   async updateCareerLog(id: string, logInput: Partial<CareerLogInput>) {
-    const { location_id, ...rest } = logInput;
+    const { account_id, position, grade, location_name, file_sk_id, notes, location_id } = logInput;
+    const payload = sanitizePayload({ account_id, position, grade, location_name, file_sk_id, notes });
+
     const { data, error } = await supabase
       .from('account_career_logs')
-      .update(sanitizePayload(rest))
+      .update(payload)
       .eq('id', id)
       .select();
 
-    if (error) throw error;
+    if (error) {
+      console.error("CAREER_LOG_UPDATE_ERROR:", error.message);
+      throw error;
+    }
 
-    // Sinkronisasi ke profil utama jika ini adalah log terbaru (asumsi sederhana sinkronisasi)
-    if (logInput.account_id) {
-      await this.update(logInput.account_id, {
-        position: logInput.position,
-        grade: logInput.grade,
+    if (account_id) {
+      await this.update(account_id, {
+        position,
+        grade,
         location_id: location_id || null
       });
     }
@@ -208,36 +230,48 @@ export const accountService = {
   },
 
   async createHealthLog(logInput: HealthLogInput) {
+    // Filtrasi: Hapus field career (location_id, location_name) yang sering terbawa dari state form
+    const { account_id, mcu_status, health_risk, file_mcu_id, notes } = logInput;
+    const payload = sanitizePayload({ account_id, mcu_status, health_risk, file_mcu_id, notes });
+
     const { data, error } = await supabase
       .from('account_health_logs')
-      .insert([sanitizePayload(logInput)])
+      .insert([payload])
       .select();
 
-    if (error) throw error;
+    if (error) {
+      console.error("HEALTH_LOG_CREATE_ERROR:", error.message);
+      throw error;
+    }
 
     // Sinkronisasi ke profil utama
-    await this.update(logInput.account_id, {
-      mcu_status: logInput.mcu_status,
-      health_risk: logInput.health_risk
+    await this.update(account_id, {
+      mcu_status,
+      health_risk
     });
 
     return data[0] as HealthLog;
   },
 
   async updateHealthLog(id: string, logInput: Partial<HealthLogInput>) {
+    const { account_id, mcu_status, health_risk, file_mcu_id, notes } = logInput;
+    const payload = sanitizePayload({ account_id, mcu_status, health_risk, file_mcu_id, notes });
+
     const { data, error } = await supabase
       .from('account_health_logs')
-      .update(sanitizePayload(logInput))
+      .update(payload)
       .eq('id', id)
       .select();
 
-    if (error) throw error;
+    if (error) {
+      console.error("HEALTH_LOG_UPDATE_ERROR:", error.message);
+      throw error;
+    }
 
-    // Sinkronisasi ke profil utama
-    if (logInput.account_id) {
-      await this.update(logInput.account_id, {
-        mcu_status: logInput.mcu_status,
-        health_risk: logInput.health_risk
+    if (account_id) {
+      await this.update(account_id, {
+        mcu_status,
+        health_risk
       });
     }
 

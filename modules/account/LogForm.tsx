@@ -76,10 +76,35 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isEdit) {
-      onSubmit({ ...formData, id: initialData.id });
+    
+    // Filtrasi Payload Akhir sebelum dikirim ke Service (Mencegah Error 400)
+    let finalPayload: any = {
+      account_id: formData.account_id,
+      notes: formData.notes
+    };
+
+    if (type === 'career') {
+      finalPayload = {
+        ...finalPayload,
+        position: formData.position,
+        grade: formData.grade,
+        location_id: formData.location_id,
+        location_name: formData.location_name,
+        file_sk_id: formData.file_sk_id
+      };
     } else {
-      onSubmit(formData);
+      finalPayload = {
+        ...finalPayload,
+        mcu_status: formData.mcu_status,
+        health_risk: formData.health_risk,
+        file_mcu_id: formData.file_mcu_id
+      };
+    }
+
+    if (isEdit) {
+      onSubmit({ ...finalPayload, id: initialData.id });
+    } else {
+      onSubmit(finalPayload);
     }
   };
 
