@@ -147,6 +147,8 @@ CREATE POLICY "Allow public delete accounts" ON accounts FOR DELETE TO public US
 
 ALTER TABLE account_career_logs ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow public read career logs" ON account_career_logs FOR SELECT TO public USING (true);
+CREATE POLICY "Allow public insert career logs" ON account_career_logs FOR INSERT TO public WITH CHECK (true);
 
 ALTER TABLE account_health_logs ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow public read health logs" ON account_health_logs FOR SELECT TO public USING (true);
+CREATE POLICY "Allow public insert health logs" ON account_health_logs FOR INSERT TO public WITH CHECK (true);

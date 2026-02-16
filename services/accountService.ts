@@ -9,7 +9,8 @@ import { Account, AccountInput, CareerLog, HealthLog } from '../types';
 const sanitizePayload = (payload: any) => {
   const sanitized = { ...payload };
   Object.keys(sanitized).forEach(key => {
-    if (sanitized[key] === '') {
+    // Memastikan string kosong dikirim sebagai null ke database
+    if (sanitized[key] === '' || sanitized[key] === undefined) {
       sanitized[key] = null;
     }
   });
@@ -26,7 +27,10 @@ export const accountService = {
       `)
       .order('created_at', { ascending: false });
     
-    if (error) throw error;
+    if (error) {
+      console.error("SUPABASE_GET_ALL_ERROR:", error.message);
+      throw error;
+    }
     return data;
   },
 
@@ -40,7 +44,10 @@ export const accountService = {
       .eq('id', id)
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error("SUPABASE_GET_BY_ID_ERROR:", error.message);
+      throw error;
+    }
     return data;
   },
 
@@ -73,7 +80,15 @@ export const accountService = {
       .insert([sanitizedAccount])
       .select();
     
-    if (error) throw error;
+    if (error) {
+      console.error("SUPABASE_CREATE_ERROR:", {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
+      throw error;
+    }
     return data[0] as Account;
   },
 
@@ -85,7 +100,15 @@ export const accountService = {
       .eq('id', id)
       .select();
     
-    if (error) throw error;
+    if (error) {
+      console.error("SUPABASE_UPDATE_ERROR:", {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
+      throw error;
+    }
     return data[0] as Account;
   },
 
@@ -95,7 +118,10 @@ export const accountService = {
       .delete()
       .eq('id', id);
     
-    if (error) throw error;
+    if (error) {
+      console.error("SUPABASE_DELETE_ERROR:", error.message);
+      throw error;
+    }
     return true;
   }
 };
