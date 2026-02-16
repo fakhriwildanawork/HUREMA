@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { X, FileUp, Download, CheckCircle, AlertTriangle, Save, Loader2 } from 'lucide-react';
 import Swal from 'sweetalert2';
@@ -39,7 +40,7 @@ const ContractImportModal: React.FC<ContractImportModalProps> = ({ onClose, onSu
 
     const confirm = await Swal.fire({
       title: 'Konfirmasi Impor',
-      text: `Sistem akan memproses ${validCount} baris perpanjangan kontrak. Profil utama karyawan akan otomatis ter-update mengikuti tanggal terbaru. Lanjutkan?`,
+      text: `Sistem akan memproses ${validCount} baris perpanjangan kontrak. Profil utama karyawan akan otomatis diperbarui mengikuti tanggal terbaru. Lanjutkan?`,
       icon: 'question',
       showCancelButton: true,
       confirmButtonColor: '#006E62',
@@ -113,7 +114,7 @@ const ContractImportModal: React.FC<ContractImportModalProps> = ({ onClose, onSu
                   <thead className="bg-gray-50 font-bold text-gray-500 uppercase">
                     <tr>
                       <th className="px-4 py-2">Status</th>
-                      <th className="px-4 py-2">Nama</th>
+                      <th className="px-4 py-2">Nama Karyawan</th>
                       <th className="px-4 py-2">No Kontrak</th>
                       <th className="px-4 py-2">Jenis</th>
                       <th className="px-4 py-2">Mulai</th>

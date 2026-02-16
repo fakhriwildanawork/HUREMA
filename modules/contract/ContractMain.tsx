@@ -1,9 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { FileBadge, Search, Download, FileUp, Paperclip, UserCircle, Upload, FileText, AlertCircle, Calendar } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { contractService } from '../../services/contractService';
 import { googleDriveService } from '../../services/googleDriveService';
-import { accountService } from '../../services/accountService';
 import { AccountContractExtended } from '../../types';
 import ContractImportModal from './ContractImportModal';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
@@ -83,7 +83,7 @@ const ContractMain: React.FC = () => {
         <div className="bg-white border border-gray-100 p-4 rounded-md shadow-sm flex items-center gap-4">
           <div className="p-3 bg-blue-50 rounded-md text-blue-600"><FileText size={24} /></div>
           <div>
-            <p className="text-[10px] font-bold text-gray-400 uppercase">Total Kontrak</p>
+            <p className="text-[10px] font-bold text-gray-400 uppercase">Total Kontrak Terdata</p>
             <p className="text-xl font-bold text-gray-800">{contracts.length}</p>
           </div>
         </div>
@@ -144,10 +144,10 @@ const ContractMain: React.FC = () => {
           <thead className="bg-gray-50 text-[10px] font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100">
             <tr>
               <th className="px-6 py-4">Karyawan</th>
-              <th className="px-6 py-4">Nomor & Jenis</th>
+              <th className="px-6 py-4">Nomor & Jenis Kontrak</th>
               <th className="px-6 py-4">Masa Berlaku</th>
               <th className="px-6 py-4">Status</th>
-              <th className="px-6 py-4">Dokumen</th>
+              <th className="px-6 py-4">Dokumen PDF</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">

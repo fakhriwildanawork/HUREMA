@@ -1,3 +1,4 @@
+
 import { supabase } from '../lib/supabase';
 import { Account, AccountInput, CareerLog, CareerLogInput, HealthLog, HealthLogInput } from '../types';
 
@@ -139,7 +140,7 @@ export const accountService = {
       notes: 'Initial Health Record'
     }]);
 
-    // 4. Otomatis buat kontrak awal jika data tersedia
+    // 4. Otomatis buat kontrak awal jika disediakan
     if (contract_initial && contract_initial.contract_number) {
       await supabase.from('account_contracts').insert([{
         account_id: newAccount.id,
@@ -188,6 +189,7 @@ export const accountService = {
 
   // Manual Log Management
   async createCareerLog(logInput: CareerLogInput) {
+    // Filtrasi: Pastikan hanya kolom yang ada di tabel account_career_logs yang dikirim
     const { account_id, position, grade, location_name, file_sk_id, notes, location_id, schedule_id, change_date } = logInput;
     const payload = sanitizePayload({ account_id, position, grade, location_name, file_sk_id, notes, change_date, location_id, schedule_id });
     
@@ -249,6 +251,7 @@ export const accountService = {
   },
 
   async createHealthLog(logInput: HealthLogInput) {
+    // Filtrasi: Hapus field career (location_id, location_name) yang sering terbawa dari state form
     const { account_id, mcu_status, health_risk, file_mcu_id, notes, change_date } = logInput;
     const payload = sanitizePayload({ account_id, mcu_status, health_risk, file_mcu_id, notes, change_date });
 

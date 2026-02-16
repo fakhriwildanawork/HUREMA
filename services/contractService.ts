@@ -1,3 +1,4 @@
+
 import { supabase } from '../lib/supabase';
 import { AccountContract, AccountContractExtended, AccountContractInput } from '../types';
 import * as XLSX from 'xlsx';
@@ -68,7 +69,6 @@ export const contractService = {
     
     if (error) throw error;
 
-    // Jika account_id ada, sinkronisasi profil utama
     if (input.account_id) {
        await accountService.update(input.account_id, {
          start_date: input.start_date || undefined,
@@ -116,7 +116,6 @@ export const contractService = {
       ]);
     });
 
-    // Validasi Kolom E (Jenis Kontrak)
     const contractTypes = ['PKWT 1', 'PKWT 2', 'PKWTT', 'Magang', 'Harian', 'Addendum'];
     const maxRow = wsImport.rowCount + 500;
     for (let i = 2; i <= maxRow; i++) {
@@ -126,7 +125,6 @@ export const contractService = {
         formulae: [`"${contractTypes.join(',')}"`]
       };
       
-      // Validasi Tanggal
       ['F', 'G'].forEach(col => {
         const cell = wsImport.getCell(`${col}${i}`);
         cell.dataValidation = {
