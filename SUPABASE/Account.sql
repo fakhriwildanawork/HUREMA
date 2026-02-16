@@ -55,13 +55,15 @@ CREATE TABLE IF NOT EXISTS accounts (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Career Logs Table (Updated with File & Notes)
+-- Career Logs Table (Updated with relational IDs)
 CREATE TABLE IF NOT EXISTS account_career_logs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     account_id UUID REFERENCES accounts(id) ON DELETE CASCADE,
     position TEXT,
     grade TEXT,
+    location_id UUID REFERENCES locations(id) ON DELETE SET NULL,
     location_name TEXT,
+    schedule_id UUID REFERENCES schedules(id) ON DELETE SET NULL,
     file_sk_id TEXT,
     notes TEXT,
     change_date TIMESTAMP WITH TIME ZONE DEFAULT NOW()

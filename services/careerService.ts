@@ -28,33 +28,69 @@ export const careerService = {
       scheduleService.getAll()
     ]);
 
-    // 2. Siapkan Sheet Utama (Career_Import)
-    const importData = accounts.map(acc => ({
-      'Account ID (Hidden)': acc.id,
-      'NIK Internal': acc.internal_nik,
-      'Nama Karyawan': acc.full_name,
-      'Jabatan Baru (*)': acc.position,
-      'Grade Baru (*)': acc.grade,
-      'Lokasi Baru (*)': (acc as any).location?.name || '',
-      'Jadwal Baru (*)': acc.schedule_type || '',
-      'Tanggal Efektif (YYYY-MM-DD) (*)': new Date().toISOString().split('T')[0],
-      'Keterangan': '',
-      'Link SK Google Drive (Opsional)': ''
-    }));
+    // 2. Siapkan Sheet Utama (Career_Import) dengan Instruksi
+    const instructionRow = ["INSTRUKSI: Hapus baris data akun/user yang tidak ingin diubah. Baris dengan (*) wajib diisi."];
+    const emptyRow = [""];
+    const headers = [
+      'Account ID (Hidden)', 
+      'NIK Internal', 
+      'Nama Karyawan', 
+      'Jabatan Baru (*)', 
+      'Grade Baru (*)', 
+      'Lokasi Baru (*)', 
+      'Jadwal Baru (*)', 
+      'Tanggal Efektif (YYYY-MM-DD) (*)', 
+      'Keterangan', 
+      'Link SK Google Drive (Opsional)'
+    ];
 
-    const wsImport = XLSX.utils.json_to_sheet(importData);
+    const importRows = accounts.map(acc => [
+      acc.id,
+      acc.internal_nik,
+      acc.full_name,
+      acc.position,
+      acc.grade,
+      (acc as any).location?.name || '',
+      acc.schedule_type || '',
+      new Date().toISOString().split('T')[0],
+      '',
+      ''
+    ]);
 
-    // 3. Siapkan Sheet Referensi (Hidden)
+    const aoaData = [instructionRow, emptyRow, headers, ...importRows];
+    const wsImport = XLSX.utils.aoa_to_sheet(aoaData);
+
+    // 3. Tambahkan Data Validation (Dropdown) - Range baris 4 sampai 500
+    // SheetJS Pro mendukung format ini, untuk versi open source kita set range referensi
+    const totalRows = aoaData.length + 50; 
+    
+    // Properti !dataValidation (Hanya bekerja jika didukung oleh parser Excel pembaca)
+    (wsImport as any)['!dataValidation'] = [
+      {
+        range: `F4:F${totalRows}`, // Kolom Lokasi Baru (*)
+        type: 'list',
+        allowBlank: true,
+        formula1: 'Ref_Locations!$B$2:$B$200'
+      },
+      {
+        range: `G4:G${totalRows}`, // Kolom Jadwal Baru (*)
+        type: 'list',
+        allowBlank: true,
+        formula1: 'Ref_Schedules!$B$2:$B$200'
+      }
+    ];
+
+    // 4. Siapkan Sheet Referensi
     const wsLoc = XLSX.utils.json_to_sheet(locations.map(l => ({ ID: l.id, Nama: l.name })));
     const wsSch = XLSX.utils.json_to_sheet(schedules.map(s => ({ ID: s.id, Nama: s.name })));
 
-    // 4. Buat Workbook
+    // 5. Buat Workbook
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, wsImport, 'Career_Import');
     XLSX.utils.book_append_sheet(wb, wsLoc, 'Ref_Locations');
     XLSX.utils.book_append_sheet(wb, wsSch, 'Ref_Schedules');
 
-    // 5. Generate Excel File
+    // 6. Generate Excel File
     const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     saveAs(data, `HUREMA_Career_Template_${new Date().toISOString().split('T')[0]}.xlsx`);
@@ -68,7 +104,9 @@ export const careerService = {
           const data = new Uint8Array(e.target?.result as ArrayBuffer);
           const workbook = XLSX.read(data, { type: 'array' });
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-          const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+          
+          // Header dimulai dari baris ke-3 karena ada instruksi di baris 1 & 2
+          const jsonData = XLSX.utils.sheet_to_json(firstSheet, { range: 2 });
 
           // Ambil referensi untuk mapping nama ke ID
           const [locations, schedules] = await Promise.all([
@@ -119,7 +157,6 @@ export const careerService = {
         schedule_id: item.schedule_id,
         notes: item.notes,
         change_date: item.change_date,
-        // Jika ada link drive, kita bisa mengekstrak ID atau menyimpannya sebagai catatan
         file_sk_id: this.extractDriveId(item.file_sk_link)
       });
       results.push(log);
