@@ -115,7 +115,14 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
           </button>
         </div>
 
-        <form className="flex-1 overflow-y-auto p-6 scrollbar-thin" onSubmit={(e) => { e.preventDefault(); onSubmit(formData); }}>
+        <form 
+          id="account-form"
+          className="flex-1 overflow-y-auto p-6 scrollbar-thin" 
+          onSubmit={(e) => { 
+            e.preventDefault(); 
+            onSubmit(formData); 
+          }}
+        >
           <div className="bg-orange-50/50 border border-orange-100 p-2 rounded mb-4 flex items-center gap-2">
             <AlertCircle size={14} className="text-orange-400 shrink-0" />
             <p className="text-[10px] text-orange-600 font-medium">Kolom bertanda <span className="text-red-500 font-bold">*</span> wajib diisi dengan benar.</p>
@@ -372,9 +379,9 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
         <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50">
           <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold text-gray-500 uppercase">Batal</button>
           <button 
-            type="button"
+            type="submit"
+            form="account-form"
             disabled={Object.values(uploading).some(v => v)}
-            onClick={() => onSubmit(formData)}
             className="flex items-center gap-2 bg-[#006E62] text-white px-8 py-2 rounded shadow-md hover:bg-[#005a50] transition-all text-xs font-bold uppercase disabled:opacity-50"
           >
             <Save size={14} /> Simpan Akun
