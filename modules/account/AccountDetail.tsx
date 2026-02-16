@@ -22,7 +22,7 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
   const [healthLogs, setHealthLogs] = useState<HealthLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [showLogForm, setShowLogForm] = useState<{ type: 'career' | 'health' } | null>(null);
+  const [showLogForm, setShowLogForm] = useState<{ type: 'career' | 'health', data?: any, isEdit?: boolean } | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -46,21 +46,27 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
     }
   };
 
-  const handleAddLog = async (data: any) => {
+  const handleLogSubmit = async (data: any) => {
     setIsSaving(true);
     const type = showLogForm?.type;
+    const isEdit = showLogForm?.isEdit;
     
     // Optimistic UI Data
-    const tempId = `temp-${Date.now()}`;
-    const optimisticEntry = { ...data, id: tempId, change_date: new Date().toISOString() };
+    const tempId = data.id || `temp-${Date.now()}`;
+    const optimisticEntry = { ...data, id: tempId, change_date: data.change_date || new Date().toISOString() };
 
     try {
       if (type === 'career') {
-        setCareerLogs(prev => [optimisticEntry, ...prev]);
-        const created = await accountService.createCareerLog(data);
-        setCareerLogs(prev => prev.map(l => l.id === tempId ? created : l));
+        if (isEdit) {
+          const updated = await accountService.updateCareerLog(data.id, data);
+          setCareerLogs(prev => prev.map(l => l.id === data.id ? updated : l));
+        } else {
+          setCareerLogs(prev => [optimisticEntry, ...prev]);
+          const created = await accountService.createCareerLog(data);
+          setCareerLogs(prev => prev.map(l => l.id === tempId ? created : l));
+        }
+        
         // Sinkronisasi data utama akun lokal
-        // FIX: Removed unnecessary (prev as any) as 'location' is now part of Account interface
         setAccount(prev => prev ? { 
           ...prev, 
           position: data.position, 
@@ -69,9 +75,15 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
           location: { ...prev.location, name: data.location_name }
         } : null);
       } else {
-        setHealthLogs(prev => [optimisticEntry, ...prev]);
-        const created = await accountService.createHealthLog(data);
-        setHealthLogs(prev => prev.map(l => l.id === tempId ? created : l));
+        if (isEdit) {
+          const updated = await accountService.updateHealthLog(data.id, data);
+          setHealthLogs(prev => prev.map(l => l.id === data.id ? updated : l));
+        } else {
+          setHealthLogs(prev => [optimisticEntry, ...prev]);
+          const created = await accountService.createHealthLog(data);
+          setHealthLogs(prev => prev.map(l => l.id === tempId ? created : l));
+        }
+
         // Sinkronisasi data utama akun lokal
         setAccount(prev => prev ? { 
           ...prev, 
@@ -81,10 +93,10 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
       }
       
       setShowLogForm(null);
-      Swal.fire({ title: 'Berhasil!', text: 'Riwayat telah ditambahkan.', icon: 'success', timer: 1000, showConfirmButton: false });
+      Swal.fire({ title: 'Berhasil!', text: `Riwayat telah ${isEdit ? 'diperbarui' : 'ditambahkan'}.`, icon: 'success', timer: 1000, showConfirmButton: false });
     } catch (error) {
-      if (type === 'career') setCareerLogs(prev => prev.filter(l => l.id !== tempId));
-      else setHealthLogs(prev => prev.filter(l => l.id !== tempId));
+      if (type === 'career' && !isEdit) setCareerLogs(prev => prev.filter(l => l.id !== tempId));
+      else if (type === 'health' && !isEdit) setHealthLogs(prev => prev.filter(l => l.id !== tempId));
       Swal.fire('Gagal', 'Gagal menyimpan riwayat', 'error');
     } finally {
       setIsSaving(false);
@@ -189,7 +201,6 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
           </div>
           <p className="text-sm font-bold text-gray-500 uppercase tracking-widest">{account.position} • {account.internal_nik}</p>
           <div className="flex flex-wrap gap-4 pt-2">
-             {/* FIX: Removed (account as any) cast */}
              <div className="flex items-center gap-1.5 text-xs text-gray-600"><MapPin size={14} className="text-gray-400" /> {account.location?.name || '-'}</div>
              <div className="flex items-center gap-1.5 text-xs text-gray-600"><Mail size={14} className="text-gray-400" /> {account.email || '-'}</div>
              <div className="flex items-center gap-1.5 text-xs text-gray-600"><Phone size={14} className="text-gray-400" /> {account.phone || '-'}</div>
@@ -257,11 +268,10 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
            </div>
         </DetailSection>
 
-        {/* Riwayat Karir dengan Tombol Tambah & Hapus */}
         <DetailSection 
           icon={Clock} 
           title="Riwayat Karir" 
-          onAdd={() => setShowLogForm({ type: 'career' })}
+          onAdd={() => setShowLogForm({ type: 'career', data: account })}
         >
           <div className="space-y-3">
             {careerLogs.length === 0 ? (
@@ -283,20 +293,24 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
                     </div>
                     {log.notes && <p className="text-[9px] text-gray-400 italic mt-1 line-clamp-1">"{log.notes}"</p>}
                   </div>
-                  <button onClick={() => handleDeleteLog(log.id, 'career')} className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Trash2 size={12} />
-                  </button>
+                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => setShowLogForm({ type: 'career', data: log, isEdit: true })} className="text-gray-300 hover:text-[#006E62]">
+                      <Edit2 size={12} />
+                    </button>
+                    <button onClick={() => handleDeleteLog(log.id, 'career')} className="text-gray-300 hover:text-red-500">
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
                 </div>
               ))
             )}
           </div>
         </DetailSection>
 
-        {/* Riwayat Kesehatan dengan Tombol Tambah & Hapus */}
         <DetailSection 
           icon={Activity} 
           title="Riwayat Kesehatan" 
-          onAdd={() => setShowLogForm({ type: 'health' })}
+          onAdd={() => setShowLogForm({ type: 'health', data: account })}
         >
           <div className="space-y-3">
             {healthLogs.length === 0 ? (
@@ -317,9 +331,14 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
                       )}
                     </div>
                   </div>
-                  <button onClick={() => handleDeleteLog(log.id, 'health')} className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Trash2 size={12} />
-                  </button>
+                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => setShowLogForm({ type: 'health', data: log, isEdit: true })} className="text-gray-300 hover:text-[#006E62]">
+                      <Edit2 size={12} />
+                    </button>
+                    <button onClick={() => handleDeleteLog(log.id, 'health')} className="text-gray-300 hover:text-red-500">
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
                 </div>
               ))
             )}
@@ -355,9 +374,10 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
         <LogForm 
           type={showLogForm.type}
           accountId={id}
-          initialData={account}
+          initialData={showLogForm.data}
+          isEdit={showLogForm.isEdit}
           onClose={() => setShowLogForm(null)}
-          onSubmit={handleAddLog}
+          onSubmit={handleLogSubmit}
         />
       )}
     </div>

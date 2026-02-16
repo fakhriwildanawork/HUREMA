@@ -3,40 +3,44 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, Upload, FileText, Paperclip } from 'lucide-react';
 import { locationService } from '../../services/locationService';
 import { googleDriveService } from '../../services/googleDriveService';
+import { accountService } from '../../services/accountService';
 import { Location } from '../../types';
 
 interface LogFormProps {
   type: 'career' | 'health';
   accountId: string;
-  initialData?: any;
+  initialData?: any; // Ini bisa data akun (untuk add) atau data log (untuk edit)
+  isEdit?: boolean;
   onClose: () => void;
   onSubmit: (data: any) => void;
 }
 
-const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, onClose, onSubmit }) => {
+const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit = false, onClose, onSubmit }) => {
   const [formData, setFormData] = useState<any>({
     account_id: accountId,
     // Career Fields
     position: initialData?.position || '',
     grade: initialData?.grade || '',
     location_id: initialData?.location_id || '',
-    location_name: initialData?.location?.name || '',
-    file_sk_id: '',
+    location_name: initialData?.location_name || (initialData?.location?.name || ''),
+    file_sk_id: initialData?.file_sk_id || '',
     // Health Fields
     mcu_status: initialData?.mcu_status || '',
     health_risk: initialData?.health_risk || '',
-    file_mcu_id: '',
+    file_mcu_id: initialData?.file_mcu_id || '',
     // Common
-    notes: '',
+    notes: initialData?.notes || '',
   });
 
   const [locations, setLocations] = useState<Location[]>([]);
+  const [suggestions, setSuggestions] = useState<{ positions: string[], grades: string[] }>({ positions: [], grades: [] });
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (type === 'career') {
       locationService.getAll().then(setLocations);
     }
+    accountService.getDistinctAttributes().then(setSuggestions);
   }, [type]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -72,7 +76,11 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, onClose
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    if (isEdit) {
+      onSubmit({ ...formData, id: initialData.id });
+    } else {
+      onSubmit(formData);
+    }
   };
 
   return (
@@ -81,7 +89,7 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, onClose
         <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
           <div>
             <h3 className="text-sm font-bold text-[#006E62]">
-              {type === 'career' ? 'Tambah Riwayat Karir' : 'Tambah Riwayat Kesehatan'}
+              {isEdit ? 'Ubah' : 'Tambah'} {type === 'career' ? 'Riwayat Karir' : 'Riwayat Kesehatan'}
             </h3>
             <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Pencatatan Riwayat Manual</p>
           </div>
@@ -95,12 +103,31 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, onClose
             <>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-gray-500 uppercase">Jabatan Baru</label>
-                  <input required name="position" value={formData.position} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded outline-none focus:ring-1 focus:ring-[#006E62]" />
+                  <label className="text-[9px] font-bold text-gray-500 uppercase">Jabatan</label>
+                  <input 
+                    required 
+                    list="career-pos-list"
+                    name="position" 
+                    value={formData.position} 
+                    onChange={handleChange} 
+                    className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded outline-none focus:ring-1 focus:ring-[#006E62]" 
+                  />
+                  <datalist id="career-pos-list">
+                    {suggestions.positions.map(p => <option key={p} value={p} />)}
+                  </datalist>
                 </div>
                 <div className="space-y-1">
                   <label className="text-[9px] font-bold text-gray-500 uppercase">Golongan</label>
-                  <input name="grade" value={formData.grade} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded outline-none focus:ring-1 focus:ring-[#006E62]" />
+                  <input 
+                    list="career-grade-list"
+                    name="grade" 
+                    value={formData.grade} 
+                    onChange={handleChange} 
+                    className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded outline-none focus:ring-1 focus:ring-[#006E62]" 
+                  />
+                  <datalist id="career-grade-list">
+                    {suggestions.grades.map(g => <option key={g} value={g} />)}
+                  </datalist>
                 </div>
               </div>
               <div className="space-y-1">
@@ -170,7 +197,7 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, onClose
               disabled={uploading}
               className="flex items-center gap-2 bg-[#006E62] text-white px-5 py-1.5 rounded text-[10px] font-bold uppercase shadow-md hover:bg-[#005a50] disabled:opacity-50"
             >
-              <Save size={12} /> Simpan Log
+              <Save size={12} /> {isEdit ? 'Simpan Perubahan' : 'Simpan Log'}
             </button>
           </div>
         </form>

@@ -176,6 +176,28 @@ export const accountService = {
     return data[0] as CareerLog;
   },
 
+  async updateCareerLog(id: string, logInput: Partial<CareerLogInput>) {
+    const { location_id, ...rest } = logInput;
+    const { data, error } = await supabase
+      .from('account_career_logs')
+      .update(sanitizePayload(rest))
+      .eq('id', id)
+      .select();
+
+    if (error) throw error;
+
+    // Sinkronisasi ke profil utama jika ini adalah log terbaru (asumsi sederhana sinkronisasi)
+    if (logInput.account_id) {
+      await this.update(logInput.account_id, {
+        position: logInput.position,
+        grade: logInput.grade,
+        location_id: location_id || null
+      });
+    }
+
+    return data[0] as CareerLog;
+  },
+
   async deleteCareerLog(id: string) {
     const { error } = await supabase
       .from('account_career_logs')
@@ -198,6 +220,26 @@ export const accountService = {
       mcu_status: logInput.mcu_status,
       health_risk: logInput.health_risk
     });
+
+    return data[0] as HealthLog;
+  },
+
+  async updateHealthLog(id: string, logInput: Partial<HealthLogInput>) {
+    const { data, error } = await supabase
+      .from('account_health_logs')
+      .update(sanitizePayload(logInput))
+      .eq('id', id)
+      .select();
+
+    if (error) throw error;
+
+    // Sinkronisasi ke profil utama
+    if (logInput.account_id) {
+      await this.update(logInput.account_id, {
+        mcu_status: logInput.mcu_status,
+        health_risk: logInput.health_risk
+      });
+    }
 
     return data[0] as HealthLog;
   },
