@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
-import { X, Save, Upload, User, MapPin, Briefcase, GraduationCap, ShieldCheck, Heart, AlertCircle, Paperclip } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Save, Upload, User, MapPin, Briefcase, GraduationCap, ShieldCheck, Heart, AlertCircle, Paperclip, ChevronDown } from 'lucide-react';
 import { AccountInput, Location } from '../../types';
 import { googleDriveService } from '../../services/googleDriveService';
 import { locationService } from '../../services/locationService';
@@ -58,6 +58,9 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
   const [suggestions, setSuggestions] = useState<{ positions: string[], grades: string[] }>({ positions: [], grades: [] });
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
 
+  const posInputRef = useRef<HTMLInputElement>(null);
+  const gradeInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     locationService.getAll().then(setLocations);
     accountService.getDistinctAttributes().then(setSuggestions);
@@ -67,6 +70,15 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
     const { name, value, type } = e.target;
     const val = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
     setFormData(prev => ({ ...prev, [name]: val }));
+  };
+
+  const triggerDatalist = (inputRef: React.RefObject<HTMLInputElement>) => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+      const currentVal = inputRef.current.value;
+      inputRef.current.value = '';
+      inputRef.current.value = currentVal;
+    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: string) => {
@@ -261,15 +273,54 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
                     <Label required>Jabatan</Label>
-                    <input list="positions-list" name="position" value={formData.position} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required />
-                    <datalist id="positions-list">
+                    <div className="relative">
+                      <input 
+                        ref={posInputRef}
+                        list="main-pos-list" 
+                        name="position" 
+                        autoComplete="one-time-code"
+                        value={formData.position} 
+                        onChange={handleChange} 
+                        onClick={() => triggerDatalist(posInputRef)}
+                        onFocus={() => triggerDatalist(posInputRef)}
+                        className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none pr-7 bg-white" 
+                        required 
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => triggerDatalist(posInputRef)}
+                        className="absolute right-0 top-0 bottom-0 px-2 flex items-center text-gray-400"
+                      >
+                        <ChevronDown size={14} />
+                      </button>
+                    </div>
+                    <datalist id="main-pos-list">
                       {suggestions.positions.map(p => <option key={p} value={p} />)}
                     </datalist>
                   </div>
                   <div className="space-y-1">
                     <Label>Golongan</Label>
-                    <input list="grades-list" name="grade" value={formData.grade} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
-                    <datalist id="grades-list">
+                    <div className="relative">
+                      <input 
+                        ref={gradeInputRef}
+                        list="main-grade-list" 
+                        name="grade" 
+                        autoComplete="one-time-code"
+                        value={formData.grade} 
+                        onChange={handleChange} 
+                        onClick={() => triggerDatalist(gradeInputRef)}
+                        onFocus={() => triggerDatalist(gradeInputRef)}
+                        className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none pr-7 bg-white" 
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => triggerDatalist(gradeInputRef)}
+                        className="absolute right-0 top-0 bottom-0 px-2 flex items-center text-gray-400"
+                      >
+                        <ChevronDown size={14} />
+                      </button>
+                    </div>
+                    <datalist id="main-grade-list">
                       {suggestions.grades.map(g => <option key={g} value={g} />)}
                     </datalist>
                   </div>

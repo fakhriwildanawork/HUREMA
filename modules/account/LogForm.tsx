@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Save, Upload, FileText, Paperclip, ChevronDown, Calendar } from 'lucide-react';
 import { locationService } from '../../services/locationService';
 import { googleDriveService } from '../../services/googleDriveService';
@@ -36,6 +36,9 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
   const [locations, setLocations] = useState<Location[]>([]);
   const [suggestions, setSuggestions] = useState<{ positions: string[], grades: string[] }>({ positions: [], grades: [] });
   const [uploading, setUploading] = useState(false);
+
+  const posInputRef = useRef<HTMLInputElement>(null);
+  const gradeInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (type === 'career') {
@@ -110,12 +113,15 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
     }
   };
 
-  // Helper untuk menampilkan datalist secara otomatis saat input fokus
-  const triggerDatalist = (e: React.FocusEvent<HTMLInputElement>) => {
-    // Pada beberapa browser, mengubah value secara singkat memicu datalist muncul
-    const currentVal = e.target.value;
-    e.target.value = '';
-    e.target.value = currentVal;
+  // Helper untuk menampilkan datalist secara otomatis saat input fokus atau klik icon
+  const triggerDatalist = (inputRef: React.RefObject<HTMLInputElement>) => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+      // Trik untuk memicu munculnya datalist pada Chrome/Edge
+      const currentVal = inputRef.current.value;
+      inputRef.current.value = '';
+      inputRef.current.value = currentVal;
+    }
   };
 
   return (
@@ -155,17 +161,25 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
                   <label className="text-[9px] font-bold text-gray-500 uppercase">Jabatan</label>
                   <div className="relative">
                     <input 
+                      ref={posInputRef}
                       required 
                       list="career-pos-list"
                       name="position" 
-                      autoComplete="off"
+                      autoComplete="one-time-code"
                       value={formData.position} 
                       onChange={handleChange} 
-                      onFocus={triggerDatalist}
-                      className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded outline-none focus:ring-1 focus:ring-[#006E62] pr-6" 
+                      onClick={() => triggerDatalist(posInputRef)}
+                      onFocus={() => triggerDatalist(posInputRef)}
+                      className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded outline-none focus:ring-1 focus:ring-[#006E62] pr-7 bg-white" 
                       placeholder="Pilih atau Ketik"
                     />
-                    <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    <button 
+                      type="button"
+                      onClick={() => triggerDatalist(posInputRef)}
+                      className="absolute right-0 top-0 bottom-0 px-2 flex items-center text-gray-400 hover:text-[#006E62]"
+                    >
+                      <ChevronDown size={14} />
+                    </button>
                   </div>
                   <datalist id="career-pos-list">
                     {suggestions.positions.map(p => <option key={p} value={p} />)}
@@ -175,16 +189,24 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
                   <label className="text-[9px] font-bold text-gray-500 uppercase">Golongan</label>
                   <div className="relative">
                     <input 
+                      ref={gradeInputRef}
                       list="career-grade-list"
                       name="grade" 
-                      autoComplete="off"
+                      autoComplete="one-time-code"
                       value={formData.grade} 
                       onChange={handleChange} 
-                      onFocus={triggerDatalist}
-                      className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded outline-none focus:ring-1 focus:ring-[#006E62] pr-6" 
+                      onClick={() => triggerDatalist(gradeInputRef)}
+                      onFocus={() => triggerDatalist(gradeInputRef)}
+                      className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded outline-none focus:ring-1 focus:ring-[#006E62] pr-7 bg-white" 
                       placeholder="Pilih atau Ketik"
                     />
-                    <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    <button 
+                      type="button"
+                      onClick={() => triggerDatalist(gradeInputRef)}
+                      className="absolute right-0 top-0 bottom-0 px-2 flex items-center text-gray-400 hover:text-[#006E62]"
+                    >
+                      <ChevronDown size={14} />
+                    </button>
                   </div>
                   <datalist id="career-grade-list">
                     {suggestions.grades.map(g => <option key={g} value={g} />)}

@@ -52,17 +52,24 @@ export const accountService = {
   },
 
   async getDistinctAttributes() {
-    // Mengambil data unik hanya dari tabel account_career_logs sesuai permintaan user
-    const { data: logPositions } = await supabase.from('account_career_logs').select('position');
-    const { data: logGrades } = await supabase.from('account_career_logs').select('grade');
-    
-    const uniquePositions = Array.from(new Set([
-      ...(logPositions?.map(p => p.position) || [])
-    ].filter(Boolean))).sort();
+    // Mengambil data unik Jabatan & Golongan dari kedua tabel untuk memastikan dropdown lengkap
+    const [accRes, logRes] = await Promise.all([
+      supabase.from('accounts').select('position, grade'),
+      supabase.from('account_career_logs').select('position, grade')
+    ]);
 
-    const uniqueGrades = Array.from(new Set([
-      ...(logGrades?.map(g => g.grade) || [])
-    ].filter(Boolean))).sort();
+    const allPositions = [
+      ...(accRes.data?.map(p => p.position) || []),
+      ...(logRes.data?.map(p => p.position) || [])
+    ];
+    
+    const allGrades = [
+      ...(accRes.data?.map(g => g.grade) || []),
+      ...(logRes.data?.map(g => g.grade) || [])
+    ];
+
+    const uniquePositions = Array.from(new Set(allPositions.filter(Boolean))).sort();
+    const uniqueGrades = Array.from(new Set(allGrades.filter(Boolean))).sort();
     
     return { positions: uniquePositions, grades: uniqueGrades };
   },
