@@ -110,10 +110,19 @@ export interface CareerLog {
   account_id: string;
   position: string;
   grade: string;
+  location_id?: string | null;
   location_name: string;
+  schedule_id?: string | null;
   file_sk_id?: string | null;
   notes?: string | null;
   change_date: string;
+}
+
+export interface CareerLogExtended extends CareerLog {
+  account?: {
+    full_name: string;
+    internal_nik: string;
+  };
 }
 
 export interface HealthLog {
@@ -130,7 +139,7 @@ export type LocationInput = Omit<Location, 'id' | 'created_at' | 'updated_at' | 
 export type LocationAdminInput = Omit<LocationAdministration, 'id' | 'created_at'>;
 // FIX: Exclude 'location' from AccountInput to prevent trying to insert non-existent column
 export type AccountInput = Omit<Account, 'id' | 'created_at' | 'updated_at' | 'search_all' | 'location'>;
-export type CareerLogInput = Omit<CareerLog, 'id'> & { location_id?: string };
+export type CareerLogInput = Omit<CareerLog, 'id'>;
 export type HealthLogInput = Omit<HealthLog, 'id'>;
 export type ScheduleInput = Omit<Schedule, 'id' | 'created_at' | 'updated_at' | 'rules' | 'location_ids'> & {
   rules: Omit<ScheduleRule, 'id' | 'schedule_id'>[];

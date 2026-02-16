@@ -14,7 +14,9 @@
     "lucide-react": "^0.564.0",
     "@supabase/supabase-js": "^2.95.3",
     "sweetalert2": "^11.26.18",
-    "qrcode.react": "^4.1.0"
+    "qrcode.react": "^4.1.0",
+    "xlsx": "0.18.5",
+    "file-saver": "2.0.5"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

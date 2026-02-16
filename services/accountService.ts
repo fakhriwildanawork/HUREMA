@@ -123,7 +123,9 @@ export const accountService = {
       account_id: newAccount.id,
       position: newAccount.position,
       grade: newAccount.grade,
+      location_id: newAccount.location_id,
       location_name: locData?.name || '-',
+      schedule_id: newAccount.schedule_id,
       file_sk_id: file_sk_id || null,
       notes: 'Initial Career Record'
     }]);
@@ -174,8 +176,8 @@ export const accountService = {
   // Manual Log Management
   async createCareerLog(logInput: CareerLogInput) {
     // Filtrasi: Pastikan hanya kolom yang ada di tabel account_career_logs yang dikirim
-    const { account_id, position, grade, location_name, file_sk_id, notes, location_id, change_date } = logInput;
-    const payload = sanitizePayload({ account_id, position, grade, location_name, file_sk_id, notes, change_date });
+    const { account_id, position, grade, location_name, file_sk_id, notes, location_id, schedule_id, change_date } = logInput;
+    const payload = sanitizePayload({ account_id, position, grade, location_name, file_sk_id, notes, change_date, location_id, schedule_id });
     
     const { data, error } = await supabase
       .from('account_career_logs')
@@ -188,20 +190,19 @@ export const accountService = {
     }
 
     // Sinkronisasi ke profil utama jika data karier berubah
-    // Include schedule_id if it exists in the logInput (passed from form state)
     await this.update(account_id, {
       position,
       grade,
       location_id: location_id || null,
-      schedule_id: (logInput as any).schedule_id || null
+      schedule_id: schedule_id || null
     });
 
     return data[0] as CareerLog;
   },
 
   async updateCareerLog(id: string, logInput: Partial<CareerLogInput>) {
-    const { account_id, position, grade, location_name, file_sk_id, notes, location_id, change_date } = logInput;
-    const payload = sanitizePayload({ account_id, position, grade, location_name, file_sk_id, notes, change_date });
+    const { account_id, position, grade, location_name, file_sk_id, notes, location_id, schedule_id, change_date } = logInput;
+    const payload = sanitizePayload({ account_id, position, grade, location_name, file_sk_id, notes, change_date, location_id, schedule_id });
 
     const { data, error } = await supabase
       .from('account_career_logs')
@@ -219,7 +220,7 @@ export const accountService = {
         position,
         grade,
         location_id: location_id || null,
-        schedule_id: (logInput as any).schedule_id || null
+        schedule_id: schedule_id || null
       });
     }
 
