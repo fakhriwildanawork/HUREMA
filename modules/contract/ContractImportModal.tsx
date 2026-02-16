@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { X, FileUp, Download, CheckCircle, AlertTriangle, Save, Loader2 } from 'lucide-react';
 import Swal from 'sweetalert2';
@@ -40,7 +39,7 @@ const ContractImportModal: React.FC<ContractImportModalProps> = ({ onClose, onSu
 
     const confirm = await Swal.fire({
       title: 'Konfirmasi Impor',
-      text: `Sistem akan memproses ${validCount} baris perpanjangan kontrak. Profil utama karyawan akan otomatis ter-update. Lanjutkan?`,
+      text: `Sistem akan memproses ${validCount} baris perpanjangan kontrak. Profil utama karyawan akan otomatis ter-update mengikuti tanggal terbaru. Lanjutkan?`,
       icon: 'question',
       showCancelButton: true,
       confirmButtonColor: '#006E62',
@@ -82,7 +81,7 @@ const ContractImportModal: React.FC<ContractImportModalProps> = ({ onClose, onSu
               </div>
               <div className="text-center max-w-md">
                 <h4 className="text-lg font-bold text-gray-800">Unggah Excel Kontrak</h4>
-                <p className="text-xs text-gray-500 mt-2">Gunakan template resmi HUREMA. Sistem akan mencatat riwayat kontrak baru dan memperbarui masa berlaku di profil akun.</p>
+                <p className="text-xs text-gray-500 mt-2">Gunakan template resmi HUREMA. Sistem akan mencatat riwayat kontrak baru dan memperbarui masa berlaku di profil akun secara otomatis.</p>
               </div>
 
               <div className="flex flex-col gap-3 w-full max-w-xs">

@@ -1,4 +1,3 @@
-
 import { supabase } from '../lib/supabase';
 import { AccountContract, AccountContractExtended, AccountContractInput } from '../types';
 import * as XLSX from 'xlsx';
@@ -50,7 +49,7 @@ export const contractService = {
     
     if (error) throw error;
 
-    // Sinkronisasi: Update profil utama akun
+    // Sinkronisasi: Update profil utama karyawan
     await accountService.update(input.account_id, {
       start_date: input.start_date,
       end_date: input.end_date || null
@@ -69,11 +68,12 @@ export const contractService = {
     
     if (error) throw error;
 
+    // Jika account_id ada, sinkronisasi profil utama
     if (input.account_id) {
-      await accountService.update(input.account_id, {
-        start_date: input.start_date,
-        end_date: input.end_date || null
-      });
+       await accountService.update(input.account_id, {
+         start_date: input.start_date || undefined,
+         end_date: input.end_date || null
+       });
     }
 
     return data[0] as AccountContract;

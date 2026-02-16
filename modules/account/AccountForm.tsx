@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Save, Upload, User, MapPin, Briefcase, GraduationCap, ShieldCheck, Heart, AlertCircle, Paperclip, ChevronDown, CalendarClock, FileBadge } from 'lucide-react';
 import { AccountInput, Location, Schedule } from '../../types';
@@ -155,7 +154,6 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
     </label>
   );
 
-  const educationOptions = ['Tidak Sekolah', 'SD', 'SMP/Setara', 'SMA/Setara', 'Diploma 1-4', 'Sarjana', 'Profesi', 'Master', 'Doktor'];
   const filteredPositions = suggestions.positions.filter(p => p.toLowerCase().includes(formData.position.toLowerCase()));
   const filteredGrades = suggestions.grades.filter(g => g.toLowerCase().includes(formData.grade.toLowerCase()));
 

@@ -1,4 +1,3 @@
-
 -- Script Pembaruan Tabel account_career_logs
 -- Jalankan script ini di SQL Editor Supabase Anda
 
@@ -22,12 +21,16 @@ CREATE TABLE IF NOT EXISTS account_contracts (
 
 -- Enable RLS untuk account_contracts
 ALTER TABLE account_contracts ENABLE ROW LEVEL SECURITY;
+
 DROP POLICY IF EXISTS "Allow public read contracts" ON account_contracts;
 CREATE POLICY "Allow public read contracts" ON account_contracts FOR SELECT TO public USING (true);
+
 DROP POLICY IF EXISTS "Allow public insert contracts" ON account_contracts;
 CREATE POLICY "Allow public insert contracts" ON account_contracts FOR INSERT TO public WITH CHECK (true);
+
 DROP POLICY IF EXISTS "Allow public update contracts" ON account_contracts;
 CREATE POLICY "Allow public update contracts" ON account_contracts FOR UPDATE TO public USING (true);
+
 DROP POLICY IF EXISTS "Allow public delete contracts" ON account_contracts;
 CREATE POLICY "Allow public delete contracts" ON account_contracts FOR DELETE TO public USING (true);
 
