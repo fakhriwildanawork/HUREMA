@@ -1,6 +1,6 @@
 
 import { supabase } from '../lib/supabase';
-import { Account, AccountInput } from '../types';
+import { Account, AccountInput, CareerLog, HealthLog } from '../types';
 
 export const accountService = {
   async getAll() {
@@ -28,6 +28,28 @@ export const accountService = {
     
     if (error) throw error;
     return data;
+  },
+
+  async getCareerLogs(accountId: string) {
+    const { data, error } = await supabase
+      .from('account_career_logs')
+      .select('*')
+      .eq('account_id', accountId)
+      .order('change_date', { ascending: false });
+    
+    if (error) throw error;
+    return data as CareerLog[];
+  },
+
+  async getHealthLogs(accountId: string) {
+    const { data, error } = await supabase
+      .from('account_health_logs')
+      .select('*')
+      .eq('account_id', accountId)
+      .order('change_date', { ascending: false });
+    
+    if (error) throw error;
+    return data as HealthLog[];
   },
 
   async create(account: AccountInput) {

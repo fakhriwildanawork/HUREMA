@@ -16,7 +16,7 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
     full_name: initialData?.full_name || '',
     nik_ktp: initialData?.nik_ktp || '',
     gender: initialData?.gender || 'Laki-laki',
-    religion: initialData?.religion || '',
+    religion: initialData?.religion || 'Islam',
     dob: initialData?.dob || '',
     address: initialData?.address || '',
     phone: initialData?.phone || '',
@@ -121,17 +121,30 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
                     <label className="text-[9px] font-bold text-gray-500 uppercase">Nama Lengkap</label>
                     <input name="full_name" value={formData.full_name} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required />
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 gap-3">
                     <div className="space-y-1">
                       <label className="text-[9px] font-bold text-gray-500 uppercase">NIK KTP</label>
                       <input name="nik_ktp" value={formData.nik_ktp} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required />
                     </div>
+                    {/* Upload KTP dibawah input KTP */}
+                    <div className="flex items-center gap-4 p-2 bg-orange-50/50 rounded border border-orange-100">
+                      <label className="w-10 h-10 rounded bg-white border border-dashed border-orange-300 flex items-center justify-center relative overflow-hidden cursor-pointer group shrink-0">
+                        {formData.ktp_google_id ? (
+                          <ShieldCheck size={18} className="text-[#006E62]" />
+                        ) : (
+                          <Upload size={14} className="text-orange-300" />
+                        )}
+                        <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, 'ktp_google_id')} />
+                        {uploading['ktp_google_id'] && <div className="absolute inset-0 bg-black/10 flex items-center justify-center"><div className="w-3 h-3 border-2 border-[#006E62] border-t-transparent rounded-full animate-spin"></div></div>}
+                      </label>
+                      <div className="text-[8px] text-gray-400 font-bold uppercase leading-tight">Upload Scan KTP<br/><span className="font-normal italic">{formData.ktp_google_id ? 'Tersimpan' : 'Belum ada file'}</span></div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
                       <label className="text-[9px] font-bold text-gray-500 uppercase">Tgl Lahir</label>
                       <input type="date" name="dob" value={formData.dob} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
                     </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
                       <label className="text-[9px] font-bold text-gray-500 uppercase">Gender</label>
                       <select name="gender" value={formData.gender} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none">
@@ -139,10 +152,18 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
                         <option value="Perempuan">Perempuan</option>
                       </select>
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-bold text-gray-500 uppercase">Agama</label>
-                      <input name="religion" value={formData.religion} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
-                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold text-gray-500 uppercase">Agama</label>
+                    <select name="religion" value={formData.religion} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none">
+                      <option value="Islam">Islam</option>
+                      <option value="Kristen">Kristen</option>
+                      <option value="Katolik">Katolik</option>
+                      <option value="Hindu">Hindu</option>
+                      <option value="Budha">Budha</option>
+                      <option value="Konghucu">Konghucu</option>
+                      <option value="Kepercayaan Lain">Kepercayaan Lain</option>
+                    </select>
                   </div>
                 </div>
               </div>
@@ -169,7 +190,8 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
                     <select name="marital_status" value={formData.marital_status} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none">
                       <option value="Belum Menikah">Belum Menikah</option>
                       <option value="Menikah">Menikah</option>
-                      <option value="Cerai">Cerai</option>
+                      <option value="Cerai Hidup">Cerai Hidup</option>
+                      <option value="Cerai Mati">Cerai Mati</option>
                     </select>
                   </div>
                   <div className="space-y-1">
@@ -234,15 +256,15 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
                   <label className="text-[9px] font-bold text-gray-500 uppercase">Pendidikan Terakhir</label>
                   <input name="last_education" value={formData.last_education} onChange={handleChange} placeholder="cth: S1 Teknik Informatika" className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                   <label className="block p-2 border border-dashed border-gray-300 rounded text-center cursor-pointer hover:bg-gray-50 group">
-                      <div className="text-[8px] font-bold text-gray-400 group-hover:text-[#006E62] uppercase">Upload KTP</div>
-                      <div className="text-[10px] text-gray-300 truncate">{formData.ktp_google_id ? 'FILE OK' : 'No File'}</div>
-                      <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, 'ktp_google_id')} />
-                   </label>
-                   <label className="block p-2 border border-dashed border-gray-300 rounded text-center cursor-pointer hover:bg-gray-50 group">
-                      <div className="text-[8px] font-bold text-gray-400 group-hover:text-[#006E62] uppercase">Upload Ijazah</div>
-                      <div className="text-[10px] text-gray-300 truncate">{formData.diploma_google_id ? 'FILE OK' : 'No File'}</div>
+                <div className="grid grid-cols-1 gap-3">
+                   <label className="flex items-center gap-4 p-2 border border-dashed border-gray-300 rounded cursor-pointer hover:bg-gray-50 group transition-colors">
+                      <div className="w-10 h-10 rounded bg-white flex items-center justify-center shrink-0 border border-gray-100">
+                        <Upload size={14} className="text-gray-300 group-hover:text-[#006E62]" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-[8px] font-bold text-gray-400 group-hover:text-[#006E62] uppercase leading-none mb-1">Upload Ijazah</div>
+                        <div className="text-[10px] text-gray-300 truncate">{formData.diploma_google_id ? 'FILE TERSIMPAN' : 'Pilih File (PDF/JPG)'}</div>
+                      </div>
                       <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, 'diploma_google_id')} />
                    </label>
                 </div>

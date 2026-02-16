@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'https://esm.sh/qrcode.react@4.1.0';
-import { X, Edit2, Trash2, User, Phone, Mail, Calendar, MapPin, Briefcase, Shield, Heart, GraduationCap, Download, ExternalLink } from 'lucide-react';
-import { Account } from '../../types';
+import { X, Edit2, Trash2, User, Phone, Mail, Calendar, MapPin, Briefcase, Shield, Heart, GraduationCap, Download, ExternalLink, Clock, Activity } from 'lucide-react';
+import { Account, CareerLog, HealthLog } from '../../types';
 import { accountService } from '../../services/accountService';
 import { googleDriveService } from '../../services/googleDriveService';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
@@ -16,13 +16,28 @@ interface AccountDetailProps {
 
 const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDelete }) => {
   const [account, setAccount] = useState<Account | null>(null);
+  const [careerLogs, setCareerLogs] = useState<CareerLog[]>([]);
+  const [healthLogs, setHealthLogs] = useState<HealthLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    accountService.getById(id).then(data => {
-      setAccount(data as any);
-      setIsLoading(false);
-    });
+    const fetchData = async () => {
+      try {
+        const [acc, careers, healths] = await Promise.all([
+          accountService.getById(id),
+          accountService.getCareerLogs(id),
+          accountService.getHealthLogs(id)
+        ]);
+        setAccount(acc as any);
+        setCareerLogs(careers);
+        setHealthLogs(healths);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
   }, [id]);
 
   if (isLoading) return <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-[#006E62] border-t-transparent rounded-full animate-spin"></div></div>;
@@ -52,6 +67,14 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
       )}
     </div>
   );
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
 
   return (
     <div className="space-y-6 pb-20">
@@ -101,6 +124,7 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
              <DataRow label="Status Nikah" value={account.marital_status} />
              <DataRow label="Tanggungan" value={account.dependents_count} />
           </div>
+          <DataRow label="Scan KTP" value={account.ktp_google_id} isFile />
           <DataRow label="Alamat Domisili" value={account.address} />
         </DetailSection>
 
@@ -140,22 +164,56 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
            </div>
         </DetailSection>
 
+        {/* Section Riwayat Karir */}
+        <DetailSection icon={Clock} title="Riwayat Karir">
+          <div className="space-y-3">
+            {careerLogs.length === 0 ? (
+              <p className="text-[10px] text-gray-400 italic">Belum ada riwayat perubahan karir.</p>
+            ) : (
+              careerLogs.map((log) => (
+                <div key={log.id} className="flex gap-3 border-l-2 border-gray-100 pl-3 py-1 relative">
+                  <div className="absolute -left-[5px] top-2 w-2 h-2 rounded-full bg-gray-200"></div>
+                  <div>
+                    <p className="text-[10px] font-bold text-[#006E62] leading-tight">{log.position} • {log.grade}</p>
+                    <p className="text-[9px] text-gray-400 font-medium">{log.location_name}</p>
+                    <p className="text-[8px] text-gray-300 font-bold uppercase">{formatDate(log.change_date)}</p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </DetailSection>
+
+        {/* Section Riwayat Kesehatan */}
+        <DetailSection icon={Activity} title="Riwayat Kesehatan">
+          <div className="space-y-3">
+            {healthLogs.length === 0 ? (
+              <p className="text-[10px] text-gray-400 italic">Belum ada riwayat kesehatan.</p>
+            ) : (
+              healthLogs.map((log) => (
+                <div key={log.id} className="flex gap-3 border-l-2 border-gray-100 pl-3 py-1 relative">
+                  <div className="absolute -left-[5px] top-2 w-2 h-2 rounded-full bg-gray-200"></div>
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-700 leading-tight">MCU: {log.mcu_status || '-'}</p>
+                    <p className="text-[9px] text-red-400 font-medium">Risiko: {log.health_risk || '-'}</p>
+                    <p className="text-[8px] text-gray-300 font-bold uppercase">{formatDate(log.change_date)}</p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </DetailSection>
+
         <DetailSection icon={GraduationCap} title="Pendidikan & Dokumen">
            <DataRow label="Pendidikan Terakhir" value={account.last_education} />
-           <div className="grid grid-cols-2 gap-4 pt-2">
-              <DataRow label="Scan KTP" value={account.ktp_google_id} isFile />
+           <div className="grid grid-cols-1 gap-4 pt-2">
               <DataRow label="Scan Ijazah" value={account.diploma_google_id} isFile />
            </div>
         </DetailSection>
 
-        <DetailSection icon={Heart} title="Kesehatan & Darurat">
-           <div className="grid grid-cols-2 gap-4">
-              <DataRow label="Status MCU" value={account.mcu_status} />
-              <DataRow label="Risiko Kesehatan" value={account.health_risk} />
-           </div>
-           <div className="mt-4 pt-4 border-t border-gray-50">
-              <p className="text-[10px] font-bold text-[#006E62] uppercase tracking-widest mb-3">Kontak Darurat</p>
-              <div className="space-y-2">
+        <DetailSection icon={Heart} title="Kontak Darurat">
+           <div className="mt-2">
+              <div className="space-y-3">
                 <DataRow label="Nama Kontak" value={account.emergency_contact_name} />
                 <div className="grid grid-cols-2 gap-4">
                   <DataRow label="Hubungan" value={account.emergency_contact_rel} />

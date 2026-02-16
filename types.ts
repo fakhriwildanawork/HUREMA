@@ -77,6 +77,23 @@ export interface Account {
   search_all?: string;
 }
 
+export interface CareerLog {
+  id: string;
+  account_id: string;
+  position: string;
+  grade: string;
+  location_name: string;
+  change_date: string;
+}
+
+export interface HealthLog {
+  id: string;
+  account_id: string;
+  mcu_status: string;
+  health_risk: string;
+  change_date: string;
+}
+
 export type LocationInput = Omit<Location, 'id' | 'created_at' | 'updated_at' | 'search_all'>;
 export type LocationAdminInput = Omit<LocationAdministration, 'id' | 'created_at'>;
 export type AccountInput = Omit<Account, 'id' | 'created_at' | 'updated_at' | 'search_all'>;
