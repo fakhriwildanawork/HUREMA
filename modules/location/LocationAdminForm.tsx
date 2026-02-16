@@ -26,7 +26,7 @@ const LocationAdminForm: React.FC<LocationAdminFormProps> = ({ onClose, onSubmit
     setFormData(prev => {
       const newData = { ...prev, [name]: value };
       
-      // Jika status diubah ke Milik Sendiri, kosongkan due_date
+      // Jika status diubah ke Milik Sendiri, kosongkan due_date di state
       if (name === 'status' && value === 'Milik Sendiri') {
         newData.due_date = '';
       }
@@ -64,7 +64,14 @@ const LocationAdminForm: React.FC<LocationAdminFormProps> = ({ onClose, onSubmit
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    
+    // Sanitasi data: ubah string kosong menjadi null agar diterima oleh kolom DATE di Supabase
+    const sanitizedData = {
+      ...formData,
+      due_date: formData.due_date === '' ? null : formData.due_date
+    };
+    
+    onSubmit(sanitizedData);
   };
 
   return (

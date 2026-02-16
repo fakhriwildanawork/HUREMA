@@ -46,10 +46,17 @@ const LocationDetail: React.FC<LocationDetailProps> = ({ id, onClose, onEdit, on
   const handleAddAdmin = async (adminInput: any) => {
     setIsSaving(true);
     try {
-      const newAdmin = await locationService.createAdministration({
+      // Pastikan data bersih: ubah string kosong ke null untuk konsistensi database
+      const cleanInput = {
         ...adminInput,
+        due_date: adminInput.due_date === '' ? null : adminInput.due_date
+      };
+
+      const newAdmin = await locationService.createAdministration({
+        ...cleanInput,
         location_id: id
       });
+      
       setAdministrations(prev => [newAdmin, ...prev]);
       setShowAdminForm(false);
       Swal.fire({
