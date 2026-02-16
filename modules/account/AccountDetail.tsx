@@ -1,17 +1,20 @@
 
 import React, { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { X, Edit2, Trash2, User, Phone, Mail, Calendar, MapPin, Briefcase, Shield, Heart, GraduationCap, Download, ExternalLink, Clock, Activity, Plus, Paperclip, FileBadge, Award } from 'lucide-react';
+import { X, Edit2, Trash2, User, Phone, Mail, Calendar, MapPin, Briefcase, Shield, Heart, GraduationCap, Download, ExternalLink, Clock, Activity, Plus, Paperclip, FileBadge, Award, ShieldAlert, LogOut } from 'lucide-react';
 import Swal from 'sweetalert2';
-import { Account, CareerLog, HealthLog, AccountContract, AccountCertification } from '../../types';
+import { Account, CareerLog, HealthLog, AccountContract, AccountCertification, WarningLog, TerminationLog } from '../../types';
 import { accountService } from '../../services/accountService';
 import { contractService } from '../../services/contractService';
 import { certificationService } from '../../services/certificationService';
+import { disciplineService } from '../../services/disciplineService';
 import { googleDriveService } from '../../services/googleDriveService';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
 import LogForm from './LogForm';
 import CertificationFormModal from '../certification/CertificationFormModal';
 import ContractFormModal from '../contract/ContractFormModal';
+import WarningForm from '../discipline/WarningForm';
+import TerminationForm from '../discipline/TerminationForm';
 
 interface AccountDetailProps {
   id: string;
@@ -26,11 +29,16 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
   const [healthLogs, setHealthLogs] = useState<HealthLog[]>([]);
   const [contracts, setContracts] = useState<AccountContract[]>([]);
   const [certs, setCerts] = useState<AccountCertification[]>([]);
+  const [warnings, setWarnings] = useState<WarningLog[]>([]);
+  const [termination, setTermination] = useState<TerminationLog | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  
   const [showLogForm, setShowLogForm] = useState<{ type: 'career' | 'health', data?: any, isEdit?: boolean } | null>(null);
   const [showCertForm, setShowCertForm] = useState<{ show: boolean, data?: any }>({ show: false });
   const [showContractForm, setShowContractForm] = useState<{ show: boolean, data?: any }>({ show: false });
+  const [showWarningForm, setShowWarningForm] = useState(false);
+  const [showTerminationForm, setShowTerminationForm] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -39,22 +47,38 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      const [acc, careers, healths, contractList, certList] = await Promise.all([
+      const [acc, careers, healths, contractList, certList, warningList, term] = await Promise.all([
         accountService.getById(id),
         accountService.getCareerLogs(id),
         accountService.getHealthLogs(id),
         contractService.getByAccountId(id),
-        certificationService.getByAccountId(id)
+        certificationService.getByAccountId(id),
+        disciplineService.getWarningsByAccountId(id),
+        disciplineService.getTerminationByAccountId(id)
       ]);
       setAccount(acc as any);
       setCareerLogs(careers);
       setHealthLogs(healths);
       setContracts(contractList);
       setCerts(certList);
+      setWarnings(warningList);
+      setTermination(term || null);
     } catch (error) {
       console.error(error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDeleteWarning = async (logId: string) => {
+    const res = await Swal.fire({ title: 'Hapus riwayat peringatan?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#006E62' });
+    if (res.isConfirmed) {
+      try {
+        setIsSaving(true);
+        await disciplineService.deleteWarning(logId);
+        setWarnings(prev => prev.filter(w => w.id !== logId));
+      } catch (e) { Swal.fire('Gagal', 'Gagal menghapus data', 'error'); }
+      finally { setIsSaving(false); }
     }
   };
 
@@ -218,6 +242,11 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
     return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
   };
 
+  const formatCurrency = (amount?: number | null) => {
+    if (!amount) return 'Rp 0';
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount);
+  };
+
   return (
     <div className="space-y-6 pb-20">
       {isSaving && <LoadingSpinner />}
@@ -236,6 +265,7 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
           <div className="flex items-center gap-3">
              <h2 className="text-2xl font-bold text-gray-800 tracking-tight">{account.full_name}</h2>
              <span className="px-2 py-0.5 bg-[#006E62]/10 text-[#006E62] text-[10px] font-bold uppercase rounded">{account.employee_type}</span>
+             {termination && <span className="px-2 py-0.5 bg-red-50 text-red-600 text-[10px] font-bold uppercase rounded">NON-AKTIF</span>}
           </div>
           <p className="text-sm font-bold text-gray-500 uppercase tracking-widest">{account.position} • {account.internal_nik}</p>
           <div className="flex flex-wrap gap-4 pt-2">
@@ -281,27 +311,60 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
           </div>
         </DetailSection>
 
-        <DetailSection icon={Shield} title="Presensi & Akses">
-           <div className="space-y-3">
-              <div className="flex items-center justify-between p-2 bg-gray-50 rounded text-[11px] font-bold">
-                <span className="text-gray-500">KODE AKSES</span>
-                <span className="text-[#006E62] tracking-widest">{account.access_code}</span>
+        <DetailSection icon={ShieldAlert} title="Status Kedisiplinan" onAdd={() => setShowWarningForm(true)}>
+          <div className="space-y-3">
+            {warnings.length === 0 ? <p className="text-[10px] text-gray-400 italic">Belum ada riwayat peringatan.</p> : (
+              warnings.map(w => (
+                <div key={w.id} className="flex group justify-between items-start border-l-2 border-orange-200 pl-3 py-1 relative">
+                  <div className="flex-1 min-w-0 pr-4">
+                    <p className="text-[10px] font-bold text-orange-600 leading-tight">{w.warning_type}</p>
+                    <p className="text-[8px] text-gray-400 uppercase font-bold">{formatDate(w.issue_date)}</p>
+                    <p className="text-[10px] text-gray-600 mt-1 line-clamp-1">{w.reason}</p>
+                    {w.file_id && <a href={googleDriveService.getFileUrl(w.file_id)} target="_blank" className="text-[9px] font-bold text-[#006E62] mt-1 inline-block">LIHAT SURAT</a>}
+                  </div>
+                  <button onClick={() => handleDeleteWarning(w.id)} className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={12} /></button>
+                </div>
+              ))
+            )}
+          </div>
+        </DetailSection>
+
+        <DetailSection icon={LogOut} title="Status Exit / Pemberhentian" onAdd={!termination ? () => setShowTerminationForm(true) : undefined}>
+          {termination ? (
+            <div className="space-y-3 p-3 bg-red-50/50 border border-red-100 rounded">
+              <div className="flex justify-between items-center">
+                <span className="text-[10px] font-bold text-red-600 uppercase tracking-widest">{termination.termination_type}</span>
+                <span className="text-[10px] font-bold text-gray-500">{formatDate(termination.termination_date)}</span>
               </div>
-              <p className="text-[9px] font-bold text-gray-400 uppercase mt-2">Kebijakan Radius Presensi</p>
-              <div className="grid grid-cols-2 gap-2">
-                 {[
-                   { id: 'is_presence_limited_checkin', label: 'Check-in Datang' },
-                   { id: 'is_presence_limited_checkout', label: 'Check-out Pulang' },
-                   { id: 'is_presence_limited_ot_in', label: 'Check-in Lembur' },
-                   { id: 'is_presence_limited_ot_out', label: 'Check-out Lembur' }
-                 ].map(item => (
-                   <div key={item.id} className="flex items-center justify-between px-2 py-1.5 border border-gray-100 rounded bg-gray-50/50">
-                      <span className="text-[9px] font-medium text-gray-600">{item.label}</span>
-                      <span className={`text-[8px] font-bold uppercase ${account[item.id as keyof Account] ? 'text-[#006E62]' : 'text-orange-500'}`}>{account[item.id as keyof Account] ? 'Terbatas' : 'Bebas'}</span>
-                   </div>
-                 ))}
-              </div>
-           </div>
+              <DataRow label="Alasan Keluar" value={termination.reason} />
+              {termination.termination_type === 'Pemecatan' ? (
+                <DataRow label="Uang Pesangon" value={formatCurrency(termination.severance_amount)} />
+              ) : (
+                <DataRow label="Biaya Penalti" value={formatCurrency(termination.penalty_amount)} />
+              )}
+              {termination.file_id && <DataRow label="Surat Pemberhentian" value={termination.file_id} isFile />}
+              <button 
+                onClick={async () => {
+                  const res = await Swal.fire({ title: 'Batalkan Pemberhentian?', text: 'Akun akan diaktifkan kembali.', icon: 'question', showCancelButton: true });
+                  if (res.isConfirmed) {
+                    setIsSaving(true);
+                    await disciplineService.deleteTermination(termination.id, id);
+                    setTermination(null);
+                    setAccount(prev => prev ? { ...prev, end_date: null } : null);
+                    setIsSaving(false);
+                  }
+                }}
+                className="w-full mt-2 py-1.5 text-[10px] font-bold uppercase text-red-600 border border-red-200 rounded hover:bg-white transition-colors"
+              >
+                Batalkan Exit
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-6 text-gray-300">
+               <LogOut size={32} strokeWidth={1} />
+               <p className="text-[10px] font-bold uppercase tracking-widest mt-2 text-gray-400">Status: Aktif Bekerja</p>
+            </div>
+          )}
         </DetailSection>
 
         <DetailSection 
@@ -431,40 +494,22 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
             )}
           </div>
         </DetailSection>
-
-        <DetailSection icon={GraduationCap} title="Pendidikan & Dokumen">
-           <div>
-             <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter mb-0.5">Pendidikan Terakhir</p>
-             <p className="text-xs text-gray-700 font-medium leading-tight">{account.last_education} {account.major ? `- ${account.major}` : ''}</p>
-           </div>
-           <div className="grid grid-cols-1 gap-4 pt-2">
-              <DataRow label="Scan Ijazah" value={account.diploma_google_id} isFile />
-           </div>
-        </DetailSection>
-
-        <DetailSection icon={Heart} title="Kontak Darurat">
-           <div className="mt-2">
-              <div className="space-y-3">
-                <DataRow label="Nama Kontak" value={account.emergency_contact_name} />
-                <div className="grid grid-cols-2 gap-4">
-                  <DataRow label="Hubungan" value={account.emergency_contact_rel} />
-                  <DataRow label="No HP" value={account.emergency_contact_phone} />
-                </div>
-              </div>
-           </div>
-        </DetailSection>
       </div>
 
       {showLogForm && (
         <LogForm type={showLogForm.type} accountId={id} initialData={showLogForm.data} isEdit={showLogForm.isEdit} onClose={() => setShowLogForm(null)} onSubmit={handleLogSubmit} />
       )}
-
       {showCertForm.show && (
         <CertificationFormModal onClose={() => setShowCertForm({ show: false })} onSuccess={() => { setShowCertForm({ show: false }); fetchData(); }} initialData={showCertForm.data} />
       )}
-
       {showContractForm.show && (
         <ContractFormModal onClose={() => setShowContractForm({ show: false })} onSuccess={() => { setShowContractForm({ show: false }); fetchData(); }} initialData={showContractForm.data} />
+      )}
+      {showWarningForm && (
+        <WarningForm accountId={id} onClose={() => setShowWarningForm(false)} onSuccess={() => { setShowWarningForm(false); fetchData(); }} />
+      )}
+      {showTerminationForm && (
+        <TerminationForm accountId={id} onClose={() => setShowTerminationForm(false)} onSuccess={() => { setShowTerminationForm(false); fetchData(); }} />
       )}
     </div>
   );

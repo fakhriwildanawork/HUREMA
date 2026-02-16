@@ -1,16 +1,17 @@
 
 import React, { useState } from 'react';
-import { MapPin, LayoutDashboard, Settings, Menu, X, Users, CalendarClock, History, FileBadge, Award, Activity } from 'lucide-react';
+import { MapPin, LayoutDashboard, Settings, Menu, X, Users, CalendarClock, History, FileBadge, Award, Activity, ShieldAlert } from 'lucide-react';
 import LocationMain from './modules/location/LocationMain';
 import AccountMain from './modules/account/AccountMain';
 import ScheduleMain from './modules/schedule/ScheduleMain';
 import CareerLogMain from './modules/career/CareerLogMain';
 import HealthLogMain from './modules/health/HealthLogMain';
+import DisciplineMain from './modules/discipline/DisciplineMain';
 import ContractMain from './modules/contract/ContractMain';
 import CertificationMain from './modules/certification/CertificationMain';
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'career' | 'health' | 'contract' | 'certification' | 'settings'>('location');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'career' | 'health' | 'discipline' | 'contract' | 'certification' | 'settings'>('location');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const NavItem = ({ id, icon: Icon, label }: { id: any, icon: any, label: string }) => (
@@ -43,6 +44,7 @@ const App: React.FC = () => {
           <NavItem id="schedule" icon={CalendarClock} label="Manajemen Jadwal" />
           <NavItem id="career" icon={History} label="Log Karir" />
           <NavItem id="health" icon={Activity} label="Log Kesehatan" />
+          <NavItem id="discipline" icon={ShieldAlert} label="Peringatan & Keluar" />
           <NavItem id="contract" icon={FileBadge} label="Kontrak Kerja" />
           <NavItem id="certification" icon={Award} label="Sertifikasi" />
           <NavItem id="settings" icon={Settings} label="Pengaturan" />
@@ -71,6 +73,7 @@ const App: React.FC = () => {
             <NavItem id="schedule" icon={CalendarClock} label="Manajemen Jadwal" />
             <NavItem id="career" icon={History} label="Log Karir" />
             <NavItem id="health" icon={Activity} label="Log Kesehatan" />
+            <NavItem id="discipline" icon={ShieldAlert} label="Peringatan & Keluar" />
             <NavItem id="contract" icon={FileBadge} label="Kontrak Kerja" />
             <NavItem id="certification" icon={Award} label="Sertifikasi" />
             <NavItem id="settings" icon={Settings} label="Pengaturan" />
@@ -91,6 +94,7 @@ const App: React.FC = () => {
                activeTab === 'schedule' ? 'Manajemen Jadwal' : 
                activeTab === 'career' ? 'Log Pergerakan Karir' : 
                activeTab === 'health' ? 'Log Kesehatan Karyawan' :
+               activeTab === 'discipline' ? 'Peringatan & Pemberhentian' :
                activeTab === 'contract' ? 'Manajemen Kontrak Kerja' : 
                activeTab === 'certification' ? 'Daftar Sertifikasi Karyawan' : activeTab}
             </h2>
@@ -111,6 +115,8 @@ const App: React.FC = () => {
             <CareerLogMain />
           ) : activeTab === 'health' ? (
             <HealthLogMain />
+          ) : activeTab === 'discipline' ? (
+            <DisciplineMain />
           ) : activeTab === 'contract' ? (
             <ContractMain />
           ) : activeTab === 'certification' ? (
