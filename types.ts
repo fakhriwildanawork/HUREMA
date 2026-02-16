@@ -13,7 +13,7 @@ export interface Location {
   radius: number;
   description: string;
   search_all: string;
-  image_google_id?: string;
+  image_google_id?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -23,7 +23,7 @@ export interface LocationAdministration {
   location_id: string;
   admin_date: string;
   status: 'Milik Sendiri' | 'Sewa/Kontrak' | 'Kerjasama';
-  due_date?: string;
+  due_date?: string | null;
   description?: string;
   file_ids: string[]; // Array ID Google Drive
   created_at?: string;
@@ -34,11 +34,11 @@ export interface Account {
   // Identitas
   full_name: string;
   nik_ktp: string;
-  photo_google_id?: string;
-  ktp_google_id?: string;
+  photo_google_id?: string | null;
+  ktp_google_id?: string | null;
   gender: 'Laki-laki' | 'Perempuan';
   religion: string;
-  dob: string;
+  dob: string | null;
   // Kontak & Sosial
   address: string;
   phone: string;
@@ -51,15 +51,15 @@ export interface Account {
   // Pendidikan
   last_education: string;
   major: string; // Jurusan
-  diploma_google_id?: string;
+  diploma_google_id?: string | null;
   // Karier & Penempatan
   internal_nik: string;
   position: string;
   grade: string;
-  location_id: string; // Relasi ke Location
+  location_id: string | null; // Relasi ke Location (UUID)
   employee_type: 'Tetap' | 'Kontrak' | 'Harian' | 'Magang';
-  start_date: string;
-  end_date?: string;
+  start_date: string | null;
+  end_date?: string | null;
   // Pengaturan Kerja & Presensi
   schedule_type: string;
   leave_quota: number;

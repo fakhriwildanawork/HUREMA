@@ -115,7 +115,7 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
           </button>
         </div>
 
-        <form className="flex-1 overflow-y-auto p-6 scrollbar-thin">
+        <form className="flex-1 overflow-y-auto p-6 scrollbar-thin" onSubmit={(e) => { e.preventDefault(); onSubmit(formData); }}>
           <div className="bg-orange-50/50 border border-orange-100 p-2 rounded mb-4 flex items-center gap-2">
             <AlertCircle size={14} className="text-orange-400 shrink-0" />
             <p className="text-[10px] text-orange-600 font-medium">Kolom bertanda <span className="text-red-500 font-bold">*</span> wajib diisi dengan benar.</p>

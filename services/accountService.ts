@@ -2,6 +2,20 @@
 import { supabase } from '../lib/supabase';
 import { Account, AccountInput, CareerLog, HealthLog } from '../types';
 
+/**
+ * Fungsi pembantu untuk membersihkan data sebelum dikirim ke Supabase.
+ * Mengubah string kosong ('') menjadi null agar tidak error saat masuk ke kolom UUID atau DATE.
+ */
+const sanitizePayload = (payload: any) => {
+  const sanitized = { ...payload };
+  Object.keys(sanitized).forEach(key => {
+    if (sanitized[key] === '') {
+      sanitized[key] = null;
+    }
+  });
+  return sanitized;
+};
+
 export const accountService = {
   async getAll() {
     const { data, error } = await supabase
@@ -53,9 +67,10 @@ export const accountService = {
   },
 
   async create(account: AccountInput) {
+    const sanitizedAccount = sanitizePayload(account);
     const { data, error } = await supabase
       .from('accounts')
-      .insert([account])
+      .insert([sanitizedAccount])
       .select();
     
     if (error) throw error;
@@ -63,9 +78,10 @@ export const accountService = {
   },
 
   async update(id: string, account: Partial<AccountInput>) {
+    const sanitizedAccount = sanitizePayload(account);
     const { data, error } = await supabase
       .from('accounts')
-      .update(account)
+      .update(sanitizedAccount)
       .eq('id', id)
       .select();
     
