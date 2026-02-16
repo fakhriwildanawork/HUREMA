@@ -7,7 +7,7 @@ export const config = {
 
 function cleanCredential(val: string | undefined): string {
   if (!val) return '';
-  // Membersihkan spasi, karakter baris baru, dan tanda kutip yang tidak sengaja terbawa
+  // Membersihkan spasi, karakter baris baru, dan tanda kutip yang sering terbawa saat copy-paste dari dashboard Vercel
   return val.trim().replace(/^["']|["']$/g, '').replace(/\\n/g, '\n');
 }
 
@@ -29,17 +29,24 @@ async function getAccessToken(clientId: string, clientSecret: string, refreshTok
   try {
     data = JSON.parse(responseText);
   } catch (e) {
-    data = { error: 'Invalid JSON', raw: responseText };
+    data = { error: 'Invalid JSON Response', raw: responseText };
   }
   
   if (!res.ok) {
-    console.error(`GOOGLE_TOKEN_ERROR [${res.status}]:`, responseText);
+    console.error(`GOOGLE_OAUTH_ERROR [${res.status}]:`, responseText);
     let customMessage = data.error_description || data.error || 'Gagal autentikasi Google';
+    
+    // Memberikan informasi lebih spesifik jika token tidak valid
     if (data.error === 'invalid_grant') {
-      customMessage = 'Refresh Token tidak valid atau sudah kadaluarsa. Silakan periksa kredensial di Vercel.';
+      customMessage = 'Refresh Token tidak valid/kadaluarsa. Harap periksa kembali variabel GOOGLE_REFRESH_TOKEN di Vercel.';
     }
-    throw new Error(`Google Auth Error (${res.status}): ${customMessage}`);
+    
+    // Melempar error dengan status asli agar handler bisa merespon dengan status yang sama
+    const error: any = new Error(customMessage);
+    error.status = res.status;
+    throw error;
   }
+  
   return data.access_token;
 }
 
@@ -54,7 +61,6 @@ export default async function handler(req: Request) {
     const refreshToken = cleanCredential(process.env.GOOGLE_REFRESH_TOKEN || process.env.VITE_GOOGLE_REFRESH_TOKEN);
 
     if (!clientId || !clientSecret || !refreshToken) {
-      console.error('Kredensial Google Drive tidak lengkap:', { hasClientId: !!clientId, hasSecret: !!clientSecret, hasToken: !!refreshToken });
       return new Response(JSON.stringify({ 
         error: 'Kredensial OAuth2 belum lengkap di Vercel. Pastikan CLIENT_ID, SECRET, dan REFRESH_TOKEN sudah diatur.' 
       }), { status: 500 });
@@ -67,7 +73,15 @@ export default async function handler(req: Request) {
       return new Response(JSON.stringify({ error: 'Tidak ada file yang dikirim' }), { status: 400 });
     }
 
-    const accessToken = await getAccessToken(clientId, clientSecret, refreshToken);
+    // Mendapatkan access token dengan penanganan error status
+    let accessToken;
+    try {
+      accessToken = await getAccessToken(clientId, clientSecret, refreshToken);
+    } catch (authError: any) {
+      return new Response(JSON.stringify({ error: authError.message }), { 
+        status: authError.status || 401 
+      });
+    }
 
     const metadata = {
       name: `HUREMA_${Date.now()}_${file.name}`,
@@ -75,7 +89,7 @@ export default async function handler(req: Request) {
       mimeType: file.type,
     };
 
-    const boundary = 'hurema_boundary';
+    const boundary = 'hurema_upload_boundary';
     const metadataPart = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n`;
     const mediaPart = `--${boundary}\r\nContent-Type: ${file.type}\r\n\r\n`;
     const closingPart = `\r\n--${boundary}--`;
@@ -100,8 +114,11 @@ export default async function handler(req: Request) {
     const driveData = await driveResponse.json();
 
     if (!driveResponse.ok) {
-      console.error('Gagal upload ke Drive API:', driveData);
-      return new Response(JSON.stringify({ error: 'Gagal mengunggah ke Google Drive', detail: driveData }), { status: 500 });
+      console.error('GOOGLE_DRIVE_API_ERROR:', driveData);
+      return new Response(JSON.stringify({ 
+        error: 'Gagal mengunggah ke Google Drive', 
+        detail: driveData 
+      }), { status: driveResponse.status });
     }
 
     return new Response(JSON.stringify({ id: driveData.id }), {
@@ -109,7 +126,9 @@ export default async function handler(req: Request) {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Upload handler error:', error);
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Internal Server Error' }), { status: 500 });
+    console.error('CRITICAL_UPLOAD_HANDLER_ERROR:', error);
+    return new Response(JSON.stringify({ 
+      error: error instanceof Error ? error.message : 'Internal Server Error' 
+    }), { status: 500 });
   }
 }

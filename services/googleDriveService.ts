@@ -1,34 +1,48 @@
 
 class GoogleDriveService {
   /**
-   * Mengunggah file ke Google Drive melalui API Proxy internal.
-   * Tidak memerlukan login user karena menggunakan Service Account di sisi server.
+   * uploadQueue digunakan untuk memastikan file diunggah satu per satu (Sequential).
+   * Ini krusial untuk mencegah error 401 (Unauthorized) dari Google OAuth saat
+   * beberapa request mencoba melakukan refresh token di saat yang bersamaan.
    */
+  private uploadQueue: Promise<any> = Promise.resolve();
+
   async uploadFile(file: File): Promise<string> {
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
+    // Memasukkan proses upload ke dalam antrean (Promise Chain)
+    const currentUpload = this.uploadQueue.then(async () => {
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
 
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Gagal mengunggah file. Pastikan Service Account sudah diatur di Vercel.');
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Gagal mengunggah file. Periksa koneksi atau kredensial Google Drive.');
+        }
+
+        const result = await response.json();
+        if (!result.id) {
+          throw new Error('ID File tidak ditemukan dalam respon API Google Drive');
+        }
+
+        return result.id;
+      } catch (error) {
+        console.error('GoogleDriveService Upload Error:', error);
+        throw error;
       }
+    });
 
-      const result = await response.json();
-      if (!result.id) {
-        throw new Error('ID File tidak ditemukan dalam respon API');
-      }
+    // Perbarui antrean agar request berikutnya menunggu proses ini selesai
+    this.uploadQueue = currentUpload.catch(() => {
+      // Jika upload ini gagal, pastikan antrean tetap berlanjut untuk file berikutnya
+      return null;
+    });
 
-      return result.id;
-    } catch (error) {
-      console.error('GoogleDriveService Error:', error);
-      throw error;
-    }
+    return currentUpload;
   }
 
   /**

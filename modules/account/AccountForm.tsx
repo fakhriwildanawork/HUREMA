@@ -67,7 +67,7 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validasi tipe file
+    // Validasi tipe file (Ekstra Proteksi)
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
     if (!allowedTypes.includes(file.type)) {
       alert('Hanya diperbolehkan mengunggah file Gambar (JPG, PNG, WEBP) atau PDF.');
@@ -76,11 +76,12 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
 
     try {
       setUploading(prev => ({ ...prev, [field]: true }));
+      // Service ini sekarang sudah menggunakan antrean (Sequential) internal
       const fileId = await googleDriveService.uploadFile(file);
       setFormData(prev => ({ ...prev, [field]: fileId }));
     } catch (error) {
       console.error(error);
-      alert('Gagal mengunggah file. Pastikan koneksi stabil dan kredensial valid.');
+      alert(error instanceof Error ? error.message : 'Gagal mengunggah file. Harap periksa kredensial Google Drive di Vercel.');
     } finally {
       setUploading(prev => ({ ...prev, [field]: false }));
     }
@@ -154,7 +155,6 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
                       <Label required>NIK KTP</Label>
                       <input name="nik_ktp" value={formData.nik_ktp} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required />
                     </div>
-                    {/* Upload KTP dibawah input KTP */}
                     <div className="flex items-center gap-4 p-2 bg-orange-50/50 rounded border border-orange-100">
                       <label className="w-10 h-10 rounded bg-white border border-dashed border-orange-300 flex items-center justify-center relative overflow-hidden cursor-pointer group shrink-0">
                         {formData.ktp_google_id ? (
@@ -302,6 +302,7 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
                         <div className="text-[10px] text-gray-300 truncate">{formData.diploma_google_id ? 'FILE TERSIMPAN' : 'Pilih File (PDF/Gambar)'}</div>
                       </div>
                       <input type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => handleFileUpload(e, 'diploma_google_id')} />
+                      {uploading['diploma_google_id'] && <div className="shrink-0"><div className="w-3 h-3 border-2 border-[#006E62] border-t-transparent rounded-full animate-spin"></div></div>}
                    </label>
                 </div>
               </div>
@@ -372,8 +373,9 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
           <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold text-gray-500 uppercase">Batal</button>
           <button 
             type="button"
+            disabled={Object.values(uploading).some(v => v)}
             onClick={() => onSubmit(formData)}
-            className="flex items-center gap-2 bg-[#006E62] text-white px-8 py-2 rounded shadow-md hover:bg-[#005a50] transition-all text-xs font-bold uppercase"
+            className="flex items-center gap-2 bg-[#006E62] text-white px-8 py-2 rounded shadow-md hover:bg-[#005a50] transition-all text-xs font-bold uppercase disabled:opacity-50"
           >
             <Save size={14} /> Simpan Akun
           </button>
