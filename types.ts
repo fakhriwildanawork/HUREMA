@@ -34,6 +34,7 @@ export interface Schedule {
   name: string;
   type: 1 | 2 | 3 | 4;
   tolerance_minutes: number;
+  tolerance_checkin_minutes: number;
   start_date?: string | null;
   end_date?: string | null;
   excluded_account_ids: string[];

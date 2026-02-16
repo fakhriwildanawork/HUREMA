@@ -6,7 +6,8 @@ CREATE TABLE IF NOT EXISTS schedules (
     name TEXT NOT NULL, -- "Data Nama Jadwal"
     type INTEGER NOT NULL CHECK (type IN (1, 2, 3, 4)), 
     -- 1: Hari Kerja (Fixed), 2: Shift (Uniform), 3: Libur Khusus, 4: Hari Kerja Khusus
-    tolerance_minutes INTEGER DEFAULT 0,
+    tolerance_minutes INTEGER DEFAULT 0, -- Ini untuk Toleransi Pulang
+    tolerance_checkin_minutes INTEGER DEFAULT 0, -- Tambahan untuk Toleransi Datang
     start_date DATE, -- For type 3 & 4
     end_date DATE,   -- For type 3 & 4
     excluded_account_ids UUID[] DEFAULT '{}', -- Selective exclusion for Type 3 & 4

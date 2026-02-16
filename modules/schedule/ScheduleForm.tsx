@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, Save, Clock, Calendar, Users, MapPin, Check } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Save, Clock, Calendar, Users, MapPin, Check, ChevronDown } from 'lucide-react';
 import { ScheduleInput, Location, Account } from '../../types';
 import { locationService } from '../../services/locationService';
 import { accountService } from '../../services/accountService';
@@ -15,6 +15,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onClose, onSubmit, initialD
     name: initialData?.name || '',
     type: initialData?.type || 1,
     tolerance_minutes: initialData?.tolerance_minutes || 0,
+    tolerance_checkin_minutes: initialData?.tolerance_checkin_minutes || 0,
     start_date: initialData?.start_date || '',
     end_date: initialData?.end_date || '',
     excluded_account_ids: initialData?.excluded_account_ids || [],
@@ -24,7 +25,12 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onClose, onSubmit, initialD
 
   const [locations, setLocations] = useState<Location[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [activeTab, setActiveTab] = useState<'info' | 'rules' | 'locations' | 'exclusions'>('info');
+  const [activeTab, setActiveTab] = useState<'info' | 'toleransi' | 'rules' | 'locations' | 'exclusions'>('info');
+  const [showLocationDropdown, setShowLocationDropdown] = useState(false);
+  const [showExclusionDropdown, setShowExclusionDropdown] = useState(false);
+
+  const locationRef = useRef<HTMLDivElement>(null);
+  const exclusionRef = useRef<HTMLDivElement>(null);
 
   const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 
@@ -42,13 +48,20 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onClose, onSubmit, initialD
       }));
       setFormData(prev => ({ ...prev, rules: initialRules }));
     }
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (locationRef.current && !locationRef.current.contains(event.target as Node)) setShowLocationDropdown(false);
+      if (exclusionRef.current && !exclusionRef.current.contains(event.target as Node)) setShowExclusionDropdown(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ 
       ...prev, 
-      [name]: name === 'type' || name === 'tolerance_minutes' ? parseInt(value) : value 
+      [name]: (name === 'type' || name === 'tolerance_minutes' || name === 'tolerance_checkin_minutes') ? parseInt(value) : value 
     }));
   };
 
@@ -78,12 +91,9 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onClose, onSubmit, initialD
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // For type 2: Map rule day_of_week to null or keep 1 set
-    // For type 3: rules can be empty or is_holiday true
+    // For type 3: rules can be empty
     let finalRules = formData.rules;
-    if (formData.type === 2) {
-       finalRules = [{ check_in_time: formData.rules[1].check_in_time, check_out_time: formData.rules[1].check_out_time, is_holiday: false }];
-    } else if (formData.type === 3) {
+    if (formData.type === 3) {
        finalRules = [];
     }
 
@@ -93,6 +103,17 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onClose, onSubmit, initialD
   const filteredAccounts = accounts.filter(acc => 
     formData.location_ids.length === 0 || (acc.location_id && formData.location_ids.includes(acc.location_id))
   );
+
+  const tabs = [
+    { id: 'info', label: 'Informasi' },
+    { id: 'toleransi', label: 'Toleransi' },
+    { id: 'rules', label: 'Aturan Jam' },
+    { id: 'locations', label: 'Lokasi' }
+  ];
+
+  if (formData.type === 3 || formData.type === 4) {
+    tabs.push({ id: 'exclusions', label: 'Pengecualian' });
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4">
@@ -110,16 +131,16 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onClose, onSubmit, initialD
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-100 bg-gray-50/50">
-           {['info', 'rules', 'locations', 'exclusions'].map(tab => (
+        <div className="flex border-b border-gray-100 bg-gray-50/50 overflow-x-auto">
+           {tabs.map(tab => (
               <button 
-                key={tab}
-                onClick={() => setActiveTab(tab as any)}
-                className={`px-6 py-3 text-[10px] font-bold uppercase tracking-widest border-b-2 transition-all ${
-                  activeTab === tab ? 'border-[#006E62] text-[#006E62] bg-white' : 'border-transparent text-gray-400 hover:text-gray-600'
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`px-6 py-3 text-[10px] font-bold uppercase tracking-widest border-b-2 transition-all whitespace-nowrap ${
+                  activeTab === tab.id ? 'border-[#006E62] text-[#006E62] bg-white' : 'border-transparent text-gray-400 hover:text-gray-600'
                 }`}
               >
-                {tab === 'info' ? 'Informasi' : tab === 'rules' ? 'Aturan Jam' : tab === 'locations' ? 'Lokasi' : 'Pengecualian'}
+                {tab.label}
               </button>
            ))}
         </div>
@@ -138,23 +159,41 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onClose, onSubmit, initialD
                   className="w-full px-3 py-2 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" 
                 />
               </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-500 uppercase">Tipe Jadwal</label>
+                <select name="type" value={formData.type} onChange={handleChange} className="w-full px-3 py-2 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none">
+                  <option value={1}>1. Hari Kerja (Fixed)</option>
+                  <option value={2}>2. Shift Kerja (Uniform)</option>
+                  <option value={3}>3. Libur Khusus (Overriding)</option>
+                  <option value={4}>4. Hari Kerja Khusus</option>
+                </select>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'toleransi' && (
+            <div className="space-y-4 animate-in fade-in duration-200">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-500 uppercase">Tipe Jadwal</label>
-                  <select name="type" value={formData.type} onChange={handleChange} className="w-full px-3 py-2 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none">
-                    <option value={1}>1. Hari Kerja (Fixed)</option>
-                    <option value={2}>2. Shift Kerja (Uniform)</option>
-                    <option value={3}>3. Libur Khusus (Overriding)</option>
-                    <option value={4}>4. Hari Kerja Khusus</option>
-                  </select>
+                  <label className="text-[10px] font-bold text-gray-500 uppercase">Toleransi Datang (Menit)</label>
+                  <input type="number" name="tolerance_checkin_minutes" value={formData.tolerance_checkin_minutes} onChange={handleChange} className="w-full px-3 py-2 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-gray-500 uppercase">Toleransi Pulang (Menit)</label>
                   <input type="number" name="tolerance_minutes" value={formData.tolerance_minutes} onChange={handleChange} className="w-full px-3 py-2 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
                 </div>
               </div>
-              {formData.type >= 3 && (
-                <div className="grid grid-cols-2 gap-4 p-4 bg-orange-50 border border-orange-100 rounded animate-in slide-in-from-top duration-200">
+              <div className="p-4 bg-blue-50 border border-blue-100 rounded">
+                 <p className="text-[10px] text-blue-700 font-medium">Batas waktu keterlambatan datang dan batas akhir presensi pulang setelah jam kerja berakhir.</p>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'rules' && (
+            <div className="space-y-4 animate-in fade-in duration-200">
+               {/* Start and End Date for Type 3 & 4 moved here */}
+               {formData.type >= 3 && (
+                <div className="grid grid-cols-2 gap-4 p-4 bg-orange-50 border border-orange-100 rounded animate-in slide-in-from-top duration-200 mb-4">
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold text-orange-600 uppercase">Mulai Tanggal</label>
                     <input type="date" required name="start_date" value={formData.start_date} onChange={handleChange} className="w-full px-3 py-2 text-xs border border-orange-200 rounded outline-none" />
@@ -164,33 +203,16 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onClose, onSubmit, initialD
                     <input type="date" required name="end_date" value={formData.end_date} onChange={handleChange} className="w-full px-3 py-2 text-xs border border-orange-200 rounded outline-none" />
                   </div>
                 </div>
-              )}
-            </div>
-          )}
+               )}
 
-          {activeTab === 'rules' && (
-            <div className="space-y-4 animate-in fade-in duration-200">
                {formData.type === 3 ? (
                  <div className="flex flex-col items-center justify-center py-10 text-gray-400 bg-gray-50 rounded border border-dashed border-gray-200">
                    <Clock size={40} strokeWidth={1} className="mb-2" />
                    <p className="text-xs font-bold uppercase tracking-widest">Tipe Libur: Tidak Perlu Jam Kerja</p>
                  </div>
-               ) : formData.type === 2 || formData.type === 4 ? (
-                 <div className="bg-gray-50 p-6 rounded border border-gray-100">
-                   <p className="text-[10px] font-bold text-gray-400 uppercase mb-4">Set Jam Kerja Uniform</p>
-                   <div className="grid grid-cols-2 gap-6">
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-gray-500 uppercase">Jam Masuk</label>
-                        <input type="time" value={formData.rules[1]?.check_in_time || '08:00'} onChange={(e) => handleRuleChange(1, 'check_in_time', e.target.value)} className="w-full px-3 py-2 text-sm font-mono border border-gray-200 rounded" />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-gray-500 uppercase">Jam Pulang</label>
-                        <input type="time" value={formData.rules[1]?.check_out_time || '17:00'} onChange={(e) => handleRuleChange(1, 'check_out_time', e.target.value)} className="w-full px-3 py-2 text-sm font-mono border border-gray-200 rounded" />
-                      </div>
-                   </div>
-                 </div>
                ) : (
                  <div className="space-y-2">
+                   <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">Tentukan Hari & Jam Kerja</p>
                    {days.map((day, idx) => (
                       <div key={idx} className={`flex items-center gap-4 p-3 rounded border ${formData.rules[idx]?.is_holiday ? 'bg-rose-50 border-rose-100 opacity-60' : 'bg-white border-gray-100'}`}>
                          <div className="w-20 shrink-0 text-[11px] font-bold text-gray-700">{day}</div>
@@ -213,22 +235,52 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onClose, onSubmit, initialD
           {activeTab === 'locations' && (
             <div className="animate-in fade-in duration-200">
                <p className="text-[10px] font-bold text-gray-400 uppercase mb-4">Pilih Lokasi yang Terpengaruh Jadwal Ini</p>
-               <div className="grid grid-cols-2 gap-2">
-                  {locations.map(loc => (
-                    <button 
-                      key={loc.id} 
-                      type="button"
-                      onClick={() => toggleLocation(loc.id)}
-                      className={`flex items-center justify-between px-3 py-2 rounded border text-xs text-left transition-all ${
-                        formData.location_ids.includes(loc.id) 
-                        ? 'border-[#006E62] bg-emerald-50 text-[#006E62] font-bold' 
-                        : 'border-gray-100 bg-white text-gray-600 hover:border-gray-300'
-                      }`}
-                    >
-                      <span className="truncate">{loc.name}</span>
-                      {formData.location_ids.includes(loc.id) && <Check size={14} />}
-                    </button>
-                  ))}
+               
+               <div className="relative" ref={locationRef}>
+                  <div 
+                    onClick={() => setShowLocationDropdown(!showLocationDropdown)}
+                    className="w-full px-3 py-2 text-xs border border-gray-200 rounded flex items-center justify-between cursor-pointer bg-white"
+                  >
+                    <span className="text-gray-600 truncate">
+                       {formData.location_ids.length === 0 
+                         ? '-- Pilih Lokasi (Enumlist) --' 
+                         : `${formData.location_ids.length} Lokasi Terpilih`}
+                    </span>
+                    <ChevronDown size={14} className="text-gray-400" />
+                  </div>
+
+                  {showLocationDropdown && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-100 rounded shadow-xl max-h-60 overflow-y-auto p-2">
+                       {locations.map(loc => (
+                          <div 
+                            key={loc.id}
+                            onClick={() => toggleLocation(loc.id)}
+                            className={`flex items-center gap-2 p-2 rounded cursor-pointer text-xs hover:bg-gray-50 ${
+                              formData.location_ids.includes(loc.id) ? 'bg-emerald-50 text-[#006E62] font-bold' : 'text-gray-600'
+                            }`}
+                          >
+                             <div className={`w-4 h-4 border rounded flex items-center justify-center ${
+                               formData.location_ids.includes(loc.id) ? 'bg-[#006E62] border-[#006E62] text-white' : 'border-gray-300'
+                             }`}>
+                                {formData.location_ids.includes(loc.id) && <Check size={10} />}
+                             </div>
+                             {loc.name}
+                          </div>
+                       ))}
+                    </div>
+                  )}
+               </div>
+
+               <div className="mt-4 flex flex-wrap gap-2">
+                  {formData.location_ids.map((lid: string) => {
+                    const loc = locations.find(l => l.id === lid);
+                    return loc ? (
+                      <span key={lid} className="px-2 py-1 bg-emerald-50 text-[#006E62] text-[10px] font-bold rounded flex items-center gap-1 border border-emerald-100">
+                        {loc.name}
+                        <X size={10} className="cursor-pointer" onClick={() => toggleLocation(lid)} />
+                      </span>
+                    ) : null;
+                  })}
                </div>
             </div>
           )}
@@ -236,31 +288,61 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onClose, onSubmit, initialD
           {activeTab === 'exclusions' && (
             <div className="animate-in fade-in duration-200">
                <div className="bg-blue-50 p-4 border border-blue-100 rounded mb-4">
-                  <p className="text-[10px] text-blue-700 font-medium">Jadwal Tipe 3 & 4 akan otomatis berlaku bagi SEMUA user di lokasi terpilih. Pilih user di bawah untuk MENGECEUALIKAN mereka (misal Security tetap masuk saat renovasi).</p>
+                  <p className="text-[10px] text-blue-700 font-medium">Pilih user di bawah untuk MENGECEUALIKAN mereka dari jadwal tipe ini.</p>
                </div>
-               <div className="space-y-2">
-                  {filteredAccounts.length === 0 ? (
-                    <p className="text-[10px] text-gray-400 italic py-10 text-center">Pilih lokasi terlebih dahulu untuk melihat daftar user.</p>
-                  ) : (
-                    filteredAccounts.map(acc => (
-                      <button 
-                        key={acc.id}
-                        type="button"
-                        onClick={() => toggleExclusion(acc.id)}
-                        className={`flex items-center justify-between w-full px-4 py-2 rounded border text-xs transition-all ${
-                          formData.excluded_account_ids.includes(acc.id)
-                          ? 'bg-rose-50 border-rose-100 text-rose-600 font-bold'
-                          : 'bg-white border-gray-100 text-gray-600 hover:bg-gray-50'
-                        }`}
-                      >
-                        <div className="flex flex-col items-start">
-                           <span>{acc.full_name}</span>
-                           <span className="text-[9px] font-normal text-gray-400">{acc.internal_nik} • {(acc as any).location?.name}</span>
-                        </div>
-                        {formData.excluded_account_ids.includes(acc.id) && <X size={14} />}
-                      </button>
-                    ))
+               
+               <div className="relative" ref={exclusionRef}>
+                  <div 
+                    onClick={() => setShowExclusionDropdown(!showExclusionDropdown)}
+                    className="w-full px-3 py-2 text-xs border border-gray-200 rounded flex items-center justify-between cursor-pointer bg-white"
+                  >
+                    <span className="text-gray-600 truncate">
+                       {formData.excluded_account_ids.length === 0 
+                         ? '-- Pilih User Dikecualikan (Enumlist) --' 
+                         : `${formData.excluded_account_ids.length} User Terpilih`}
+                    </span>
+                    <ChevronDown size={14} className="text-gray-400" />
+                  </div>
+
+                  {showExclusionDropdown && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-100 rounded shadow-xl max-h-60 overflow-y-auto p-2">
+                       {filteredAccounts.length === 0 ? (
+                         <p className="text-[10px] text-gray-400 p-2 text-center italic">Tidak ada user tersedia di lokasi terpilih.</p>
+                       ) : (
+                         filteredAccounts.map(acc => (
+                            <div 
+                              key={acc.id}
+                              onClick={() => toggleExclusion(acc.id)}
+                              className={`flex items-center gap-2 p-2 rounded cursor-pointer text-xs hover:bg-gray-50 ${
+                                formData.excluded_account_ids.includes(acc.id) ? 'bg-rose-50 text-rose-600 font-bold' : 'text-gray-600'
+                              }`}
+                            >
+                               <div className={`w-4 h-4 border rounded flex items-center justify-center ${
+                                 formData.excluded_account_ids.includes(acc.id) ? 'bg-rose-500 border-rose-500 text-white' : 'border-gray-300'
+                               }`}>
+                                  {formData.excluded_account_ids.includes(acc.id) && <Check size={10} />}
+                               </div>
+                               <div>
+                                 <p className="leading-tight">{acc.full_name}</p>
+                                 <p className="text-[9px] font-normal opacity-70">{(acc as any).location?.name || 'Tanpa Lokasi'}</p>
+                               </div>
+                            </div>
+                         ))
+                       )}
+                    </div>
                   )}
+               </div>
+
+               <div className="mt-4 flex flex-wrap gap-2">
+                  {formData.excluded_account_ids.map((aid: string) => {
+                    const acc = accounts.find(a => a.id === aid);
+                    return acc ? (
+                      <span key={aid} className="px-2 py-1 bg-rose-50 text-rose-600 text-[10px] font-bold rounded flex items-center gap-1 border border-rose-100">
+                        {acc.full_name}
+                        <X size={10} className="cursor-pointer" onClick={() => toggleExclusion(aid)} />
+                      </span>
+                    ) : null;
+                  })}
                </div>
             </div>
           )}
