@@ -69,6 +69,7 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
   );
 
   const formatDate = (dateStr: string) => {
+    if (!dateStr) return '-';
     return new Date(dateStr).toLocaleDateString('id-ID', {
       day: 'numeric',
       month: 'short',
@@ -118,7 +119,7 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
         <DetailSection icon={User} title="Informasi Personal">
           <div className="grid grid-cols-2 gap-4">
              <DataRow label="NIK KTP" value={account.nik_ktp} />
-             <DataRow label="Tanggal Lahir" value={account.dob} />
+             <DataRow label="Tanggal Lahir" value={formatDate(account.dob)} />
              <DataRow label="Gender" value={account.gender} />
              <DataRow label="Agama" value={account.religion} />
              <DataRow label="Status Nikah" value={account.marital_status} />
@@ -134,8 +135,8 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
              <DataRow label="Golongan" value={account.grade} />
              <DataRow label="NIK Internal" value={account.internal_nik} />
              <DataRow label="Jadwal" value={account.schedule_type} />
-             <DataRow label="Mulai Kerja" value={account.start_date} />
-             <DataRow label="Akhir Kerja" value={account.end_date || 'Aktif'} />
+             <DataRow label="Mulai Kerja" value={formatDate(account.start_date)} />
+             <DataRow label="Akhir Kerja" value={account.end_date ? formatDate(account.end_date) : 'Aktif'} />
           </div>
         </DetailSection>
 
@@ -205,7 +206,12 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
         </DetailSection>
 
         <DetailSection icon={GraduationCap} title="Pendidikan & Dokumen">
-           <DataRow label="Pendidikan Terakhir" value={account.last_education} />
+           <div>
+             <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter mb-0.5">Pendidikan Terakhir</p>
+             <p className="text-xs text-gray-700 font-medium leading-tight">
+               {account.last_education} {account.major ? `- ${account.major}` : ''}
+             </p>
+           </div>
            <div className="grid grid-cols-1 gap-4 pt-2">
               <DataRow label="Scan Ijazah" value={account.diploma_google_id} isFile />
            </div>

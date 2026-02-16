@@ -50,6 +50,7 @@ export interface Account {
   emergency_contact_phone: string;
   // Pendidikan
   last_education: string;
+  major: string; // Jurusan
   diploma_google_id?: string;
   // Karier & Penempatan
   internal_nik: string;

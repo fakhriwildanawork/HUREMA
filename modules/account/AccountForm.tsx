@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Save, Upload, User, MapPin, Briefcase, GraduationCap, ShieldCheck, Heart } from 'lucide-react';
+import { X, Save, Upload, User, MapPin, Briefcase, GraduationCap, ShieldCheck, Heart, AlertCircle } from 'lucide-react';
 import { AccountInput, Location } from '../../types';
 import { googleDriveService } from '../../services/googleDriveService';
 import { locationService } from '../../services/locationService';
@@ -26,7 +26,8 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
     emergency_contact_name: initialData?.emergency_contact_name || '',
     emergency_contact_rel: initialData?.emergency_contact_rel || '',
     emergency_contact_phone: initialData?.emergency_contact_phone || '',
-    last_education: initialData?.last_education || '',
+    last_education: initialData?.last_education || 'Sarjana',
+    major: initialData?.major || '',
     internal_nik: initialData?.internal_nik || '',
     position: initialData?.position || '',
     grade: initialData?.grade || '',
@@ -66,12 +67,20 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validasi tipe file
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Hanya diperbolehkan mengunggah file Gambar (JPG, PNG, WEBP) atau PDF.');
+      return;
+    }
+
     try {
       setUploading(prev => ({ ...prev, [field]: true }));
       const fileId = await googleDriveService.uploadFile(file);
       setFormData(prev => ({ ...prev, [field]: fileId }));
     } catch (error) {
-      alert('Gagal mengunggah file.');
+      console.error(error);
+      alert('Gagal mengunggah file. Pastikan koneksi stabil dan kredensial valid.');
     } finally {
       setUploading(prev => ({ ...prev, [field]: false }));
     }
@@ -83,6 +92,15 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
       <h4 className="text-[11px] font-bold uppercase tracking-widest text-[#006E62]">{title}</h4>
     </div>
   );
+
+  const Label = ({ children, required = false }: { children: React.ReactNode, required?: boolean }) => (
+    <label className="text-[9px] font-bold text-gray-500 uppercase flex items-center gap-1">
+      {children}
+      {required && <span className="text-red-500">*</span>}
+    </label>
+  );
+
+  const educationOptions = ['Tidak Sekolah', 'SD', 'SMP/Setara', 'SMA/Setara', 'Diploma 1-4', 'Sarjana', 'Profesi', 'Master', 'Doktor'];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4">
@@ -97,6 +115,11 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
         </div>
 
         <form className="flex-1 overflow-y-auto p-6 scrollbar-thin">
+          <div className="bg-orange-50/50 border border-orange-100 p-2 rounded mb-4 flex items-center gap-2">
+            <AlertCircle size={14} className="text-orange-400 shrink-0" />
+            <p className="text-[10px] text-orange-600 font-medium">Kolom bertanda <span className="text-red-500 font-bold">*</span> wajib diisi dengan benar.</p>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8">
             
             {/* Kolom Kiri: Identitas & Sosial */}
@@ -110,7 +133,12 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
                     ) : (
                       <Upload size={14} className="text-gray-300" />
                     )}
-                    <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleFileUpload(e, 'photo_google_id')} />
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      className="absolute inset-0 opacity-0 cursor-pointer" 
+                      onChange={(e) => handleFileUpload(e, 'photo_google_id')} 
+                    />
                     {uploading['photo_google_id'] && <div className="absolute inset-0 bg-black/20 flex items-center justify-center"><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div></div>}
                   </div>
                   <div className="text-[10px] text-gray-400 font-bold uppercase leading-tight">Foto Profil<br/><span className="font-normal italic">G-Drive Storage</span></div>
@@ -118,12 +146,12 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
 
                 <div className="grid grid-cols-1 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-gray-500 uppercase">Nama Lengkap</label>
+                    <Label required>Nama Lengkap</Label>
                     <input name="full_name" value={formData.full_name} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required />
                   </div>
                   <div className="grid grid-cols-1 gap-3">
                     <div className="space-y-1">
-                      <label className="text-[9px] font-bold text-gray-500 uppercase">NIK KTP</label>
+                      <Label required>NIK KTP</Label>
                       <input name="nik_ktp" value={formData.nik_ktp} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required />
                     </div>
                     {/* Upload KTP dibawah input KTP */}
@@ -134,7 +162,7 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
                         ) : (
                           <Upload size={14} className="text-orange-300" />
                         )}
-                        <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, 'ktp_google_id')} />
+                        <input type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => handleFileUpload(e, 'ktp_google_id')} />
                         {uploading['ktp_google_id'] && <div className="absolute inset-0 bg-black/10 flex items-center justify-center"><div className="w-3 h-3 border-2 border-[#006E62] border-t-transparent rounded-full animate-spin"></div></div>}
                       </label>
                       <div className="text-[8px] text-gray-400 font-bold uppercase leading-tight">Upload Scan KTP<br/><span className="font-normal italic">{formData.ktp_google_id ? 'Tersimpan' : 'Belum ada file'}</span></div>
@@ -142,20 +170,20 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
-                      <label className="text-[9px] font-bold text-gray-500 uppercase">Tgl Lahir</label>
-                      <input type="date" name="dob" value={formData.dob} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
+                      <Label required>Tgl Lahir</Label>
+                      <input type="date" name="dob" value={formData.dob} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[9px] font-bold text-gray-500 uppercase">Gender</label>
-                      <select name="gender" value={formData.gender} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none">
+                      <Label required>Gender</Label>
+                      <select name="gender" value={formData.gender} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required>
                         <option value="Laki-laki">Laki-laki</option>
                         <option value="Perempuan">Perempuan</option>
                       </select>
                     </div>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-gray-500 uppercase">Agama</label>
-                    <select name="religion" value={formData.religion} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none">
+                    <Label required>Agama</Label>
+                    <select name="religion" value={formData.religion} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required>
                       <option value="Islam">Islam</option>
                       <option value="Kristen">Kristen</option>
                       <option value="Katolik">Katolik</option>
@@ -171,23 +199,23 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
               <SectionHeader icon={MapPin} title="Kontak & Alamat" />
               <div className="space-y-3">
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-gray-500 uppercase">Alamat Domisili</label>
-                  <textarea name="address" value={formData.address} onChange={handleChange} rows={2} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none resize-none" />
+                  <Label required>Alamat Domisili</Label>
+                  <textarea name="address" value={formData.address} onChange={handleChange} rows={2} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none resize-none" required />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-gray-500 uppercase">Email</label>
-                    <input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
+                    <Label required>Email</Label>
+                    <input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-gray-500 uppercase">No Telepon</label>
-                    <input name="phone" value={formData.phone} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
+                    <Label required>No Telepon</Label>
+                    <input name="phone" value={formData.phone} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-gray-500 uppercase">Status Pernikahan</label>
-                    <select name="marital_status" value={formData.marital_status} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none">
+                    <Label required>Status Pernikahan</Label>
+                    <select name="marital_status" value={formData.marital_status} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required>
                       <option value="Belum Menikah">Belum Menikah</option>
                       <option value="Menikah">Menikah</option>
                       <option value="Cerai Hidup">Cerai Hidup</option>
@@ -195,7 +223,7 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
                     </select>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-gray-500 uppercase">Tanggungan</label>
+                    <Label>Tanggungan</Label>
                     <input type="number" name="dependents_count" value={formData.dependents_count} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
                   </div>
                 </div>
@@ -208,11 +236,11 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-gray-500 uppercase">NIK Internal</label>
-                    <input name="internal_nik" value={formData.internal_nik} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
+                    <Label required>NIK Internal</Label>
+                    <input name="internal_nik" value={formData.internal_nik} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-gray-500 uppercase">Lokasi</label>
+                    <Label required>Lokasi</Label>
                     <select name="location_id" value={formData.location_id} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required>
                       <option value="">-- Pilih Lokasi --</option>
                       {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
@@ -221,17 +249,17 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-gray-500 uppercase">Jabatan</label>
-                    <input name="position" value={formData.position} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
+                    <Label required>Jabatan</Label>
+                    <input name="position" value={formData.position} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-gray-500 uppercase">Golongan</label>
+                    <Label>Golongan</Label>
                     <input name="grade" value={formData.grade} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-gray-500 uppercase">Jenis Karyawan</label>
-                  <select name="employee_type" value={formData.employee_type} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none">
+                  <Label required>Jenis Karyawan</Label>
+                  <select name="employee_type" value={formData.employee_type} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required>
                     <option value="Tetap">Tetap</option>
                     <option value="Kontrak">Kontrak</option>
                     <option value="Harian">Harian</option>
@@ -240,11 +268,11 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-gray-500 uppercase">Tgl Mulai</label>
-                    <input type="date" name="start_date" value={formData.start_date} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
+                    <Label required>Tgl Mulai</Label>
+                    <input type="date" name="start_date" value={formData.start_date} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-gray-500 uppercase">Tgl Akhir</label>
+                    <Label>Tgl Akhir</Label>
                     <input type="date" name="end_date" value={formData.end_date} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
                   </div>
                 </div>
@@ -252,9 +280,17 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
 
               <SectionHeader icon={GraduationCap} title="Pendidikan & Dokumen" />
               <div className="space-y-3">
-                <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-gray-500 uppercase">Pendidikan Terakhir</label>
-                  <input name="last_education" value={formData.last_education} onChange={handleChange} placeholder="cth: S1 Teknik Informatika" className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label required>Pendidikan Terakhir</Label>
+                    <select name="last_education" value={formData.last_education} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required>
+                      {educationOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label required>Jurusan</Label>
+                    <input name="major" value={formData.major} onChange={handleChange} placeholder="cth: Teknik Sipil" className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required />
+                  </div>
                 </div>
                 <div className="grid grid-cols-1 gap-3">
                    <label className="flex items-center gap-4 p-2 border border-dashed border-gray-300 rounded cursor-pointer hover:bg-gray-50 group transition-colors">
@@ -263,9 +299,9 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
                       </div>
                       <div className="flex-1">
                         <div className="text-[8px] font-bold text-gray-400 group-hover:text-[#006E62] uppercase leading-none mb-1">Upload Ijazah</div>
-                        <div className="text-[10px] text-gray-300 truncate">{formData.diploma_google_id ? 'FILE TERSIMPAN' : 'Pilih File (PDF/JPG)'}</div>
+                        <div className="text-[10px] text-gray-300 truncate">{formData.diploma_google_id ? 'FILE TERSIMPAN' : 'Pilih File (PDF/Gambar)'}</div>
                       </div>
-                      <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, 'diploma_google_id')} />
+                      <input type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => handleFileUpload(e, 'diploma_google_id')} />
                    </label>
                 </div>
               </div>
@@ -285,7 +321,7 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
               <SectionHeader icon={ShieldCheck} title="Presensi & Keamanan" />
               <div className="space-y-3">
                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-gray-500 uppercase">Jenis Jadwal</label>
+                    <Label>Jenis Jadwal</Label>
                     <input name="schedule_type" value={formData.schedule_type} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
                  </div>
                  <div className="space-y-2 pt-2">
@@ -310,21 +346,21 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
 
                  <div className="grid grid-cols-2 gap-2 mt-4">
                     <div className="space-y-1">
-                      <label className="text-[9px] font-bold text-gray-500 uppercase">Kode Akses</label>
-                      <input name="access_code" value={formData.access_code} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
+                      <Label required>Kode Akses</Label>
+                      <input name="access_code" value={formData.access_code} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[9px] font-bold text-gray-500 uppercase">Password</label>
-                      <input type="password" name="password" value={formData.password} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
+                      <Label required>Password</Label>
+                      <input type="password" name="password" value={formData.password} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required />
                     </div>
                  </div>
 
                  <div className="space-y-1 pt-2">
-                    <label className="text-[9px] font-bold text-gray-500 uppercase">Status Medis / MCU</label>
+                    <Label>Status Medis / MCU</Label>
                     <input name="mcu_status" value={formData.mcu_status} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
                  </div>
                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-gray-500 uppercase">Risiko Kesehatan</label>
+                    <Label>Risiko Kesehatan</Label>
                     <input name="health_risk" value={formData.health_risk} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
                  </div>
               </div>
@@ -335,6 +371,7 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
         <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50">
           <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold text-gray-500 uppercase">Batal</button>
           <button 
+            type="button"
             onClick={() => onSubmit(formData)}
             className="flex items-center gap-2 bg-[#006E62] text-white px-8 py-2 rounded shadow-md hover:bg-[#005a50] transition-all text-xs font-bold uppercase"
           >

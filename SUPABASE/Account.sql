@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS accounts (
 
     -- Pendidikan
     last_education TEXT,
+    major TEXT,
     diploma_google_id TEXT,
 
     -- Karier & Penempatan
@@ -126,7 +127,8 @@ BEGIN
         COALESCE(NEW.internal_nik, '') || ' ' || 
         COALESCE(NEW.position, '') || ' ' || 
         COALESCE(NEW.email, '') || ' ' || 
-        COALESCE(NEW.phone, '');
+        COALESCE(NEW.phone, '') || ' ' ||
+        COALESCE(NEW.major, '');
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;

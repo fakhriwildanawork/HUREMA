@@ -7,7 +7,8 @@ export const config = {
 
 function cleanCredential(val: string | undefined): string {
   if (!val) return '';
-  return val.trim().replace(/^["']|["']$/g, '');
+  // Membersihkan spasi, karakter baris baru, dan tanda kutip yang tidak sengaja terbawa
+  return val.trim().replace(/^["']|["']$/g, '').replace(/\\n/g, '\n');
 }
 
 async function getAccessToken(clientId: string, clientSecret: string, refreshToken: string) {
@@ -35,9 +36,9 @@ async function getAccessToken(clientId: string, clientSecret: string, refreshTok
     console.error(`GOOGLE_TOKEN_ERROR [${res.status}]:`, responseText);
     let customMessage = data.error_description || data.error || 'Gagal autentikasi Google';
     if (data.error === 'invalid_grant') {
-      customMessage = 'Refresh Token tidak valid atau sudah kadaluarsa.';
+      customMessage = 'Refresh Token tidak valid atau sudah kadaluarsa. Silakan periksa kredensial di Vercel.';
     }
-    throw new Error(`Google Auth Error: ${customMessage}`);
+    throw new Error(`Google Auth Error (${res.status}): ${customMessage}`);
   }
   return data.access_token;
 }
@@ -53,8 +54,9 @@ export default async function handler(req: Request) {
     const refreshToken = cleanCredential(process.env.GOOGLE_REFRESH_TOKEN || process.env.VITE_GOOGLE_REFRESH_TOKEN);
 
     if (!clientId || !clientSecret || !refreshToken) {
+      console.error('Kredensial Google Drive tidak lengkap:', { hasClientId: !!clientId, hasSecret: !!clientSecret, hasToken: !!refreshToken });
       return new Response(JSON.stringify({ 
-        error: 'Kredensial OAuth2 belum lengkap di Vercel.' 
+        error: 'Kredensial OAuth2 belum lengkap di Vercel. Pastikan CLIENT_ID, SECRET, dan REFRESH_TOKEN sudah diatur.' 
       }), { status: 500 });
     }
 
@@ -98,6 +100,7 @@ export default async function handler(req: Request) {
     const driveData = await driveResponse.json();
 
     if (!driveResponse.ok) {
+      console.error('Gagal upload ke Drive API:', driveData);
       return new Response(JSON.stringify({ error: 'Gagal mengunggah ke Google Drive', detail: driveData }), { status: 500 });
     }
 
@@ -106,6 +109,7 @@ export default async function handler(req: Request) {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
+    console.error('Upload handler error:', error);
     return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Internal Server Error' }), { status: 500 });
   }
 }
