@@ -1,4 +1,3 @@
-
 import { supabase } from '../lib/supabase';
 import { Account, AccountInput, CareerLog, CareerLogInput, HealthLog, HealthLogInput } from '../types';
 
@@ -189,10 +188,12 @@ export const accountService = {
     }
 
     // Sinkronisasi ke profil utama jika data karier berubah
+    // Include schedule_id if it exists in the logInput (passed from form state)
     await this.update(account_id, {
       position,
       grade,
-      location_id: location_id || null
+      location_id: location_id || null,
+      schedule_id: (logInput as any).schedule_id || null
     });
 
     return data[0] as CareerLog;
@@ -217,7 +218,8 @@ export const accountService = {
       await this.update(account_id, {
         position,
         grade,
-        location_id: location_id || null
+        location_id: location_id || null,
+        schedule_id: (logInput as any).schedule_id || null
       });
     }
 

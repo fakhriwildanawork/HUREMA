@@ -1,4 +1,3 @@
-
 -- Create Accounts Table
 CREATE TABLE IF NOT EXISTS accounts (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -32,6 +31,7 @@ CREATE TABLE IF NOT EXISTS accounts (
     position TEXT,
     grade TEXT,
     location_id UUID REFERENCES locations(id) ON DELETE SET NULL,
+    schedule_id UUID REFERENCES schedules(id) ON DELETE SET NULL,
     employee_type TEXT CHECK (employee_type IN ('Tetap', 'Kontrak', 'Harian', 'Magang')),
     start_date DATE,
     end_date DATE,
