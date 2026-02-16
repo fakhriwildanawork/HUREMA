@@ -1,6 +1,6 @@
 
 import { supabase } from '../lib/supabase';
-import { Account, AccountInput, CareerLog, HealthLog } from '../types';
+import { Account, AccountInput, CareerLog, CareerLogInput, HealthLog, HealthLogInput } from '../types';
 
 /**
  * Fungsi pembantu untuk membersihkan data sebelum dikirim ke Supabase.
@@ -81,12 +81,7 @@ export const accountService = {
       .select();
     
     if (error) {
-      console.error("SUPABASE_CREATE_ERROR:", {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code
-      });
+      console.error("SUPABASE_CREATE_ERROR:", error.message);
       throw error;
     }
     return data[0] as Account;
@@ -101,12 +96,7 @@ export const accountService = {
       .select();
     
     if (error) {
-      console.error("SUPABASE_UPDATE_ERROR:", {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code
-      });
+      console.error("SUPABASE_UPDATE_ERROR:", error.message);
       throw error;
     }
     return data[0] as Account;
@@ -122,6 +112,61 @@ export const accountService = {
       console.error("SUPABASE_DELETE_ERROR:", error.message);
       throw error;
     }
+    return true;
+  },
+
+  // Manual Log Management
+  async createCareerLog(logInput: CareerLogInput) {
+    const { location_id, ...rest } = logInput;
+    const { data, error } = await supabase
+      .from('account_career_logs')
+      .insert([sanitizePayload(rest)])
+      .select();
+
+    if (error) throw error;
+
+    // Sinkronisasi ke profil utama jika data karier berubah
+    await this.update(logInput.account_id, {
+      position: logInput.position,
+      grade: logInput.grade,
+      location_id: location_id || null
+    });
+
+    return data[0] as CareerLog;
+  },
+
+  async deleteCareerLog(id: string) {
+    const { error } = await supabase
+      .from('account_career_logs')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+    return true;
+  },
+
+  async createHealthLog(logInput: HealthLogInput) {
+    const { data, error } = await supabase
+      .from('account_health_logs')
+      .insert([sanitizePayload(logInput)])
+      .select();
+
+    if (error) throw error;
+
+    // Sinkronisasi ke profil utama
+    await this.update(logInput.account_id, {
+      mcu_status: logInput.mcu_status,
+      health_risk: logInput.health_risk
+    });
+
+    return data[0] as HealthLog;
+  },
+
+  async deleteHealthLog(id: string) {
+    const { error } = await supabase
+      .from('account_health_logs')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
     return true;
   }
 };

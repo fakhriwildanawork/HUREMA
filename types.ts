@@ -57,6 +57,8 @@ export interface Account {
   position: string;
   grade: string;
   location_id: string | null; // Relasi ke Location (UUID)
+  // FIX: Added location property to support joined data from Supabase
+  location?: any;
   employee_type: 'Tetap' | 'Kontrak' | 'Harian' | 'Magang';
   start_date: string | null;
   end_date?: string | null;
@@ -84,6 +86,8 @@ export interface CareerLog {
   position: string;
   grade: string;
   location_name: string;
+  file_sk_id?: string | null;
+  notes?: string | null;
   change_date: string;
 }
 
@@ -92,12 +96,17 @@ export interface HealthLog {
   account_id: string;
   mcu_status: string;
   health_risk: string;
+  file_mcu_id?: string | null;
+  notes?: string | null;
   change_date: string;
 }
 
 export type LocationInput = Omit<Location, 'id' | 'created_at' | 'updated_at' | 'search_all'>;
 export type LocationAdminInput = Omit<LocationAdministration, 'id' | 'created_at'>;
-export type AccountInput = Omit<Account, 'id' | 'created_at' | 'updated_at' | 'search_all'>;
+// FIX: Exclude 'location' from AccountInput to prevent trying to insert non-existent column
+export type AccountInput = Omit<Account, 'id' | 'created_at' | 'updated_at' | 'search_all' | 'location'>;
+export type CareerLogInput = Omit<CareerLog, 'id' | 'change_date'> & { location_id?: string };
+export type HealthLogInput = Omit<HealthLog, 'id' | 'change_date'>;
 
 export interface GoogleDriveFile {
   id: string;

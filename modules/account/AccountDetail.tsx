@@ -1,10 +1,13 @@
+
 import React, { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { X, Edit2, Trash2, User, Phone, Mail, Calendar, MapPin, Briefcase, Shield, Heart, GraduationCap, Download, ExternalLink, Clock, Activity } from 'lucide-react';
+import { X, Edit2, Trash2, User, Phone, Mail, Calendar, MapPin, Briefcase, Shield, Heart, GraduationCap, Download, ExternalLink, Clock, Activity, Plus, Paperclip } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { Account, CareerLog, HealthLog } from '../../types';
 import { accountService } from '../../services/accountService';
 import { googleDriveService } from '../../services/googleDriveService';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
+import LogForm from './LogForm';
 
 interface AccountDetailProps {
   id: string;
@@ -18,35 +21,122 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
   const [careerLogs, setCareerLogs] = useState<CareerLog[]>([]);
   const [healthLogs, setHealthLogs] = useState<HealthLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [showLogForm, setShowLogForm] = useState<{ type: 'career' | 'health' } | null>(null);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [acc, careers, healths] = await Promise.all([
-          accountService.getById(id),
-          accountService.getCareerLogs(id),
-          accountService.getHealthLogs(id)
-        ]);
-        setAccount(acc as any);
-        setCareerLogs(careers);
-        setHealthLogs(healths);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
     fetchData();
   }, [id]);
+
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      const [acc, careers, healths] = await Promise.all([
+        accountService.getById(id),
+        accountService.getCareerLogs(id),
+        accountService.getHealthLogs(id)
+      ]);
+      setAccount(acc as any);
+      setCareerLogs(careers);
+      setHealthLogs(healths);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddLog = async (data: any) => {
+    setIsSaving(true);
+    const type = showLogForm?.type;
+    
+    // Optimistic UI Data
+    const tempId = `temp-${Date.now()}`;
+    const optimisticEntry = { ...data, id: tempId, change_date: new Date().toISOString() };
+
+    try {
+      if (type === 'career') {
+        setCareerLogs(prev => [optimisticEntry, ...prev]);
+        const created = await accountService.createCareerLog(data);
+        setCareerLogs(prev => prev.map(l => l.id === tempId ? created : l));
+        // Sinkronisasi data utama akun lokal
+        // FIX: Removed unnecessary (prev as any) as 'location' is now part of Account interface
+        setAccount(prev => prev ? { 
+          ...prev, 
+          position: data.position, 
+          grade: data.grade, 
+          location_id: data.location_id,
+          location: { ...prev.location, name: data.location_name }
+        } : null);
+      } else {
+        setHealthLogs(prev => [optimisticEntry, ...prev]);
+        const created = await accountService.createHealthLog(data);
+        setHealthLogs(prev => prev.map(l => l.id === tempId ? created : l));
+        // Sinkronisasi data utama akun lokal
+        setAccount(prev => prev ? { 
+          ...prev, 
+          mcu_status: data.mcu_status, 
+          health_risk: data.health_risk 
+        } : null);
+      }
+      
+      setShowLogForm(null);
+      Swal.fire({ title: 'Berhasil!', text: 'Riwayat telah ditambahkan.', icon: 'success', timer: 1000, showConfirmButton: false });
+    } catch (error) {
+      if (type === 'career') setCareerLogs(prev => prev.filter(l => l.id !== tempId));
+      else setHealthLogs(prev => prev.filter(l => l.id !== tempId));
+      Swal.fire('Gagal', 'Gagal menyimpan riwayat', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteLog = async (logId: string, type: 'career' | 'health') => {
+    const result = await Swal.fire({
+      title: 'Hapus riwayat?',
+      text: "Data ini tidak dapat dikembalikan.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#006E62',
+      cancelButtonColor: '#ef4444',
+      confirmButtonText: 'Ya, hapus!',
+      cancelButtonText: 'Batal'
+    });
+
+    if (result.isConfirmed) {
+      setIsSaving(true);
+      try {
+        if (type === 'career') {
+          await accountService.deleteCareerLog(logId);
+          setCareerLogs(prev => prev.filter(l => l.id !== logId));
+        } else {
+          await accountService.deleteHealthLog(logId);
+          setHealthLogs(prev => prev.filter(l => l.id !== logId));
+        }
+        Swal.fire('Terhapus!', 'Riwayat telah dihapus.', 'success');
+      } catch (error) {
+        Swal.fire('Gagal', 'Gagal menghapus data', 'error');
+      } finally {
+        setIsSaving(false);
+      }
+    }
+  };
 
   if (isLoading) return <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-[#006E62] border-t-transparent rounded-full animate-spin"></div></div>;
   if (!account) return null;
 
-  const DetailSection = ({ icon: Icon, title, children }: { icon: any, title: string, children: React.ReactNode }) => (
+  const DetailSection = ({ icon: Icon, title, onAdd, children }: { icon: any, title: string, onAdd?: () => void, children: React.ReactNode }) => (
     <div className="bg-white border border-gray-100 p-5 rounded-md shadow-sm">
-      <div className="flex items-center gap-2 border-b border-gray-50 pb-3 mb-4">
-        <Icon size={16} className="text-[#006E62]" />
-        <h4 className="text-[11px] font-bold uppercase tracking-widest text-gray-400">{title}</h4>
+      <div className="flex items-center justify-between border-b border-gray-50 pb-3 mb-4">
+        <div className="flex items-center gap-2">
+          <Icon size={16} className="text-[#006E62]" />
+          <h4 className="text-[11px] font-bold uppercase tracking-widest text-gray-400">{title}</h4>
+        </div>
+        {onAdd && (
+          <button onClick={onAdd} className="p-1 hover:bg-gray-50 text-[#006E62] rounded transition-colors">
+            <Plus size={16} />
+          </button>
+        )}
       </div>
       <div className="space-y-4">
         {children}
@@ -58,8 +148,8 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
     <div>
       <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter mb-0.5">{label}</p>
       {isFile && value ? (
-        <a href={googleDriveService.getFileUrl(value)} target="_blank" className="flex items-center gap-1.5 text-[11px] text-[#006E62] font-bold hover:underline">
-          <Download size={10} /> LIHAT DOKUMEN
+        <a href={googleDriveService.getFileUrl(value).replace('=s1600', '=s0')} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[11px] text-[#006E62] font-bold hover:underline">
+          <Paperclip size={10} /> LIHAT DOKUMEN
         </a>
       ) : (
         <p className="text-xs text-gray-700 font-medium leading-tight">{value || '-'}</p>
@@ -78,6 +168,8 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
 
   return (
     <div className="space-y-6 pb-20">
+      {isSaving && <LoadingSpinner />}
+      
       {/* Header Profile */}
       <div className="bg-white rounded-md border border-gray-100 p-6 flex flex-col md:flex-row gap-6 items-start shadow-sm">
         <div className="w-32 h-32 rounded-md border-4 border-gray-50 overflow-hidden shrink-0 shadow-inner">
@@ -97,7 +189,8 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
           </div>
           <p className="text-sm font-bold text-gray-500 uppercase tracking-widest">{account.position} • {account.internal_nik}</p>
           <div className="flex flex-wrap gap-4 pt-2">
-             <div className="flex items-center gap-1.5 text-xs text-gray-600"><MapPin size={14} className="text-gray-400" /> {(account as any).location?.name || '-'}</div>
+             {/* FIX: Removed (account as any) cast */}
+             <div className="flex items-center gap-1.5 text-xs text-gray-600"><MapPin size={14} className="text-gray-400" /> {account.location?.name || '-'}</div>
              <div className="flex items-center gap-1.5 text-xs text-gray-600"><Mail size={14} className="text-gray-400" /> {account.email || '-'}</div>
              <div className="flex items-center gap-1.5 text-xs text-gray-600"><Phone size={14} className="text-gray-400" /> {account.phone || '-'}</div>
           </div>
@@ -118,7 +211,7 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
         <DetailSection icon={User} title="Informasi Personal">
           <div className="grid grid-cols-2 gap-4">
              <DataRow label="NIK KTP" value={account.nik_ktp} />
-             <DataRow label="Tanggal Lahir" value={formatDate(account.dob)} />
+             <DataRow label="Tanggal Lahir" value={formatDate(account.dob || '')} />
              <DataRow label="Gender" value={account.gender} />
              <DataRow label="Agama" value={account.religion} />
              <DataRow label="Status Nikah" value={account.marital_status} />
@@ -134,7 +227,7 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
              <DataRow label="Golongan" value={account.grade} />
              <DataRow label="NIK Internal" value={account.internal_nik} />
              <DataRow label="Jadwal" value={account.schedule_type} />
-             <DataRow label="Mulai Kerja" value={formatDate(account.start_date)} />
+             <DataRow label="Mulai Kerja" value={formatDate(account.start_date || '')} />
              <DataRow label="Akhir Kerja" value={account.end_date ? formatDate(account.end_date) : 'Aktif'} />
           </div>
         </DetailSection>
@@ -164,40 +257,69 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
            </div>
         </DetailSection>
 
-        {/* Section Riwayat Karir */}
-        <DetailSection icon={Clock} title="Riwayat Karir">
+        {/* Riwayat Karir dengan Tombol Tambah & Hapus */}
+        <DetailSection 
+          icon={Clock} 
+          title="Riwayat Karir" 
+          onAdd={() => setShowLogForm({ type: 'career' })}
+        >
           <div className="space-y-3">
             {careerLogs.length === 0 ? (
               <p className="text-[10px] text-gray-400 italic">Belum ada riwayat perubahan karir.</p>
             ) : (
               careerLogs.map((log) => (
-                <div key={log.id} className="flex gap-3 border-l-2 border-gray-100 pl-3 py-1 relative">
-                  <div className="absolute -left-[5px] top-2 w-2 h-2 rounded-full bg-gray-200"></div>
-                  <div>
+                <div key={log.id} className="flex group justify-between items-start border-l-2 border-gray-100 pl-3 py-1 relative">
+                  <div className="absolute -left-[5px] top-2 w-2 h-2 rounded-full bg-[#006E62]"></div>
+                  <div className="flex-1 min-w-0 pr-4">
                     <p className="text-[10px] font-bold text-[#006E62] leading-tight">{log.position} • {log.grade}</p>
                     <p className="text-[9px] text-gray-400 font-medium">{log.location_name}</p>
-                    <p className="text-[8px] text-gray-300 font-bold uppercase">{formatDate(log.change_date)}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <p className="text-[8px] text-gray-300 font-bold uppercase">{formatDate(log.change_date)}</p>
+                      {log.file_sk_id && (
+                        <a href={googleDriveService.getFileUrl(log.file_sk_id).replace('=s1600', '=s0')} target="_blank" rel="noreferrer" className="text-[#006E62] hover:underline flex items-center gap-0.5 text-[8px] font-bold">
+                          <Paperclip size={8} /> SK
+                        </a>
+                      )}
+                    </div>
+                    {log.notes && <p className="text-[9px] text-gray-400 italic mt-1 line-clamp-1">"{log.notes}"</p>}
                   </div>
+                  <button onClick={() => handleDeleteLog(log.id, 'career')} className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Trash2 size={12} />
+                  </button>
                 </div>
               ))
             )}
           </div>
         </DetailSection>
 
-        {/* Section Riwayat Kesehatan */}
-        <DetailSection icon={Activity} title="Riwayat Kesehatan">
+        {/* Riwayat Kesehatan dengan Tombol Tambah & Hapus */}
+        <DetailSection 
+          icon={Activity} 
+          title="Riwayat Kesehatan" 
+          onAdd={() => setShowLogForm({ type: 'health' })}
+        >
           <div className="space-y-3">
             {healthLogs.length === 0 ? (
               <p className="text-[10px] text-gray-400 italic">Belum ada riwayat kesehatan.</p>
             ) : (
               healthLogs.map((log) => (
-                <div key={log.id} className="flex gap-3 border-l-2 border-gray-100 pl-3 py-1 relative">
-                  <div className="absolute -left-[5px] top-2 w-2 h-2 rounded-full bg-gray-200"></div>
-                  <div>
+                <div key={log.id} className="flex group justify-between items-start border-l-2 border-gray-100 pl-3 py-1 relative">
+                  <div className="absolute -left-[5px] top-2 w-2 h-2 rounded-full bg-[#00FFE4]"></div>
+                  <div className="flex-1 min-w-0 pr-4">
                     <p className="text-[10px] font-bold text-gray-700 leading-tight">MCU: {log.mcu_status || '-'}</p>
                     <p className="text-[9px] text-red-400 font-medium">Risiko: {log.health_risk || '-'}</p>
-                    <p className="text-[8px] text-gray-300 font-bold uppercase">{formatDate(log.change_date)}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <p className="text-[8px] text-gray-300 font-bold uppercase">{formatDate(log.change_date)}</p>
+                      {log.file_mcu_id && (
+                        <a href={googleDriveService.getFileUrl(log.file_mcu_id).replace('=s1600', '=s0')} target="_blank" rel="noreferrer" className="text-[#006E62] hover:underline flex items-center gap-0.5 text-[8px] font-bold">
+                          <Paperclip size={8} /> MCU
+                        </a>
+                      )}
+                    </div>
                   </div>
+                  <button onClick={() => handleDeleteLog(log.id, 'health')} className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Trash2 size={12} />
+                  </button>
                 </div>
               ))
             )}
@@ -228,6 +350,16 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
            </div>
         </DetailSection>
       </div>
+
+      {showLogForm && (
+        <LogForm 
+          type={showLogForm.type}
+          accountId={id}
+          initialData={account}
+          onClose={() => setShowLogForm(null)}
+          onSubmit={handleAddLog}
+        />
+      )}
     </div>
   );
 };
