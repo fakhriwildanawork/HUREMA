@@ -135,6 +135,13 @@ export interface HealthLog {
   change_date: string;
 }
 
+export interface HealthLogExtended extends HealthLog {
+  account?: {
+    full_name: string;
+    internal_nik: string;
+  };
+}
+
 export interface AccountContract {
   id: string;
   account_id: string;
