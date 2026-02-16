@@ -1,14 +1,15 @@
 
 import React, { useState } from 'react';
-import { MapPin, LayoutDashboard, Settings, Menu, X, Users, CalendarClock, History, FileBadge } from 'lucide-react';
+import { MapPin, LayoutDashboard, Settings, Menu, X, Users, CalendarClock, History, FileBadge, Award } from 'lucide-react';
 import LocationMain from './modules/location/LocationMain';
 import AccountMain from './modules/account/AccountMain';
 import ScheduleMain from './modules/schedule/ScheduleMain';
 import CareerLogMain from './modules/career/CareerLogMain';
 import ContractMain from './modules/contract/ContractMain';
+import CertificationMain from './modules/certification/CertificationMain';
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'career' | 'contract' | 'settings'>('location');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'career' | 'contract' | 'certification' | 'settings'>('location');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const NavItem = ({ id, icon: Icon, label }: { id: any, icon: any, label: string }) => (
@@ -41,6 +42,7 @@ const App: React.FC = () => {
           <NavItem id="schedule" icon={CalendarClock} label="Manajemen Jadwal" />
           <NavItem id="career" icon={History} label="Log Karir" />
           <NavItem id="contract" icon={FileBadge} label="Kontrak Kerja" />
+          <NavItem id="certification" icon={Award} label="Sertifikasi" />
           <NavItem id="settings" icon={Settings} label="Pengaturan" />
         </nav>
       </aside>
@@ -67,6 +69,7 @@ const App: React.FC = () => {
             <NavItem id="schedule" icon={CalendarClock} label="Manajemen Jadwal" />
             <NavItem id="career" icon={History} label="Log Karir" />
             <NavItem id="contract" icon={FileBadge} label="Kontrak Kerja" />
+            <NavItem id="certification" icon={Award} label="Sertifikasi" />
             <NavItem id="settings" icon={Settings} label="Pengaturan" />
           </nav>
         </div>
@@ -84,7 +87,8 @@ const App: React.FC = () => {
                activeTab === 'account' ? 'Manajemen Akun' : 
                activeTab === 'schedule' ? 'Manajemen Jadwal' : 
                activeTab === 'career' ? 'Log Pergerakan Karir' : 
-               activeTab === 'contract' ? 'Manajemen Kontrak Kerja' : activeTab}
+               activeTab === 'contract' ? 'Manajemen Kontrak Kerja' : 
+               activeTab === 'certification' ? 'Daftar Sertifikasi Karyawan' : activeTab}
             </h2>
           </div>
           <div className="flex items-center gap-4">
@@ -103,6 +107,8 @@ const App: React.FC = () => {
             <CareerLogMain />
           ) : activeTab === 'contract' ? (
             <ContractMain />
+          ) : activeTab === 'certification' ? (
+            <CertificationMain />
           ) : (
             <div className="flex items-center justify-center h-64 text-gray-400">
               <p>Modul "{activeTab}" sedang dalam pengembangan.</p>

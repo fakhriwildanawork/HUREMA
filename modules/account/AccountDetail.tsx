@@ -1,13 +1,16 @@
+
 import React, { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { X, Edit2, Trash2, User, Phone, Mail, Calendar, MapPin, Briefcase, Shield, Heart, GraduationCap, Download, ExternalLink, Clock, Activity, Plus, Paperclip, FileBadge } from 'lucide-react';
+import { X, Edit2, Trash2, User, Phone, Mail, Calendar, MapPin, Briefcase, Shield, Heart, GraduationCap, Download, ExternalLink, Clock, Activity, Plus, Paperclip, FileBadge, Award } from 'lucide-react';
 import Swal from 'sweetalert2';
-import { Account, CareerLog, HealthLog, AccountContract } from '../../types';
+import { Account, CareerLog, HealthLog, AccountContract, AccountCertification } from '../../types';
 import { accountService } from '../../services/accountService';
 import { contractService } from '../../services/contractService';
+import { certificationService } from '../../services/certificationService';
 import { googleDriveService } from '../../services/googleDriveService';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
 import LogForm from './LogForm';
+import CertificationFormModal from '../certification/CertificationFormModal';
 
 interface AccountDetailProps {
   id: string;
@@ -21,9 +24,11 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
   const [careerLogs, setCareerLogs] = useState<CareerLog[]>([]);
   const [healthLogs, setHealthLogs] = useState<HealthLog[]>([]);
   const [contracts, setContracts] = useState<AccountContract[]>([]);
+  const [certs, setCerts] = useState<AccountCertification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showLogForm, setShowLogForm] = useState<{ type: 'career' | 'health', data?: any, isEdit?: boolean } | null>(null);
+  const [showCertForm, setShowCertForm] = useState<{ show: boolean, data?: any }>({ show: false });
 
   useEffect(() => {
     fetchData();
@@ -32,16 +37,18 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      const [acc, careers, healths, contractList] = await Promise.all([
+      const [acc, careers, healths, contractList, certList] = await Promise.all([
         accountService.getById(id),
         accountService.getCareerLogs(id),
         accountService.getHealthLogs(id),
-        contractService.getByAccountId(id)
+        contractService.getByAccountId(id),
+        certificationService.getByAccountId(id)
       ]);
       setAccount(acc as any);
       setCareerLogs(careers);
       setHealthLogs(healths);
       setContracts(contractList);
+      setCerts(certList);
     } catch (error) {
       console.error(error);
     } finally {
@@ -129,6 +136,32 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
           setHealthLogs(prev => prev.filter(l => l.id !== logId));
         }
         Swal.fire('Terhapus!', 'Riwayat telah dihapus.', 'success');
+      } catch (error) {
+        Swal.fire('Gagal', 'Gagal menghapus data', 'error');
+      } finally {
+        setIsSaving(false);
+      }
+    }
+  };
+
+  const handleDeleteCert = async (certId: string) => {
+    const result = await Swal.fire({
+      title: 'Hapus Sertifikasi?',
+      text: "Data sertifikasi ini akan dihapus permanen.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#006E62',
+      cancelButtonColor: '#ef4444',
+      confirmButtonText: 'Ya, hapus!',
+      cancelButtonText: 'Batal'
+    });
+
+    if (result.isConfirmed) {
+      setIsSaving(true);
+      try {
+        await certificationService.delete(certId);
+        setCerts(prev => prev.filter(c => c.id !== certId));
+        Swal.fire('Terhapus!', 'Data sertifikasi telah dihapus.', 'success');
       } catch (error) {
         Swal.fire('Gagal', 'Gagal menghapus data', 'error');
       } finally {
@@ -295,6 +328,44 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
         </DetailSection>
 
         <DetailSection 
+          icon={Award} 
+          title="Daftar Sertifikasi" 
+          onAdd={() => setShowCertForm({ show: true, data: { account_id: id } })}
+        >
+          <div className="space-y-3">
+            {certs.length === 0 ? (
+              <p className="text-[10px] text-gray-400 italic">Belum ada data sertifikasi.</p>
+            ) : (
+              certs.map((cert) => (
+                <div key={cert.id} className="flex group justify-between items-start border-l-2 border-emerald-100 pl-3 py-1 relative">
+                  <div className="absolute -left-[5px] top-2 w-2 h-2 rounded-full bg-[#006E62]"></div>
+                  <div className="flex-1 min-w-0 pr-4">
+                    <p className="text-[10px] font-bold text-[#006E62] leading-tight">{cert.cert_name}</p>
+                    <p className="text-[9px] text-gray-500 font-medium uppercase tracking-tighter">{cert.cert_type}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <p className="text-[8px] text-gray-400 font-bold uppercase">{formatDate(cert.cert_date)}</p>
+                      {cert.file_id && (
+                        <a href={googleDriveService.getFileUrl(cert.file_id).replace('=s1600', '=s0')} target="_blank" rel="noreferrer" className="text-[#006E62] hover:underline flex items-center gap-0.5 text-[8px] font-bold">
+                          <Paperclip size={8} /> FILE
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => setShowCertForm({ show: true, data: cert })} className="text-gray-300 hover:text-[#006E62]">
+                      <Edit2 size={12} />
+                    </button>
+                    <button onClick={() => handleDeleteCert(cert.id)} className="text-gray-300 hover:text-red-500">
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </DetailSection>
+
+        <DetailSection 
           icon={Clock} 
           title="Riwayat Karir" 
           onAdd={() => setShowLogForm({ type: 'career', data: account })}
@@ -404,6 +475,14 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
           isEdit={showLogForm.isEdit}
           onClose={() => setShowLogForm(null)}
           onSubmit={handleLogSubmit}
+        />
+      )}
+
+      {showCertForm.show && (
+        <CertificationFormModal 
+          onClose={() => setShowCertForm({ show: false })}
+          onSuccess={() => { setShowCertForm({ show: false }); fetchData(); }}
+          initialData={showCertForm.data}
         />
       )}
     </div>

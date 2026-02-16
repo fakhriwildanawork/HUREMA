@@ -155,12 +155,33 @@ export interface AccountContractExtended extends AccountContract {
   };
 }
 
+export interface AccountCertification {
+  id: string;
+  account_id: string;
+  entry_date: string;
+  cert_type: string;
+  cert_name: string;
+  cert_date: string;
+  file_id?: string | null;
+  notes?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface AccountCertificationExtended extends AccountCertification {
+  account?: {
+    full_name: string;
+    internal_nik: string;
+  };
+}
+
 export type LocationInput = Omit<Location, 'id' | 'created_at' | 'updated_at' | 'search_all'>;
 export type LocationAdminInput = Omit<LocationAdministration, 'id' | 'created_at'>;
 export type AccountInput = Omit<Account, 'id' | 'created_at' | 'updated_at' | 'search_all' | 'location'>;
 export type CareerLogInput = Omit<CareerLog, 'id'>;
 export type HealthLogInput = Omit<HealthLog, 'id'>;
 export type AccountContractInput = Omit<AccountContract, 'id' | 'created_at' | 'updated_at'>;
+export type AccountCertificationInput = Omit<AccountCertification, 'id' | 'created_at' | 'updated_at'>;
 export type ScheduleInput = Omit<Schedule, 'id' | 'created_at' | 'updated_at' | 'rules' | 'location_ids'> & {
   rules: Omit<ScheduleRule, 'id' | 'schedule_id'>[];
   location_ids: string[];
