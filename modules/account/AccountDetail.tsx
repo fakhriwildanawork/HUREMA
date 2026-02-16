@@ -33,7 +33,6 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
   const [termination, setTermination] = useState<TerminationLog | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  
   const [showLogForm, setShowLogForm] = useState<{ type: 'career' | 'health', data?: any, isEdit?: boolean } | null>(null);
   const [showCertForm, setShowCertForm] = useState<{ show: boolean, data?: any }>({ show: false });
   const [showContractForm, setShowContractForm] = useState<{ show: boolean, data?: any }>({ show: false });
@@ -71,7 +70,13 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
   };
 
   const handleDeleteWarning = async (logId: string) => {
-    const res = await Swal.fire({ title: 'Hapus riwayat peringatan?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#006E62' });
+    const res = await Swal.fire({ 
+      title: 'Hapus riwayat peringatan?', 
+      icon: 'warning', 
+      showCancelButton: true, 
+      confirmButtonColor: '#006E62',
+      confirmButtonText: 'Ya, Hapus'
+    });
     if (res.isConfirmed) {
       try {
         setIsSaving(true);
@@ -345,7 +350,7 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
               {termination.file_id && <DataRow label="Surat Pemberhentian" value={termination.file_id} isFile />}
               <button 
                 onClick={async () => {
-                  const res = await Swal.fire({ title: 'Batalkan Pemberhentian?', text: 'Akun akan diaktifkan kembali.', icon: 'question', showCancelButton: true });
+                  const res = await Swal.fire({ title: 'Batalkan Pemberhentian?', text: 'Akun akan diaktifkan kembali.', icon: 'question', showCancelButton: true, confirmButtonColor: '#006E62' });
                   if (res.isConfirmed) {
                     setIsSaving(true);
                     await disciplineService.deleteTermination(termination.id, id);
@@ -365,6 +370,29 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
                <p className="text-[10px] font-bold uppercase tracking-widest mt-2 text-gray-400">Status: Aktif Bekerja</p>
             </div>
           )}
+        </DetailSection>
+
+        <DetailSection icon={Shield} title="Presensi & Akses">
+           <div className="space-y-3">
+              <div className="flex items-center justify-between p-2 bg-gray-50 rounded text-[11px] font-bold">
+                <span className="text-gray-500">KODE AKSES</span>
+                <span className="text-[#006E62] tracking-widest">{account.access_code}</span>
+              </div>
+              <p className="text-[9px] font-bold text-gray-400 uppercase mt-2">Kebijakan Radius Presensi</p>
+              <div className="grid grid-cols-2 gap-2">
+                 {[
+                   { id: 'is_presence_limited_checkin', label: 'Check-in Datang' },
+                   { id: 'is_presence_limited_checkout', label: 'Check-out Pulang' },
+                   { id: 'is_presence_limited_ot_in', label: 'Check-in Lembur' },
+                   { id: 'is_presence_limited_ot_out', label: 'Check-out Lembur' }
+                 ].map(item => (
+                   <div key={item.id} className="flex items-center justify-between px-2 py-1.5 border border-gray-100 rounded bg-gray-50/50">
+                      <span className="text-[9px] font-medium text-gray-600">{item.label}</span>
+                      <span className={`text-[8px] font-bold uppercase ${account[item.id as keyof Account] ? 'text-[#006E62]' : 'text-orange-500'}`}>{account[item.id as keyof Account] ? 'Terbatas' : 'Bebas'}</span>
+                   </div>
+                 ))}
+              </div>
+           </div>
         </DetailSection>
 
         <DetailSection 
@@ -494,20 +522,46 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
             )}
           </div>
         </DetailSection>
+
+        <DetailSection icon={GraduationCap} title="Pendidikan & Dokumen">
+           <div>
+             <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter mb-0.5">Pendidikan Terakhir</p>
+             <p className="text-xs text-gray-700 font-medium leading-tight">{account.last_education} {account.major ? `- ${account.major}` : ''}</p>
+           </div>
+           <div className="grid grid-cols-1 gap-4 pt-2">
+              <DataRow label="Scan Ijazah" value={account.diploma_google_id} isFile />
+           </div>
+        </DetailSection>
+
+        <DetailSection icon={Heart} title="Kontak Darurat">
+           <div className="mt-2">
+              <div className="space-y-3">
+                <DataRow label="Nama Kontak" value={account.emergency_contact_name} />
+                <div className="grid grid-cols-2 gap-4">
+                  <DataRow label="Hubungan" value={account.emergency_contact_rel} />
+                  <DataRow label="No HP" value={account.emergency_contact_phone} />
+                </div>
+              </div>
+           </div>
+        </DetailSection>
       </div>
 
       {showLogForm && (
         <LogForm type={showLogForm.type} accountId={id} initialData={showLogForm.data} isEdit={showLogForm.isEdit} onClose={() => setShowLogForm(null)} onSubmit={handleLogSubmit} />
       )}
+
       {showCertForm.show && (
         <CertificationFormModal onClose={() => setShowCertForm({ show: false })} onSuccess={() => { setShowCertForm({ show: false }); fetchData(); }} initialData={showCertForm.data} />
       )}
+
       {showContractForm.show && (
         <ContractFormModal onClose={() => setShowContractForm({ show: false })} onSuccess={() => { setShowContractForm({ show: false }); fetchData(); }} initialData={showContractForm.data} />
       )}
+
       {showWarningForm && (
         <WarningForm accountId={id} onClose={() => setShowWarningForm(false)} onSuccess={() => { setShowWarningForm(false); fetchData(); }} />
       )}
+      
       {showTerminationForm && (
         <TerminationForm accountId={id} onClose={() => setShowTerminationForm(false)} onSuccess={() => { setShowTerminationForm(false); fetchData(); }} />
       )}
