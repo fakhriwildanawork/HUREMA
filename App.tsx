@@ -1,10 +1,11 @@
 
 import React, { useState } from 'react';
-import { MapPin, LayoutDashboard, Settings, Menu, X } from 'lucide-react';
+import { MapPin, LayoutDashboard, Settings, Menu, X, Users } from 'lucide-react';
 import LocationMain from './modules/location/LocationMain';
+import AccountMain from './modules/account/AccountMain';
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'settings'>('location');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'settings'>('location');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const NavItem = ({ id, icon: Icon, label }: { id: any, icon: any, label: string }) => (
@@ -32,6 +33,7 @@ const App: React.FC = () => {
         
         <nav className="flex-1 space-y-1">
           <NavItem id="dashboard" icon={LayoutDashboard} label="Beranda" />
+          <NavItem id="account" icon={Users} label="Data Akun" />
           <NavItem id="location" icon={MapPin} label="Data Lokasi" />
           <NavItem id="settings" icon={Settings} label="Pengaturan" />
         </nav>
@@ -54,6 +56,7 @@ const App: React.FC = () => {
           </div>
           <nav className="space-y-1">
             <NavItem id="dashboard" icon={LayoutDashboard} label="Beranda" />
+            <NavItem id="account" icon={Users} label="Data Akun" />
             <NavItem id="location" icon={MapPin} label="Data Lokasi" />
             <NavItem id="settings" icon={Settings} label="Pengaturan" />
           </nav>
@@ -68,7 +71,8 @@ const App: React.FC = () => {
               <Menu size={20} />
             </button>
             <h2 className="text-lg font-semibold capitalize text-gray-700">
-              {activeTab === 'location' ? 'Manajemen Lokasi' : activeTab}
+              {activeTab === 'location' ? 'Manajemen Lokasi' : 
+               activeTab === 'account' ? 'Manajemen Akun' : activeTab}
             </h2>
           </div>
           <div className="flex items-center gap-4">
@@ -79,6 +83,8 @@ const App: React.FC = () => {
         <div className="p-4 md:p-8 max-w-6xl mx-auto">
           {activeTab === 'location' ? (
             <LocationMain />
+          ) : activeTab === 'account' ? (
+            <AccountMain />
           ) : (
             <div className="flex items-center justify-center h-64 text-gray-400">
               <p>Modul "{activeTab}" sedang dalam pengembangan.</p>

@@ -29,8 +29,57 @@ export interface LocationAdministration {
   created_at?: string;
 }
 
+export interface Account {
+  id: string;
+  // Identitas
+  full_name: string;
+  nik_ktp: string;
+  photo_google_id?: string;
+  ktp_google_id?: string;
+  gender: 'Laki-laki' | 'Perempuan';
+  religion: string;
+  dob: string;
+  // Kontak & Sosial
+  address: string;
+  phone: string;
+  email: string;
+  marital_status: string;
+  dependents_count: number;
+  emergency_contact_name: string;
+  emergency_contact_rel: string;
+  emergency_contact_phone: string;
+  // Pendidikan
+  last_education: string;
+  diploma_google_id?: string;
+  // Karier & Penempatan
+  internal_nik: string;
+  position: string;
+  grade: string;
+  location_id: string; // Relasi ke Location
+  employee_type: 'Tetap' | 'Kontrak' | 'Harian' | 'Magang';
+  start_date: string;
+  end_date?: string;
+  // Pengaturan Kerja & Presensi
+  schedule_type: string;
+  leave_quota: number;
+  is_presence_limited_checkin: boolean;
+  is_presence_limited_checkout: boolean;
+  is_presence_limited_ot_in: boolean;
+  is_presence_limited_ot_out: boolean;
+  // Keamanan & Medis
+  access_code: string;
+  password?: string;
+  mcu_status: string;
+  health_risk: string;
+  
+  created_at?: string;
+  updated_at?: string;
+  search_all?: string;
+}
+
 export type LocationInput = Omit<Location, 'id' | 'created_at' | 'updated_at' | 'search_all'>;
 export type LocationAdminInput = Omit<LocationAdministration, 'id' | 'created_at'>;
+export type AccountInput = Omit<Account, 'id' | 'created_at' | 'updated_at' | 'search_all'>;
 
 export interface GoogleDriveFile {
   id: string;
