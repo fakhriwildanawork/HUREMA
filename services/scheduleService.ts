@@ -1,6 +1,20 @@
 import { supabase } from '../lib/supabase';
 import { Schedule, ScheduleInput, ScheduleRule } from '../types';
 
+/**
+ * Fungsi pembantu untuk membersihkan data sebelum dikirim ke Supabase.
+ * Mengubah string kosong ('') menjadi null agar tidak error saat masuk ke kolom DATE atau TIME.
+ */
+const sanitizePayload = (payload: any) => {
+  const sanitized = { ...payload };
+  Object.keys(sanitized).forEach(key => {
+    if (sanitized[key] === '' || sanitized[key] === undefined) {
+      sanitized[key] = null;
+    }
+  });
+  return sanitized;
+};
+
 export const scheduleService = {
   async getAll() {
     const { data, error } = await supabase
@@ -34,30 +48,35 @@ export const scheduleService = {
   async create(input: ScheduleInput) {
     const { rules, location_ids, ...scheduleData } = input;
     
-    // 1. Insert schedule
+    // 1. Insert schedule with sanitization
+    const sanitizedSchedule = sanitizePayload(scheduleData);
     const { data: schedule, error: sError } = await supabase
       .from('schedules')
-      .insert([scheduleData])
+      .insert([sanitizedSchedule])
       .select()
       .single();
     
     if (sError) throw sError;
 
-    // 2. Insert rules
-    const rulesToInsert = rules.map(r => ({ ...r, schedule_id: schedule.id }));
-    const { error: rError } = await supabase
-      .from('schedule_rules')
-      .insert(rulesToInsert);
-    
-    if (rError) throw rError;
+    // 2. Insert rules with sanitization
+    if (rules && rules.length > 0) {
+      const rulesToInsert = rules.map(r => sanitizePayload({ ...r, schedule_id: schedule.id }));
+      const { error: rError } = await supabase
+        .from('schedule_rules')
+        .insert(rulesToInsert);
+      
+      if (rError) throw rError;
+    }
 
     // 3. Insert locations
-    const locationsToInsert = location_ids.map(lid => ({ schedule_id: schedule.id, location_id: lid }));
-    const { error: lError } = await supabase
-      .from('schedule_locations')
-      .insert(locationsToInsert);
-    
-    if (lError) throw lError;
+    if (location_ids && location_ids.length > 0) {
+      const locationsToInsert = location_ids.map(lid => ({ schedule_id: schedule.id, location_id: lid }));
+      const { error: lError } = await supabase
+        .from('schedule_locations')
+        .insert(locationsToInsert);
+      
+      if (lError) throw lError;
+    }
 
     return schedule as Schedule;
   },
@@ -65,10 +84,11 @@ export const scheduleService = {
   async update(id: string, input: Partial<ScheduleInput>) {
     const { rules, location_ids, ...scheduleData } = input;
 
-    // 1. Update master
+    // 1. Update master with sanitization
+    const sanitizedSchedule = sanitizePayload(scheduleData);
     const { data: schedule, error: sError } = await supabase
       .from('schedules')
-      .update(scheduleData)
+      .update(sanitizedSchedule)
       .eq('id', id)
       .select()
       .single();
@@ -78,15 +98,19 @@ export const scheduleService = {
     // 2. Update rules (delete and re-insert for simplicity)
     if (rules) {
       await supabase.from('schedule_rules').delete().eq('schedule_id', id);
-      const rulesToInsert = rules.map(r => ({ ...r, schedule_id: id }));
-      await supabase.from('schedule_rules').insert(rulesToInsert);
+      if (rules.length > 0) {
+        const rulesToInsert = rules.map(r => sanitizePayload({ ...r, schedule_id: id }));
+        await supabase.from('schedule_rules').insert(rulesToInsert);
+      }
     }
 
     // 3. Update locations
     if (location_ids) {
       await supabase.from('schedule_locations').delete().eq('schedule_id', id);
-      const locationsToInsert = location_ids.map(lid => ({ schedule_id: id, location_id: lid }));
-      await supabase.from('schedule_locations').insert(locationsToInsert);
+      if (location_ids.length > 0) {
+        const locationsToInsert = location_ids.map(lid => ({ schedule_id: id, location_id: lid }));
+        await supabase.from('schedule_locations').insert(locationsToInsert);
+      }
     }
 
     return schedule as Schedule;

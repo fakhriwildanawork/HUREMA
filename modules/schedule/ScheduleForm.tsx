@@ -59,9 +59,10 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onClose, onSubmit, initialD
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    // Add || 0 to prevent NaN if value is empty string for numeric fields
     setFormData(prev => ({ 
       ...prev, 
-      [name]: (name === 'type' || name === 'tolerance_minutes' || name === 'tolerance_checkin_minutes') ? parseInt(value) : value 
+      [name]: (name === 'type' || name === 'tolerance_minutes' || name === 'tolerance_checkin_minutes') ? parseInt(value) || 0 : value 
     }));
   };
 
