@@ -218,6 +218,17 @@ export interface TerminationLogExtended extends TerminationLog {
   };
 }
 
+export interface DigitalDocument {
+  id: string;
+  name: string;
+  doc_type: string;
+  file_id: string;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
+  allowed_account_ids?: string[];
+}
+
 export type LocationInput = Omit<Location, 'id' | 'created_at' | 'updated_at' | 'search_all'>;
 export type LocationAdminInput = Omit<LocationAdministration, 'id' | 'created_at'>;
 export type AccountInput = Omit<Account, 'id' | 'created_at' | 'updated_at' | 'search_all' | 'location'>;
@@ -227,6 +238,9 @@ export type AccountContractInput = Omit<AccountContract, 'id' | 'created_at' | '
 export type AccountCertificationInput = Omit<AccountCertification, 'id' | 'created_at' | 'updated_at'>;
 export type WarningLogInput = Omit<WarningLog, 'id' | 'created_at'>;
 export type TerminationLogInput = Omit<TerminationLog, 'id' | 'created_at'>;
+export type DocumentInput = Omit<DigitalDocument, 'id' | 'created_at' | 'updated_at' | 'allowed_account_ids'> & {
+  allowed_account_ids: string[];
+};
 
 export type ScheduleInput = Omit<Schedule, 'id' | 'created_at' | 'updated_at' | 'rules' | 'location_ids'> & {
   rules: Omit<ScheduleRule, 'id' | 'schedule_id'>[];

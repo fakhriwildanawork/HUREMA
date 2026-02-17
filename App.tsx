@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { MapPin, LayoutDashboard, Settings, Menu, X, Users, CalendarClock, History, FileBadge, Award, Activity, ShieldAlert } from 'lucide-react';
+import { MapPin, LayoutDashboard, Settings, Menu, X, Users, CalendarClock, History, FileBadge, Award, Activity, ShieldAlert, Files } from 'lucide-react';
 import LocationMain from './modules/location/LocationMain';
 import AccountMain from './modules/account/AccountMain';
 import ScheduleMain from './modules/schedule/ScheduleMain';
@@ -9,9 +8,10 @@ import HealthLogMain from './modules/health/HealthLogMain';
 import ContractMain from './modules/contract/ContractMain';
 import CertificationMain from './modules/certification/CertificationMain';
 import DisciplineMain from './modules/discipline/DisciplineMain';
+import DocumentMain from './modules/document/DocumentMain';
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'career' | 'health' | 'contract' | 'certification' | 'discipline' | 'settings'>('location');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'career' | 'health' | 'contract' | 'certification' | 'discipline' | 'document' | 'settings'>('location');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const NavItem = ({ id, icon: Icon, label }: { id: any, icon: any, label: string }) => (
@@ -47,6 +47,7 @@ const App: React.FC = () => {
           <NavItem id="contract" icon={FileBadge} label="Kontrak Kerja" />
           <NavItem id="certification" icon={Award} label="Sertifikasi" />
           <NavItem id="discipline" icon={ShieldAlert} label="Peringatan & Keluar" />
+          <NavItem id="document" icon={Files} label="Dokumen Digital" />
           <NavItem id="settings" icon={Settings} label="Pengaturan" />
         </nav>
       </aside>
@@ -76,6 +77,7 @@ const App: React.FC = () => {
             <NavItem id="contract" icon={FileBadge} label="Kontrak Kerja" />
             <NavItem id="certification" icon={Award} label="Sertifikasi" />
             <NavItem id="discipline" icon={ShieldAlert} label="Peringatan & Keluar" />
+            <NavItem id="document" icon={Files} label="Dokumen Digital" />
             <NavItem id="settings" icon={Settings} label="Pengaturan" />
           </nav>
         </div>
@@ -96,7 +98,8 @@ const App: React.FC = () => {
                activeTab === 'health' ? 'Log Kesehatan Karyawan' :
                activeTab === 'contract' ? 'Manajemen Kontrak Kerja' : 
                activeTab === 'certification' ? 'Daftar Sertifikasi Karyawan' : 
-               activeTab === 'discipline' ? 'Kedisiplinan & Exit Management' : activeTab}
+               activeTab === 'discipline' ? 'Kedisiplinan & Exit Management' : 
+               activeTab === 'document' ? 'Repositori Dokumen Digital' : activeTab}
             </h2>
           </div>
           <div className="flex items-center gap-4">
@@ -121,6 +124,8 @@ const App: React.FC = () => {
             <CertificationMain />
           ) : activeTab === 'discipline' ? (
             <DisciplineMain />
+          ) : activeTab === 'document' ? (
+            <DocumentMain />
           ) : (
             <div className="flex items-center justify-center h-64 text-gray-400">
               <p>Modul "{activeTab}" sedang dalam pengembangan.</p>
