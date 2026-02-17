@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ShieldAlert, LogOut, Search, Download, FileUp, Paperclip, UserCircle, Plus, Trash2, ArrowRight } from 'lucide-react';
 import Swal from 'sweetalert2';
@@ -15,6 +14,7 @@ const DisciplineMain: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'warnings' | 'terminations'>('warnings');
   const [searchTerm, setSearchTerm] = useState('');
   const [showImportModal, setShowImportModal] = useState(false);
+  const [importType, setImportType] = useState<'warning' | 'termination'>('warning');
 
   useEffect(() => {
     fetchData();
@@ -82,13 +82,22 @@ const DisciplineMain: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          {activeTab === 'warnings' && (
+          {activeTab === 'warnings' ? (
             <>
               <button onClick={() => disciplineService.downloadWarningTemplate()} className="flex items-center gap-2 border border-gray-200 px-4 py-2 rounded-md hover:bg-gray-50 text-xs font-bold text-gray-500 uppercase">
-                <Download size={16} /> Template
+                <Download size={16} /> Template SP
               </button>
-              <button onClick={() => setShowImportModal(true)} className="flex items-center gap-2 bg-[#006E62] text-white px-4 py-2 rounded-md hover:bg-[#005a50] text-xs font-bold uppercase">
+              <button onClick={() => { setImportType('warning'); setShowImportModal(true); }} className="flex items-center gap-2 bg-[#006E62] text-white px-4 py-2 rounded-md hover:bg-[#005a50] text-xs font-bold uppercase">
                 <FileUp size={16} /> Impor SP
+              </button>
+            </>
+          ) : (
+            <>
+              <button onClick={() => disciplineService.downloadTerminationTemplate()} className="flex items-center gap-2 border border-gray-200 px-4 py-2 rounded-md hover:bg-gray-50 text-xs font-bold text-gray-500 uppercase">
+                <Download size={16} /> Template Exit
+              </button>
+              <button onClick={() => { setImportType('termination'); setShowImportModal(true); }} className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 text-xs font-bold uppercase">
+                <FileUp size={16} /> Impor Exit
               </button>
             </>
           )}
@@ -96,7 +105,7 @@ const DisciplineMain: React.FC = () => {
       </div>
 
       <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+        <ShieldAlert className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
         <input
           type="text"
           placeholder="Cari data..."
@@ -190,7 +199,11 @@ const DisciplineMain: React.FC = () => {
       </div>
 
       {showImportModal && (
-        <DisciplineImportModal onClose={() => setShowImportModal(false)} onSuccess={() => { setShowImportModal(false); fetchData(); }} />
+        <DisciplineImportModal 
+          type={importType}
+          onClose={() => setShowImportModal(false)} 
+          onSuccess={() => { setShowImportModal(false); fetchData(); }} 
+        />
       )}
     </div>
   );

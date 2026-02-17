@@ -22,34 +22,28 @@ export const careerService = {
   },
 
   async downloadTemplate() {
-    // 1. Ambil data referensi
-    const [accounts, locations, schedules] = await Promise.all([
-      accountService.getAll(),
+    // Optimasi: Gunakan query spesifik untuk mencegah lag saat fetching data besar
+    const [accRes, locRes, schRes] = await Promise.all([
+      supabase.from('accounts').select('id, internal_nik, full_name').is('end_date', null),
       locationService.getAll(),
       scheduleService.getAll()
     ]);
 
-    // 2. Gunakan ExcelJS untuk fitur Dropdown & Date Validation
+    const accounts = accRes.data || [];
+    const locations = locRes || [];
+    const schedules = schRes || [];
+
     const workbook = new ExcelJS.Workbook();
-    
-    // Sheet Utama (Career_Import)
     const wsImport = workbook.addWorksheet('Career_Import');
-    
-    // Sheet Referensi
     const wsLoc = workbook.addWorksheet('Ref_Locations');
     const wsSch = workbook.addWorksheet('Ref_Schedules');
 
-    // 3. Isi Data Referensi ke sheet pembantu
-    wsLoc.addRow(['ID', 'Nama']);
     locations.forEach(l => wsLoc.addRow([l.id, l.name]));
-    
-    wsSch.addRow(['ID', 'Nama']);
     schedules.forEach(s => wsSch.addRow([s.id, s.name]));
 
-    // 4. Siapkan Sheet Utama (Career_Import)
     const instructionText = "Hapus baris data akun/user yg tidak ingin diubah. Baris dengan (*) wajib diisi.";
-    wsImport.addRow([instructionText]); // Baris 1
-    wsImport.addRow(['']); // Baris 2 (Kosong)
+    wsImport.addRow([instructionText]); 
+    wsImport.addRow(['']); 
     
     const headers = [
       'Account ID (Hidden)', 
@@ -63,79 +57,48 @@ export const careerService = {
       'Keterangan', 
       'Link SK Google Drive (Opsional)'
     ];
-    wsImport.addRow(headers); // Baris 3
+    wsImport.addRow(headers); 
 
-    // Styling Header
     const headerRow = wsImport.getRow(3);
     headerRow.font = { bold: true };
 
-    // 5. Masukkan Data Akun (Kolom "Baru (*)" dikosongkan sesuai permintaan)
     accounts.forEach(acc => {
-      wsImport.addRow([
-        acc.id,             // A
-        acc.internal_nik,   // B
-        acc.full_name,      // C
-        '',                 // D: Jabatan Baru (*) - Kosong
-        '',                 // E: Grade Baru (*) - Kosong
-        '',                 // F: Lokasi Baru (*) - Kosong
-        '',                 // G: Jadwal Baru (*) - Kosong
-        '',                 // H: Tanggal Efektif (*) - Kosong
-        '',                 // I
-        ''                  // J
-      ]);
+      wsImport.addRow([acc.id, acc.internal_nik, acc.full_name, '', '', '', '', '', '', '']);
     });
 
-    // 6. Terapkan Validasi Data
-    const maxRow = wsImport.rowCount + 500; // Proteksi untuk baris tambahan
-    
-    for (let i = 4; i <= maxRow; i++) {
-      // Dropdown Lokasi Baru (*) - Kolom F
+    const rowCount = wsImport.rowCount;
+    // Optimasi: Loop hanya pada baris yang valid ada data karyawan
+    for (let i = 4; i <= rowCount; i++) {
       wsImport.getCell(`F${i}`).dataValidation = {
         type: 'list',
         allowBlank: true,
-        formulae: [`Ref_Locations!$B$2:$B$${locations.length + 1}`],
-        showErrorMessage: true,
-        errorTitle: 'Input Tidak Valid',
-        error: 'Pilih lokasi dari daftar yang tersedia.'
+        formulae: [`Ref_Locations!$B$1:$B$${locations.length}`],
+        showErrorMessage: true
       };
       
-      // Dropdown Jadwal Baru (*) - Kolom G
       wsImport.getCell(`G${i}`).dataValidation = {
         type: 'list',
         allowBlank: true,
-        formulae: [`Ref_Schedules!$B$2:$B$${schedules.length + 1}`],
-        showErrorMessage: true,
-        errorTitle: 'Input Tidak Valid',
-        error: 'Pilih jadwal dari daftar yang tersedia.'
+        formulae: [`Ref_Schedules!$B$1:$B$${schedules.length}`],
+        showErrorMessage: true
       };
 
-      // Validasi Tanggal Efektif (*) - Kolom H
       const cellH = wsImport.getCell(`H${i}`);
       cellH.dataValidation = {
         type: 'date',
         operator: 'greaterThan',
-        showErrorMessage: true,
         allowBlank: true,
-        formulae: [new Date(1900, 0, 1)], // Memastikan input adalah tanggal
-        errorTitle: 'Format Tanggal Salah',
-        error: 'Harap masukkan tanggal yang valid dengan format YYYY-MM-DD.'
+        formulae: [new Date(1900, 0, 1)]
       };
-      // Format tampilan sel agar otomatis YYYY-MM-DD
       cellH.numFmt = 'yyyy-mm-dd';
     }
 
-    // Lebar Kolom agar rapi
     wsImport.columns.forEach((col, idx) => {
-      if (idx === 0) col.width = 20; // ID
-      else if (idx === 1) col.width = 15; // NIK
-      else if (idx === 2) col.width = 25; // Nama
-      else col.width = 22;
+      col.width = [20, 15, 25, 20, 15, 25, 25, 22, 25, 30][idx];
     });
 
-    // 7. Unduh File
     const buffer = await workbook.xlsx.writeBuffer();
-    const dataBlob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    saveAs(dataBlob, `HUREMA_Career_Template_${new Date().toISOString().split('T')[0]}.xlsx`);
+    saveAs(new Blob([buffer]), `HUREMA_Career_Template_${new Date().toISOString().split('T')[0]}.xlsx`);
   },
 
   async processImport(file: File) {
@@ -146,11 +109,8 @@ export const careerService = {
           const data = new Uint8Array(e.target?.result as ArrayBuffer);
           const workbook = XLSX.read(data, { type: 'array' });
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-          
-          // Header dimulai dari baris ke-3 karena ada instruksi di baris 1 & 2
           const jsonData = XLSX.utils.sheet_to_json(firstSheet, { range: 2 });
 
-          // Ambil referensi untuk mapping nama ke ID
           const [locations, schedules] = await Promise.all([
             locationService.getAll(),
             scheduleService.getAll()
@@ -160,12 +120,9 @@ export const careerService = {
             const loc = locations.find(l => l.name === row['Lokasi Baru (*)']);
             const sch = schedules.find(s => s.name === row['Jadwal Baru (*)']);
             
-            // Konversi tanggal dari format Excel jika perlu
             let effectiveDate = row['Tanggal Efektif (YYYY-MM-DD) (*)'];
             if (typeof effectiveDate === 'number') {
-              // Jika Excel mengirimkan serial number date
-              const date = new Date((effectiveDate - 25569) * 86400 * 1000);
-              effectiveDate = date.toISOString().split('T')[0];
+              effectiveDate = new Date((effectiveDate - 25569) * 86400 * 1000).toISOString().split('T')[0];
             }
 
             return {
@@ -185,9 +142,7 @@ export const careerService = {
           });
 
           resolve(results);
-        } catch (err) {
-          reject(err);
-        }
+        } catch (err) { reject(err); }
       };
       reader.readAsArrayBuffer(file);
     });
@@ -195,10 +150,8 @@ export const careerService = {
 
   async commitImport(data: any[]) {
     const validData = data.filter(d => d.isValid);
-    const results = [];
-    
     for (const item of validData) {
-      const log = await accountService.createCareerLog({
+      await accountService.createCareerLog({
         account_id: item.account_id,
         position: item.position,
         grade: item.grade,
@@ -207,17 +160,8 @@ export const careerService = {
         schedule_id: item.schedule_id,
         notes: item.notes,
         change_date: item.change_date,
-        file_sk_id: this.extractDriveId(item.file_sk_link)
+        file_sk_id: item.file_sk_link ? item.file_sk_link.match(/[-\w]{25,}/)?.[0] : null
       });
-      results.push(log);
     }
-    
-    return results;
-  },
-
-  extractDriveId(link: string | null): string | null {
-    if (!link) return null;
-    const match = link.match(/[-\w]{25,}/);
-    return match ? match[0] : null;
   }
 };
