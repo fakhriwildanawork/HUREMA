@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 /* Added ShieldCheck to lucide-react imports */
 import { Fingerprint, Clock, MapPin, History, AlertCircle, Map as MapIcon, Camera, Search, UserX, CalendarClock, MessageSquare, ShieldCheck } from 'lucide-react';
@@ -26,7 +27,6 @@ const PresenceMain: React.FC = () => {
   const [distance, setDistance] = useState<number | null>(null);
   const watchId = useRef<number | null>(null);
 
-  // Ambil user dari session
   const currentUser = authService.getCurrentUser();
   const currentAccountId = currentUser?.id;
 
@@ -97,7 +97,6 @@ const PresenceMain: React.FC = () => {
   const handleAttendance = async (photoBlob: Blob) => {
     if (!account || !coords || distance === null || !account.schedule) return;
 
-    // 1. Validasi Radius
     const locationRadius = account.location?.radius || 100;
     if (distance > locationRadius) {
        setShowCameraModal(false);
@@ -110,11 +109,8 @@ const PresenceMain: React.FC = () => {
     }
 
     const isCheckOut = !!todayAttendance && !todayAttendance.check_out;
-    
-    // 2. Hitung Status Jadwal & Menit
     const scheduleResult = presenceService.calculateStatus(serverTime, account.schedule, isCheckOut ? 'OUT' : 'IN');
     
-    // 3. Tangani Alasan Jika Terlambat/Pulang Cepat
     let reason = null;
     if (scheduleResult.status !== 'Tepat Waktu') {
       const { value: text, isConfirmed } = await Swal.fire({
@@ -134,21 +130,14 @@ const PresenceMain: React.FC = () => {
         }
       });
 
-      if (!isConfirmed) {
-        setShowCameraModal(false);
-        return;
-      }
+      if (!isConfirmed) return;
       reason = text;
     }
 
     try {
-      setShowCameraModal(false);
       setIsCapturing(true);
       
-      // 4. Reverse Geotagging Alamat Aktual
       const address = await presenceService.getReverseGeocode(coords.lat, coords.lng);
-      
-      // 5. Upload Photo
       const photoId = await googleDriveService.uploadFile(new File([photoBlob], `Presence_${isCheckOut ? 'OUT' : 'IN'}_${Date.now()}.jpg`));
       const currentTimeStr = serverTime.toISOString();
       
@@ -179,6 +168,7 @@ const PresenceMain: React.FC = () => {
         await presenceService.checkOut(todayAttendance.id, payload);
       }
 
+      setShowCameraModal(false); // Tutup modal hanya setelah proses selesai
       await Swal.fire({ 
         title: 'Berhasil!', 
         text: `Presensi ${isCheckOut ? 'Pulang' : 'Masuk'} berhasil dicatat.`, 
@@ -188,7 +178,7 @@ const PresenceMain: React.FC = () => {
       });
       fetchInitialData();
     } catch (error) {
-      Swal.fire('Error', 'Gagal memproses presensi.', 'error');
+      Swal.fire('Error', 'Gagal memproses presensi. Pastikan koneksi stabil.', 'error');
     } finally {
       setIsCapturing(false);
     }
@@ -215,14 +205,11 @@ const PresenceMain: React.FC = () => {
   }
 
   const isWithinRadius = distance !== null && distance <= (account?.location?.radius || 100);
-  
-  // Ambil Rule Jadwal untuk Hari Ini
   const todayDay = serverTime.getDay();
   const scheduleRule = account.schedule?.rules?.find(r => r.day_of_week === todayDay);
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      {/* Header Info */}
       <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm flex flex-col md:flex-row justify-between items-center gap-6">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 bg-[#006E62]/10 rounded-xl flex items-center justify-center text-[#006E62]">
@@ -251,7 +238,6 @@ const PresenceMain: React.FC = () => {
 
       {activeTab === 'capture' ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start animate-in fade-in duration-500">
-          {/* Kolom Kiri: Ilustrasi / Status Utama */}
           <div className="lg:col-span-7">
             {(!todayAttendance || !todayAttendance.check_out) ? (
               <div className="bg-white rounded-2xl border border-gray-100 p-12 flex flex-col items-center justify-center shadow-sm text-center">
@@ -290,9 +276,7 @@ const PresenceMain: React.FC = () => {
             )}
           </div>
 
-          {/* Kolom Kanan: Detail & Status */}
           <div className="lg:col-span-5 space-y-6">
-            {/* Server Time & Schedule Card */}
             <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm overflow-hidden relative">
                <div className="absolute top-0 right-0 p-4 opacity-5">
                   <Clock size={120} />
@@ -310,7 +294,6 @@ const PresenceMain: React.FC = () => {
                   </div>
                </div>
 
-               {/* Detail Jadwal */}
                <div className="mt-8 p-4 bg-emerald-50/50 rounded-xl border border-emerald-100/50 space-y-3">
                   <div className="flex items-center gap-2 text-[10px] font-bold text-[#006E62] uppercase tracking-wider mb-2">
                     <CalendarClock size={14} /> Jadwal Hari Ini
@@ -349,7 +332,6 @@ const PresenceMain: React.FC = () => {
                </div>
             </div>
 
-            {/* GPS Status Card */}
             <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
                <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
@@ -403,7 +385,6 @@ const PresenceMain: React.FC = () => {
         </div>
       )}
 
-      {/* Modal Kamera Full Screen */}
       {showCameraModal && (
         <PresenceCamera 
           onClose={() => setShowCameraModal(false)}

@@ -31,7 +31,6 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, onClose, isP
     };
   }, []);
 
-  // Memulai kamera segera setelah AI siap
   useEffect(() => {
     if (isAiLoaded) {
       startCamera();
@@ -113,7 +112,6 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, onClose, isP
           const faceWidth = Math.abs(leftEdge.x - rightEdge.x);
           const noseRelativeX = (nose.x - Math.min(rightEdge.x, leftEdge.x)) / faceWidth;
 
-          // Menggunakan fungsional update untuk memastikan state terbaru dibaca dengan benar
           setStep(prev => {
             if (prev === 'RIGHT' && noseRelativeX < 0.35) return 'LEFT';
             if (prev === 'LEFT' && noseRelativeX > 0.65) return 'READY';
@@ -125,7 +123,6 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, onClose, isP
       }
     }
 
-    // Loop tetap berjalan kecuali sudah READY
     if (isComponentMounted.current) {
       requestRef.current = requestAnimationFrame(predictLoop);
     }
@@ -136,13 +133,11 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, onClose, isP
     if (!video || video.readyState < 2) return;
 
     const canvas = document.createElement('canvas');
-    // Pastikan ukuran canvas sesuai dengan video aktual (bukan CSS)
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext('2d');
     
     if (ctx) {
-      // Mirroring canvas karena video diset mirror visual
       ctx.translate(canvas.width, 0);
       ctx.scale(-1, 1);
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -155,7 +150,6 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, onClose, isP
 
   return (
     <div className="fixed inset-0 z-[1000] bg-slate-950 flex items-center justify-center">
-      {/* Background Video Layer */}
       {!isAiLoaded ? (
         <div className="absolute inset-0 flex flex-col items-center justify-center text-white/50 gap-4">
           <Loader2 className="animate-spin text-[#00FFE4]" size={40} />
@@ -163,25 +157,24 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, onClose, isP
         </div>
       ) : (
         <div className="relative w-full h-full max-w-lg overflow-hidden flex flex-col bg-black">
-          {/* Perbaikan: object-contain untuk menghindari zoom paksa */}
+          {/* Perbaikan: object-cover untuk portrait penuh tanpa black space */}
           <video 
             ref={videoRef} 
             autoPlay 
             playsInline 
             muted 
-            className="absolute inset-0 w-full h-full object-contain scale-x-[-1]"
+            className="absolute inset-0 w-full h-full object-cover scale-x-[-1]"
           />
           
-          {/* Close Button */}
           <button 
             onClick={onClose}
-            className="absolute top-6 right-6 z-50 p-3 bg-black/40 backdrop-blur-md rounded-full text-white/80 hover:text-white"
+            disabled={isProcessing}
+            className="absolute top-6 right-6 z-50 p-3 bg-black/40 backdrop-blur-md rounded-full text-white/80 hover:text-white disabled:opacity-50"
           >
             <X size={24} />
           </button>
 
           <div className="relative h-full w-full flex flex-col items-center justify-between p-8 pointer-events-none">
-            {/* Instruction Overlay */}
             <div className="mt-12 bg-black/60 backdrop-blur-xl px-8 py-5 rounded-2xl border border-white/10 text-center animate-in fade-in zoom-in duration-500">
               {step === 'RIGHT' && (
                 <div className="flex flex-col items-center gap-3">
@@ -209,14 +202,12 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, onClose, isP
               )}
             </div>
 
-            {/* Face Guide Frame */}
             <div className={`w-64 h-80 border-2 border-dashed rounded-[120px] transition-all duration-700 ${
               step === 'READY' 
               ? 'border-emerald-500 bg-emerald-500/5 scale-105 shadow-[0_0_50px_rgba(16,185,129,0.2)]' 
               : 'border-white/20 bg-white/5'
             }`}></div>
 
-            {/* Bottom Controls */}
             <div className="w-full space-y-6 pointer-events-auto mb-10">
               <div className="px-6">
                 <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
@@ -233,7 +224,8 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, onClose, isP
                     setStep('RIGHT');
                     lastVideoTimeRef.current = -1;
                   }}
-                  className="p-5 text-white/50 hover:text-white bg-white/5 backdrop-blur-lg rounded-full border border-white/10 transition-all hover:bg-white/10"
+                  disabled={isProcessing}
+                  className="p-5 text-white/50 hover:text-white bg-white/5 backdrop-blur-lg rounded-full border border-white/10 transition-all hover:bg-white/10 disabled:opacity-30"
                 >
                   <RefreshCw size={28} />
                 </button>
