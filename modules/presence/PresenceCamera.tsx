@@ -1,6 +1,6 @@
 
 import React, { useRef, useState, useEffect } from 'react';
-import { Camera, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Camera, RefreshCw, CheckCircle2, ShieldCheck, ArrowRight, ArrowLeft } from 'lucide-react';
 
 interface PresenceCameraProps {
   onCapture: (blob: Blob) => void;
@@ -11,25 +11,28 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, isProcessing
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
-  const [livenessStatus, setLivenessStatus] = useState<'idle' | 'moving' | 'detected'>('idle');
+  const [step, setStep] = useState<'RIGHT' | 'LEFT' | 'READY'>('RIGHT');
   const [movementScore, setMovementScore] = useState(0);
   const lastFrameRef = useRef<ImageData | null>(null);
-  // FIX: Use refs to track state within the persistent animation loop closure
-  const livenessStatusRef = useRef<'idle' | 'moving' | 'detected'>('idle');
-  const detectionTimeoutRef = useRef<any>(null);
+  const isComponentMounted = useRef(true);
 
   useEffect(() => {
+    isComponentMounted.current = true;
     startCamera();
     return () => {
+      isComponentMounted.current = false;
       stopCamera();
-      if (detectionTimeoutRef.current) clearTimeout(detectionTimeoutRef.current);
     };
   }, []);
 
   const startCamera = async () => {
     try {
       const s = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'user', width: 640, height: 480 } 
+        video: { 
+          facingMode: 'user', 
+          width: { ideal: 1280 }, 
+          height: { ideal: 720 } 
+        } 
       });
       setStream(s);
       if (videoRef.current) videoRef.current.srcObject = s;
@@ -45,62 +48,70 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, isProcessing
 
   const detectMovementLoop = () => {
     if (!videoRef.current || !canvasRef.current) return;
-    
     const ctx = canvasRef.current.getContext('2d', { willReadFrequently: true });
     if (!ctx) return;
 
     const analyze = () => {
-      // FIX: Use ref to avoid stale closure and TypeScript narrowing errors
-      if (livenessStatusRef.current === 'detected') return;
-      
+      if (!isComponentMounted.current || step === 'READY') return;
       if (!videoRef.current) return;
-      ctx.drawImage(videoRef.current, 0, 0, 160, 120);
-      const currentFrame = ctx.getImageData(0, 0, 160, 120);
+
+      const width = 160;
+      const height = 120;
+      ctx.drawImage(videoRef.current, 0, 0, width, height);
+      const currentFrame = ctx.getImageData(0, 0, width, height);
 
       if (lastFrameRef.current) {
         let diff = 0;
-        const data1 = lastFrameRef.current.data;
-        const data2 = currentFrame.data;
+        const d1 = lastFrameRef.current.data;
+        const d2 = currentFrame.data;
         
-        // Pixel step 4 to speed up
-        for (let i = 0; i < data1.length; i += 8) {
-          diff += Math.abs(data1[i] - data2[i]);
+        // Membagi zona: Kiri (0-53px), Tengah (54-106px), Kanan (107-160px)
+        const leftLimit = Math.floor(width / 3);
+        const rightLimit = Math.floor((width / 3) * 2);
+
+        let activeZoneDiff = 0;
+        let pixelCount = 0;
+
+        for (let i = 0; i < d1.length; i += 8) {
+          const pixelIdx = i / 4;
+          const x = pixelIdx % width;
+          
+          const pDiff = Math.abs(d1[i] - d2[i]);
+          
+          if (step === 'RIGHT' && x > rightLimit) {
+            activeZoneDiff += pDiff;
+            pixelCount++;
+          } else if (step === 'LEFT' && x < leftLimit) {
+            activeZoneDiff += pDiff;
+            pixelCount++;
+          }
         }
 
-        const score = diff / (160 * 120);
+        const score = activeZoneDiff / (pixelCount || 1);
         setMovementScore(score);
 
-        if (score > 15) {
-          if (livenessStatusRef.current === 'idle') {
-            setLivenessStatus('moving');
-            livenessStatusRef.current = 'moving';
-          }
-          
-          // Jika gerakan cukup, anggap liveness OK setelah 1 detik gerakan konsisten
-          if (score > 20 && !detectionTimeoutRef.current) {
-             detectionTimeoutRef.current = setTimeout(() => {
-                setLivenessStatus('detected');
-                livenessStatusRef.current = 'detected';
-             }, 1500);
+        // Ambang batas sensitivitas pergerakan
+        if (score > 25) {
+          if (step === 'RIGHT') {
+            setTimeout(() => setStep('LEFT'), 1000);
+          } else if (step === 'LEFT') {
+            setTimeout(() => setStep('READY'), 1000);
           }
         }
       }
 
       lastFrameRef.current = currentFrame;
-      // FIX: Comparison on livenessStatus variable here caused TS error due to previous narrowing
-      if (livenessStatusRef.current !== 'detected') {
-        requestAnimationFrame(analyze);
-      }
+      requestAnimationFrame(analyze);
     };
 
     requestAnimationFrame(analyze);
   };
 
   const handleCapture = () => {
-    if (!videoRef.current || !canvasRef.current) return;
+    if (!videoRef.current) return;
     const canvas = document.createElement('canvas');
-    canvas.width = 640;
-    canvas.height = 480;
+    canvas.width = videoRef.current.videoWidth;
+    canvas.height = videoRef.current.videoHeight;
     const ctx = canvas.getContext('2d');
     ctx?.drawImage(videoRef.current, 0, 0);
     canvas.toBlob((blob) => {
@@ -109,71 +120,78 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, isProcessing
   };
 
   return (
-    <div className="space-y-4">
-      <div className="relative aspect-[4/3] bg-black rounded-lg overflow-hidden border-2 border-gray-100 shadow-inner">
-        <video 
-          ref={videoRef} 
-          autoPlay 
-          playsInline 
-          muted 
-          className="w-full h-full object-cover scale-x-[-1]"
-        />
-        <canvas ref={canvasRef} width={160} height={120} className="hidden" />
-        
-        {/* Overlay Instructions */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <div className="w-48 h-64 border-2 border-dashed border-white/50 rounded-[100px] mb-4"></div>
-          {livenessStatus === 'idle' && (
-            <div className="bg-black/60 px-4 py-2 rounded-full text-white text-[10px] font-bold uppercase tracking-widest animate-pulse">
-              Posisikan Wajah & Tolah-Toleh
+    <div className="relative w-full max-w-md mx-auto aspect-[9/16] bg-black rounded-2xl overflow-hidden shadow-2xl border-4 border-white/10">
+      <video 
+        ref={videoRef} 
+        autoPlay 
+        playsInline 
+        muted 
+        className="w-full h-full object-cover scale-x-[-1]"
+      />
+      <canvas ref={canvasRef} width={160} height={120} className="hidden" />
+      
+      {/* Liveness Overlays */}
+      <div className="absolute inset-0 flex flex-col items-center justify-between p-8 pointer-events-none">
+        <div className="mt-12 bg-black/40 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/20 text-center">
+          {step === 'RIGHT' && (
+            <div className="flex flex-col items-center gap-2">
+              <ArrowRight className="text-[#00FFE4] animate-bounce" size={32} />
+              <p className="text-white text-sm font-bold uppercase tracking-widest">Tengok ke Kanan</p>
             </div>
           )}
-          {livenessStatus === 'moving' && (
-            <div className="bg-emerald-500/80 px-4 py-2 rounded-full text-white text-[10px] font-bold uppercase tracking-widest">
-              Gerakan Terdeteksi... Teruskan
+          {step === 'LEFT' && (
+            <div className="flex flex-col items-center gap-2">
+              <ArrowLeft className="text-[#00FFE4] animate-bounce" size={32} />
+              <p className="text-white text-sm font-bold uppercase tracking-widest">Tengok ke Kiri</p>
             </div>
           )}
-          {livenessStatus === 'detected' && (
-            <div className="bg-[#00FFE4] px-4 py-2 rounded-full text-[#006E62] text-[10px] font-bold uppercase tracking-widest shadow-lg">
-              Liveness OK! Siap Ambil Gambar
+          {step === 'READY' && (
+            <div className="flex flex-col items-center gap-2">
+              <ShieldCheck className="text-emerald-400" size={32} />
+              <p className="text-emerald-400 text-sm font-bold uppercase tracking-widest">Identitas Valid</p>
             </div>
           )}
         </div>
 
-        {/* Status Bar */}
-        <div className="absolute bottom-4 left-0 right-0 px-4">
-          <div className="bg-black/40 backdrop-blur-md h-1.5 w-full rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-[#00FFE4] transition-all duration-300" 
-              style={{ width: `${Math.min(movementScore * 3, 100)}%` }}
-            />
+        {/* Face Guide UI */}
+        <div className={`w-64 h-80 border-2 border-dashed rounded-[120px] transition-colors duration-500 ${step === 'READY' ? 'border-emerald-500 bg-emerald-500/10' : 'border-white/30'}`}></div>
+
+        {/* Controls Container */}
+        <div className="w-full space-y-6 pointer-events-auto">
+          {/* Progress Bar Liveness */}
+          <div className="px-4">
+            <div className="h-1.5 w-full bg-white/20 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-[#00FFE4] transition-all duration-300" 
+                style={{ width: step === 'RIGHT' ? '33%' : step === 'LEFT' ? '66%' : '100%' }}
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-center gap-4 pb-4">
+            <button 
+              onClick={() => { setStep('RIGHT'); startCamera(); }}
+              className="p-4 text-white/70 hover:text-white bg-white/10 backdrop-blur-md rounded-full border border-white/20 transition-all"
+            >
+              <RefreshCw size={24} />
+            </button>
+            <button 
+              onClick={handleCapture}
+              disabled={step !== 'READY' || isProcessing}
+              className={`flex items-center gap-3 px-10 py-4 rounded-full font-bold uppercase text-sm tracking-widest shadow-2xl transition-all ${
+                step === 'READY' 
+                ? 'bg-white text-[#006E62] hover:scale-105 active:scale-95' 
+                : 'bg-white/10 text-white/30 cursor-not-allowed border border-white/10'
+              }`}
+            >
+              <Camera size={20} />
+              {isProcessing ? 'PROSES...' : 'AMBIL FOTO'}
+            </button>
           </div>
         </div>
-      </div>
-
-      <div className="flex justify-center gap-3">
-        <button 
-          onClick={startCamera}
-          className="p-3 text-gray-400 hover:text-[#006E62] bg-gray-50 rounded-full border border-gray-200 transition-colors"
-        >
-          <RefreshCw size={20} />
-        </button>
-        <button 
-          onClick={handleCapture}
-          disabled={livenessStatus !== 'detected' || isProcessing}
-          className={`flex items-center gap-2 px-8 py-3 rounded-full font-bold uppercase text-xs tracking-widest shadow-lg transition-all ${
-            livenessStatus === 'detected' 
-            ? 'bg-[#006E62] text-white hover:bg-[#005a50]' 
-            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-          }`}
-        >
-          <Camera size={18} />
-          {isProcessing ? 'MEMPROSES...' : 'AMBIL FOTO PRESENSI'}
-        </button>
       </div>
     </div>
   );
 };
-
 
 export default PresenceCamera;

@@ -19,13 +19,12 @@ export const presenceService = {
   async getServerTime(): Promise<Date> {
     const { data, error } = await supabase.rpc('get_server_time');
     if (error) {
-      // Fallback ke API publik jika RPC gagal
       try {
         const res = await fetch('https://worldtimeapi.org/api/timezone/Asia/Jakarta');
         const json = await res.json();
         return new Date(json.datetime);
       } catch (e) {
-        return new Date(); // Last resort (bisa dimanipulasi lokal)
+        return new Date();
       }
     }
     return new Date(data);
@@ -89,7 +88,7 @@ export const presenceService = {
     return data as Attendance;
   },
 
-  async getRecentHistory(accountId: string, limit = 7) {
+  async getRecentHistory(accountId: string, limit = 31) {
     const { data, error } = await supabase
       .from('attendances')
       .select('*')
