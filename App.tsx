@@ -1,16 +1,16 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, LayoutDashboard, Users, MapPin, CalendarClock, Files, Settings, Database, Fingerprint } from 'lucide-react';
-import Sidebar from './components/Layout/Sidebar';
-import Header from './components/Layout/Header';
-import LocationMain from './modules/location/LocationMain';
-import AccountMain from './modules/account/AccountMain';
-import ScheduleMain from './modules/schedule/ScheduleMain';
-import DocumentMain from './modules/document/DocumentMain';
-import PresenceMain from './modules/presence/PresenceMain';
-import Login from './modules/auth/Login';
-import { authService } from './services/authService';
-import { AuthUser } from './types';
+import Sidebar from './components/Layout/Sidebar.tsx';
+import Header from './components/Layout/Header.tsx';
+import LocationMain from './modules/location/LocationMain.tsx';
+import AccountMain from './modules/account/AccountMain.tsx';
+import ScheduleMain from './modules/schedule/ScheduleMain.tsx';
+import DocumentMain from './modules/document/DocumentMain.tsx';
+import PresenceMain from './modules/presence/PresenceMain.tsx';
+import Login from './modules/auth/Login.tsx';
+import { authService } from './services/authService.ts';
+import { AuthUser } from './types.ts';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<AuthUser | null>(null);

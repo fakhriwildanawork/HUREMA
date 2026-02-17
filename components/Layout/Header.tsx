@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { Menu, UserCircle } from 'lucide-react';
-import { AuthUser } from '../../types';
-import { googleDriveService } from '../../services/googleDriveService';
+import { AuthUser } from '../../types.ts';
+import { googleDriveService } from '../../services/googleDriveService.ts';
 
 interface HeaderProps {
   activeTab: string;
