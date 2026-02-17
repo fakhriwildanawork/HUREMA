@@ -42,7 +42,7 @@ export const accountService = {
         location:locations(*)
       `)
       .eq('id', id)
-      .single();
+      .maybeSingle(); // Menggunakan maybeSingle() agar tidak error jika record tidak ditemukan
     
     if (error) {
       console.error("SUPABASE_GET_BY_ID_ERROR:", error.message);

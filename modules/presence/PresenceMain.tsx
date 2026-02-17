@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Fingerprint, Clock, MapPin, History, AlertCircle, Map as MapIcon, Camera } from 'lucide-react';
+import { Fingerprint, Clock, MapPin, History, AlertCircle, Map as MapIcon, Camera, Search, UserX } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { presenceService } from '../../services/presenceService';
 import { accountService } from '../../services/accountService';
@@ -20,11 +20,12 @@ const PresenceMain: React.FC = () => {
   const [isCapturing, setIsCapturing] = useState(false);
   const [serverTime, setServerTime] = useState<Date>(new Date());
   const [coords, setCoords] = useState<{lat: number, lng: number} | null>(null);
+  const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
   const [distance, setDistance] = useState<number | null>(null);
   const watchId = useRef<number | null>(null);
 
-  // Hardcoded current session context
-  const currentAccountId = "81907722-19f8-410e-a895-36be0709b114";
+  // Hardcoded current session context - Ganti dengan ID Anda jika perlu
+  const [currentAccountId, setCurrentAccountId] = useState("81907722-19f8-410e-a895-36be0709b114");
 
   useEffect(() => {
     fetchInitialData();
@@ -38,7 +39,7 @@ const PresenceMain: React.FC = () => {
       clearInterval(timeInterval);
       if (watchId.current !== null) navigator.geolocation.clearWatch(watchId.current);
     };
-  }, []);
+  }, [currentAccountId]);
 
   const fetchInitialData = async () => {
     try {
@@ -64,16 +65,14 @@ const PresenceMain: React.FC = () => {
     if (navigator.geolocation) {
       watchId.current = navigator.geolocation.watchPosition(
         (pos) => {
-          // Hanya update jika akurasi mencukupi (misal < 100m) untuk mencegah lonjakan titik
+          setGpsAccuracy(pos.coords.accuracy);
+          // Hanya update titik map jika akurasi di bawah 100m untuk visual yang tenang
           if (pos.coords.accuracy < 100) {
             setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
           }
         },
         (err) => {
           console.error("GPS Error:", err);
-          if (err.code === 1) {
-            Swal.fire('Akses Ditolak', 'Harap aktifkan izin lokasi di browser Anda.', 'error');
-          }
         },
         { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 }
       );
@@ -92,6 +91,16 @@ const PresenceMain: React.FC = () => {
 
   const handleAttendance = async (photoBlob: Blob) => {
     if (!account || !coords || distance === null) return;
+
+    // Tambahan Validasi Akurasi GPS (Mandatory untuk Geotag Presisi)
+    if (gpsAccuracy && gpsAccuracy > 50) {
+       return Swal.fire({
+         title: 'Sinyal Lemah',
+         text: `Akurasi GPS Anda terlalu rendah (${Math.round(gpsAccuracy)}m). Harap cari area terbuka.`,
+         icon: 'warning',
+         confirmButtonColor: '#006E62'
+       });
+    }
 
     const isCheckOut = !!todayAttendance && !todayAttendance.check_out;
     const locationRadius = account.location?.radius || 100;
@@ -149,6 +158,25 @@ const PresenceMain: React.FC = () => {
   };
 
   if (isLoading) return <LoadingSpinner message="Sinkronisasi Data Satelit..." />;
+
+  // Jika akun tidak ditemukan (handle maybeSingle)
+  if (!account) {
+    return (
+      <div className="max-w-md mx-auto mt-20 p-8 bg-white rounded-3xl border border-gray-100 shadow-xl text-center">
+        <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center text-rose-500 mx-auto mb-6">
+          <UserX size={40} />
+        </div>
+        <h3 className="text-xl font-bold text-gray-800">Akun Tidak Dikenali</h3>
+        <p className="text-sm text-gray-500 mt-2">ID karyawan tidak terdaftar atau telah dinonaktifkan. Harap hubungi Admin HR.</p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="mt-8 w-full py-3 bg-[#006E62] text-white rounded-xl font-bold text-sm uppercase tracking-widest shadow-lg hover:bg-[#005a50] transition-all"
+        >
+          Coba Muat Ulang
+        </button>
+      </div>
+    );
+  }
 
   const isWithinRadius = distance !== null && distance <= (account?.location?.radius || 100);
 

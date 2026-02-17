@@ -2,8 +2,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Camera, RefreshCw, ShieldCheck, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
 
-declare var vision: any;
-
 interface PresenceCameraProps {
   onCapture: (blob: Blob) => void;
   isProcessing?: boolean;
@@ -20,7 +18,17 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, isProcessing
 
   useEffect(() => {
     isComponentMounted.current = true;
-    initializeAi();
+    
+    // Tunggu library dimuat jika belum ada di window
+    const checkAndInit = () => {
+      if ((window as any).vision) {
+        initializeAi();
+      } else {
+        setTimeout(checkAndInit, 500);
+      }
+    };
+    checkAndInit();
+
     return () => {
       isComponentMounted.current = false;
       stopCamera();
@@ -28,6 +36,9 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, isProcessing
   }, []);
 
   const initializeAi = async () => {
+    const vision = (window as any).vision;
+    if (!vision) return;
+
     try {
       const filesetResolver = await vision.FilesetResolver.forVisionTasks(
         "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
