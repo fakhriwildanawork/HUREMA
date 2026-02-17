@@ -47,7 +47,6 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
     password: initialData?.password || '',
     mcu_status: initialData?.mcu_status || '',
     health_risk: initialData?.health_risk || '',
-    // Fix: Removed duplicate photo_google_id property on line 51
     photo_google_id: initialData?.photo_google_id || '',
     ktp_google_id: initialData?.ktp_google_id || '',
     diploma_google_id: initialData?.diploma_google_id || '',
@@ -242,7 +241,7 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
                     <div className="flex items-center gap-4 p-2 bg-orange-50/50 rounded border border-orange-100">
                       <label className="w-10 h-10 rounded bg-white border border-dashed border-orange-300 flex items-center justify-center relative overflow-hidden cursor-pointer group shrink-0">
                         {formData.ktp_google_id ? (
-                          <ShieldCheck size={18} className="text-[#006E62]" />
+                          <img src={googleDriveService.getFileUrl(formData.ktp_google_id)} alt="KTP" className="w-full h-full object-cover" />
                         ) : (
                           <Upload size={14} className="text-orange-300" />
                         )}
@@ -411,8 +410,14 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
                     <Label>Upload SK Awal (G-Drive)</Label>
                     <div className="flex items-center gap-2 mt-1">
                       <label className="flex items-center gap-2 px-3 py-1.5 bg-white border border-dashed border-gray-300 rounded cursor-pointer hover:bg-gray-100 transition-colors flex-1 overflow-hidden">
-                        <Upload size={12} className="text-gray-400 shrink-0" />
-                        <span className="text-[10px] text-gray-500 truncate">{formData.file_sk_id ? 'SK Terpilih' : 'PDF/Gambar SK'}</span>
+                        {formData.file_sk_id ? (
+                          <div className="w-5 h-5 rounded overflow-hidden border border-gray-100 shrink-0">
+                            <img src={googleDriveService.getFileUrl(formData.file_sk_id)} className="w-full h-full object-cover" />
+                          </div>
+                        ) : (
+                          <Upload size={12} className="text-gray-400 shrink-0" />
+                        )}
+                        <span className="text-[10px] text-gray-500 truncate">{formData.file_sk_id ? 'SK Terlampir' : 'PDF/Gambar SK'}</span>
                         <input type="file" className="hidden" accept="image/*,application/pdf" onChange={(e) => handleFileUpload(e, 'file_sk_id')} />
                       </label>
                       {uploading['file_sk_id'] && <div className="w-4 h-4 border-2 border-[#006E62] border-t-transparent rounded-full animate-spin"></div>}
@@ -435,7 +440,14 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
                   </div>
                   <div className="space-y-1">
                     <Label>Tgl Akhir</Label>
-                    <input type="date" name="end_date" value={formData.end_date} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
+                    <input 
+                      type="date" 
+                      name="end_date" 
+                      value={formData.end_date} 
+                      onChange={handleChange} 
+                      disabled={formData.employee_type === 'Tetap'}
+                      className={`w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none transition-colors ${formData.employee_type === 'Tetap' ? 'bg-gray-100 cursor-not-allowed opacity-60' : 'bg-white'}`} 
+                    />
                   </div>
                 </div>
 
@@ -479,8 +491,12 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
                 </div>
                 <div className="grid grid-cols-1 gap-3">
                    <label className="flex items-center gap-4 p-2 border border-dashed border-gray-300 rounded cursor-pointer hover:bg-gray-50 group transition-colors">
-                      <div className="w-10 h-10 rounded bg-white flex items-center justify-center shrink-0 border border-gray-100">
-                        <Upload size={14} className="text-gray-300 group-hover:text-[#006E62]" />
+                      <div className="w-10 h-10 rounded bg-white flex items-center justify-center shrink-0 border border-gray-100 overflow-hidden">
+                        {formData.diploma_google_id ? (
+                           <img src={googleDriveService.getFileUrl(formData.diploma_google_id)} className="w-full h-full object-cover" />
+                        ) : (
+                          <Upload size={14} className="text-gray-300 group-hover:text-[#006E62]" />
+                        )}
                       </div>
                       <div className="flex-1">
                         <div className="text-[8px] font-bold text-gray-400 group-hover:text-[#006E62] uppercase leading-none mb-1">Upload Ijazah</div>
@@ -515,12 +531,12 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
                         value={formData.schedule_id} 
                         onChange={handleChange} 
                         disabled={!formData.location_id}
-                        className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none bg-white disabled:bg-gray-50"
+                        className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none bg-white disabled:bg-gray-50 appearance-none pr-8"
                       >
                         <option value="">-- {formData.location_id ? 'Pilih Jadwal' : 'Pilih Lokasi Terlebih Dahulu'} --</option>
                         {schedules.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                       </select>
-                      <CalendarClock className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
+                      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
                     </div>
                  </div>
                  <div className="space-y-2 pt-2">
@@ -567,7 +583,13 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
                     <Label>Upload Hasil MCU Awal</Label>
                     <div className="flex items-center gap-2 mt-1">
                       <label className="flex items-center gap-2 px-3 py-1.5 bg-white border border-dashed border-gray-300 rounded cursor-pointer hover:bg-gray-100 transition-colors flex-1 overflow-hidden">
-                        <Upload size={12} className="text-gray-400 shrink-0" />
+                        {formData.file_mcu_id ? (
+                           <div className="w-5 h-5 rounded overflow-hidden border border-gray-100 shrink-0">
+                              <img src={googleDriveService.getFileUrl(formData.file_mcu_id)} className="w-full h-full object-cover" />
+                           </div>
+                        ) : (
+                          <Upload size={12} className="text-gray-400 shrink-0" />
+                        )}
                         <span className="text-[10px] text-gray-500 truncate">{formData.file_mcu_id ? 'Hasil MCU OK' : 'Upload PDF Hasil MCU'}</span>
                         <input type="file" className="hidden" accept="image/*,application/pdf" onChange={(e) => handleFileUpload(e, 'file_mcu_id')} />
                       </label>
