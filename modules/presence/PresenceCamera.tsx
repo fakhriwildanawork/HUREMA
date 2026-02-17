@@ -11,10 +11,12 @@ interface PresenceCameraProps {
 
 const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, onClose, isProcessing }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const landmarkerRef = useRef<any>(null);
+  const requestRef = useRef<number>(null);
+  
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [step, setStep] = useState<'RIGHT' | 'LEFT' | 'READY'>('RIGHT');
   const [isAiLoaded, setIsAiLoaded] = useState(false);
-  const [faceLandmarker, setFaceLandmarker] = useState<any>(null);
   const isComponentMounted = useRef(true);
   const lastVideoTimeRef = useRef(-1);
 
@@ -24,9 +26,17 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, onClose, isP
 
     return () => {
       isComponentMounted.current = false;
+      if (requestRef.current) cancelAnimationFrame(requestRef.current);
       stopCamera();
     };
   }, []);
+
+  // Memulai kamera segera setelah AI siap
+  useEffect(() => {
+    if (isAiLoaded) {
+      startCamera();
+    }
+  }, [isAiLoaded]);
 
   const initializeAi = async () => {
     try {
@@ -44,9 +54,8 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, onClose, isP
       });
       
       if (isComponentMounted.current) {
-        setFaceLandmarker(landmarker);
+        landmarkerRef.current = landmarker;
         setIsAiLoaded(true);
-        startCamera();
       }
     } catch (err) {
       console.error("AI Init Error:", err);
@@ -63,12 +72,16 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, onClose, isP
           height: { ideal: 1920 } 
         } 
       });
-      setStream(s);
-      if (videoRef.current) {
-        videoRef.current.srcObject = s;
-        videoRef.current.onloadedmetadata = () => {
-          predictLoop();
-        };
+      
+      if (isComponentMounted.current) {
+        setStream(s);
+        if (videoRef.current) {
+          videoRef.current.srcObject = s;
+          videoRef.current.onloadedmetadata = () => {
+            if (videoRef.current) videoRef.current.play();
+            predictLoop();
+          };
+        }
       }
     } catch (err) {
       console.error("Camera Error:", err);
@@ -76,51 +89,68 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, onClose, isP
   };
 
   const stopCamera = () => {
-    if (stream) stream.getTracks().forEach(track => track.stop());
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+    }
   };
 
   const predictLoop = () => {
-    if (!isComponentMounted.current || !videoRef.current || !faceLandmarker) return;
+    if (!isComponentMounted.current || !videoRef.current || !landmarkerRef.current) return;
 
     const video = videoRef.current;
-    if (video.currentTime !== lastVideoTimeRef.current) {
+    if (video.readyState >= 2 && video.currentTime !== lastVideoTimeRef.current) {
       lastVideoTimeRef.current = video.currentTime;
-      const results = faceLandmarker.detectForVideo(video, performance.now());
+      
+      try {
+        const results = landmarkerRef.current.detectForVideo(video, performance.now());
 
-      if (results.faceLandmarks && results.faceLandmarks.length > 0) {
-        const landmarks = results.faceLandmarks[0];
-        const nose = landmarks[4];
-        const rightEdge = landmarks[234];
-        const leftEdge = landmarks[454];
+        if (results.faceLandmarks && results.faceLandmarks.length > 0) {
+          const landmarks = results.faceLandmarks[0];
+          const nose = landmarks[4];
+          const rightEdge = landmarks[234];
+          const leftEdge = landmarks[454];
 
-        const faceWidth = Math.abs(leftEdge.x - rightEdge.x);
-        const noseRelativeX = (nose.x - Math.min(rightEdge.x, leftEdge.x)) / faceWidth;
+          const faceWidth = Math.abs(leftEdge.x - rightEdge.x);
+          const noseRelativeX = (nose.x - Math.min(rightEdge.x, leftEdge.x)) / faceWidth;
 
-        if (step === 'RIGHT' && noseRelativeX < 0.35) {
-          setStep('LEFT');
-        } else if (step === 'LEFT' && noseRelativeX > 0.65) {
-          setStep('READY');
+          // Menggunakan fungsional update untuk memastikan state terbaru dibaca dengan benar
+          setStep(prev => {
+            if (prev === 'RIGHT' && noseRelativeX < 0.35) return 'LEFT';
+            if (prev === 'LEFT' && noseRelativeX > 0.65) return 'READY';
+            return prev;
+          });
         }
+      } catch (e) {
+        console.error("In-loop detection error:", e);
       }
     }
 
-    if (step !== 'READY') {
-      requestAnimationFrame(predictLoop);
+    // Loop tetap berjalan kecuali sudah READY
+    if (isComponentMounted.current) {
+      requestRef.current = requestAnimationFrame(predictLoop);
     }
   };
 
   const handleCapture = () => {
-    if (!videoRef.current) return;
+    const video = videoRef.current;
+    if (!video || video.readyState < 2) return;
+
     const canvas = document.createElement('canvas');
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
+    // Pastikan ukuran canvas sesuai dengan video aktual (bukan CSS)
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
     const ctx = canvas.getContext('2d');
     
-    ctx?.drawImage(videoRef.current, 0, 0);
-    
-    canvas.toBlob((blob) => {
-      if (blob) onCapture(blob);
-    }, 'image/jpeg', 0.8);
+    if (ctx) {
+      // Mirroring canvas karena video diset mirror visual
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      canvas.toBlob((blob) => {
+        if (blob) onCapture(blob);
+      }, 'image/jpeg', 0.85);
+    }
   };
 
   return (
@@ -132,13 +162,14 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, onClose, isP
           <p className="text-[10px] font-bold uppercase tracking-widest">Inisialisasi Keamanan AI...</p>
         </div>
       ) : (
-        <div className="relative w-full h-full max-w-lg overflow-hidden flex flex-col">
+        <div className="relative w-full h-full max-w-lg overflow-hidden flex flex-col bg-black">
+          {/* Perbaikan: object-contain untuk menghindari zoom paksa */}
           <video 
             ref={videoRef} 
             autoPlay 
             playsInline 
             muted 
-            className="absolute inset-0 w-full h-full object-cover scale-x-[-1]"
+            className="absolute inset-0 w-full h-full object-contain scale-x-[-1]"
           />
           
           {/* Close Button */}
@@ -198,7 +229,10 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, onClose, isP
 
               <div className="flex justify-center gap-4">
                 <button 
-                  onClick={() => { setStep('RIGHT'); predictLoop(); }}
+                  onClick={() => { 
+                    setStep('RIGHT');
+                    lastVideoTimeRef.current = -1;
+                  }}
                   className="p-5 text-white/50 hover:text-white bg-white/5 backdrop-blur-lg rounded-full border border-white/10 transition-all hover:bg-white/10"
                 >
                   <RefreshCw size={28} />
