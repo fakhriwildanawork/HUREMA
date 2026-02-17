@@ -28,16 +28,17 @@ const PresenceMap: React.FC<PresenceMapProps> = ({ userLat, userLng, officeLat, 
         radius: radius
       }).addTo(mapRef.current);
 
-      // Markers
+      // Office Marker (Pusat Lokasi)
       L.marker([officeLat, officeLng], {
         icon: L.divIcon({ 
           className: 'bg-[#006E62] w-3 h-3 rounded-full border-2 border-white' 
         })
       }).addTo(mapRef.current);
 
+      // User ACTUAL Location Marker (HERE()) - Red Static Pin
       L.marker([userLat, userLng], {
         icon: L.divIcon({ 
-          className: 'bg-blue-500 w-3 h-3 rounded-full border-2 border-white shadow-lg animate-pulse' 
+          className: 'bg-red-600 w-3 h-3 rounded-full border-2 border-white shadow-lg' 
         })
       }).addTo(mapRef.current);
 

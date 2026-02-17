@@ -92,6 +92,7 @@ export interface Account {
   schedule_id: string | null; // Relasi ke Schedule (UUID)
   // FIX: Added location property to support joined data from Supabase
   location?: any;
+  schedule?: Schedule;
   employee_type: 'Tetap' | 'Kontrak' | 'Harian' | 'Magang';
   start_date: string | null;
   end_date?: string | null;
@@ -124,8 +125,12 @@ export interface Attendance {
   out_longitude: number | null;
   in_photo_id: string | null;
   out_photo_id: string | null;
+  in_address: string | null;
+  out_address: string | null;
   late_minutes: number;
   early_departure_minutes: number;
+  late_reason: string | null;
+  early_departure_reason: string | null;
   status_in: string;
   status_out: string;
   work_duration: string | null;

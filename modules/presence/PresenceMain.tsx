@@ -1,12 +1,12 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { Fingerprint, Clock, MapPin, History, AlertCircle, Map as MapIcon, Camera, Search, UserX } from 'lucide-react';
+/* Added ShieldCheck to lucide-react imports */
+import { Fingerprint, Clock, MapPin, History, AlertCircle, Map as MapIcon, Camera, Search, UserX, CalendarClock, MessageSquare, ShieldCheck } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { presenceService } from '../../services/presenceService';
 import { accountService } from '../../services/accountService';
 import { authService } from '../../services/authService';
 import { googleDriveService } from '../../services/googleDriveService';
-import { Account, Attendance } from '../../types';
+import { Account, Attendance, Schedule, ScheduleRule } from '../../types';
 import PresenceCamera from './PresenceCamera';
 import PresenceMap from './PresenceMap';
 import PresenceHistory from './PresenceHistory';
@@ -19,6 +19,7 @@ const PresenceMain: React.FC = () => {
   const [recentLogs, setRecentLogs] = useState<Attendance[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [showCameraModal, setShowCameraModal] = useState(false);
   const [serverTime, setServerTime] = useState<Date>(new Date());
   const [coords, setCoords] = useState<{lat: number, lng: number} | null>(null);
   const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
@@ -71,7 +72,6 @@ const PresenceMain: React.FC = () => {
       watchId.current = navigator.geolocation.watchPosition(
         (pos) => {
           setGpsAccuracy(pos.coords.accuracy);
-          // Dilonggarkan ke 500m agar titik user muncul di peta meski sinyal kurang kuat (misal di dalam gedung)
           if (pos.coords.accuracy < 500) {
             setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
           }
@@ -95,22 +95,12 @@ const PresenceMain: React.FC = () => {
   }, [coords, account]);
 
   const handleAttendance = async (photoBlob: Blob) => {
-    if (!account || !coords || distance === null) return;
+    if (!account || !coords || distance === null || !account.schedule) return;
 
-    // Validasi Akurasi GPS Tetap Ketat (50m) saat tombol ditekan demi presisi data entry
-    if (gpsAccuracy && gpsAccuracy > 50) {
-       return Swal.fire({
-         title: 'Sinyal Lemah',
-         text: `Akurasi GPS Anda terlalu rendah (${Math.round(gpsAccuracy)}m). Harap cari area terbuka atau nyalakan GPS mode akurasi tinggi.`,
-         icon: 'warning',
-         confirmButtonColor: '#006E62'
-       });
-    }
-
-    const isCheckOut = !!todayAttendance && !todayAttendance.check_out;
+    // 1. Validasi Radius
     const locationRadius = account.location?.radius || 100;
-
     if (distance > locationRadius) {
+       setShowCameraModal(false);
        return Swal.fire({
          title: 'Gagal',
          text: `Anda berada diluar radius penempatan (${Math.round(distance)}m > ${locationRadius}m)`,
@@ -119,8 +109,46 @@ const PresenceMain: React.FC = () => {
        });
     }
 
+    const isCheckOut = !!todayAttendance && !todayAttendance.check_out;
+    
+    // 2. Hitung Status Jadwal & Menit
+    const scheduleResult = presenceService.calculateStatus(serverTime, account.schedule, isCheckOut ? 'OUT' : 'IN');
+    
+    // 3. Tangani Alasan Jika Terlambat/Pulang Cepat
+    let reason = null;
+    if (scheduleResult.status !== 'Tepat Waktu') {
+      const { value: text, isConfirmed } = await Swal.fire({
+        title: `Konfirmasi ${scheduleResult.status}`,
+        input: 'textarea',
+        inputLabel: `Anda terdeteksi ${scheduleResult.status.toLowerCase()} ${scheduleResult.minutes} menit. Harap berikan alasan:`,
+        inputPlaceholder: 'Tuliskan alasan Anda di sini...',
+        inputAttributes: { 'aria-label': 'Tuliskan alasan Anda di sini' },
+        showCancelButton: true,
+        confirmButtonColor: '#006E62',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Kirim Presensi',
+        cancelButtonText: 'Batal',
+        inputValidator: (value) => {
+          if (!value) return 'Alasan wajib diisi!';
+          return null;
+        }
+      });
+
+      if (!isConfirmed) {
+        setShowCameraModal(false);
+        return;
+      }
+      reason = text;
+    }
+
     try {
+      setShowCameraModal(false);
       setIsCapturing(true);
+      
+      // 4. Reverse Geotagging Alamat Aktual
+      const address = await presenceService.getReverseGeocode(coords.lat, coords.lng);
+      
+      // 5. Upload Photo
       const photoId = await googleDriveService.uploadFile(new File([photoBlob], `Presence_${isCheckOut ? 'OUT' : 'IN'}_${Date.now()}.jpg`));
       const currentTimeStr = serverTime.toISOString();
       
@@ -131,8 +159,10 @@ const PresenceMain: React.FC = () => {
           in_latitude: coords.lat,
           in_longitude: coords.lng,
           in_photo_id: photoId,
-          status_in: 'Tepat Waktu',
-          late_minutes: 0
+          in_address: address,
+          status_in: scheduleResult.status,
+          late_minutes: scheduleResult.minutes,
+          late_reason: reason
         };
         await presenceService.checkIn(payload);
       } else {
@@ -141,8 +171,10 @@ const PresenceMain: React.FC = () => {
           out_latitude: coords.lat,
           out_longitude: coords.lng,
           out_photo_id: photoId,
-          status_out: 'Tepat Waktu',
-          early_departure_minutes: 0
+          out_address: address,
+          status_out: scheduleResult.status,
+          early_departure_minutes: scheduleResult.minutes,
+          early_departure_reason: reason
         };
         await presenceService.checkOut(todayAttendance.id, payload);
       }
@@ -164,7 +196,6 @@ const PresenceMain: React.FC = () => {
 
   if (isLoading) return <LoadingSpinner message="Sinkronisasi Data Satelit..." />;
 
-  // Jika akun tidak ditemukan (handle maybeSingle)
   if (!account) {
     return (
       <div className="max-w-md mx-auto mt-20 p-8 bg-white rounded-3xl border border-gray-100 shadow-xl text-center">
@@ -184,6 +215,10 @@ const PresenceMain: React.FC = () => {
   }
 
   const isWithinRadius = distance !== null && distance <= (account?.location?.radius || 100);
+  
+  // Ambil Rule Jadwal untuk Hari Ini
+  const todayDay = serverTime.getDay();
+  const scheduleRule = account.schedule?.rules?.find(r => r.day_of_week === todayDay);
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -216,14 +251,38 @@ const PresenceMain: React.FC = () => {
 
       {activeTab === 'capture' ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start animate-in fade-in duration-500">
-          {/* Kolom Kiri: Kamera */}
+          {/* Kolom Kiri: Ilustrasi / Status Utama */}
           <div className="lg:col-span-7">
             {(!todayAttendance || !todayAttendance.check_out) ? (
-              <PresenceCamera onCapture={handleAttendance} isProcessing={isCapturing} />
+              <div className="bg-white rounded-2xl border border-gray-100 p-12 flex flex-col items-center justify-center shadow-sm text-center">
+                <div className={`w-24 h-24 rounded-full flex items-center justify-center mb-8 shadow-xl transition-all duration-500 ${isWithinRadius ? 'bg-emerald-50 text-[#006E62]' : 'bg-rose-50 text-rose-500'}`}>
+                   <Fingerprint size={48} />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-800">
+                   {!!todayAttendance && !todayAttendance.check_out ? 'Waktunya Pulang?' : 'Siap Bekerja Hari Ini?'}
+                </h3>
+                <p className="text-sm text-gray-400 mt-2 max-w-xs">
+                  {isWithinRadius 
+                    ? 'Klik tombol di bawah untuk verifikasi identitas AI dan mencatat lokasi Anda.' 
+                    : 'Akses presensi terkunci. Anda harus berada di area lokasi penempatan.'}
+                </p>
+                <button 
+                  disabled={!isWithinRadius || isCapturing}
+                  onClick={() => setShowCameraModal(true)}
+                  className={`mt-10 flex items-center gap-3 px-12 py-4 rounded-2xl font-bold uppercase text-xs tracking-widest shadow-lg transition-all ${
+                    isWithinRadius && !isCapturing
+                    ? 'bg-[#006E62] text-white hover:bg-[#005a50] hover:scale-105 active:scale-95' 
+                    : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                  }`}
+                >
+                  <Camera size={18} />
+                  {isCapturing ? 'MEMPROSES...' : 'AMBIL FOTO & VERIFIKASI'}
+                </button>
+              </div>
             ) : (
               <div className="bg-white rounded-2xl border border-gray-100 p-20 flex flex-col items-center justify-center shadow-sm text-center">
                 <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center text-[#006E62] mb-6 animate-pulse">
-                  <Fingerprint size={48} />
+                  <ShieldCheck size={48} />
                 </div>
                 <h3 className="text-2xl font-bold text-gray-800">Tugas Selesai!</h3>
                 <p className="text-sm text-gray-500 mt-2 max-w-xs">Terima kasih, Anda telah menyelesaikan presensi masuk dan pulang untuk hari ini.</p>
@@ -231,17 +290,18 @@ const PresenceMain: React.FC = () => {
             )}
           </div>
 
-          {/* Kolom Kanan: Status */}
+          {/* Kolom Kanan: Detail & Status */}
           <div className="lg:col-span-5 space-y-6">
-            {/* Server Time Card */}
-            <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-               <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-2">
-                    <Clock size={16} className="text-[#006E62]" />
-                    <h4 className="text-[11px] font-bold uppercase tracking-widest text-gray-500">Waktu Terverifikasi</h4>
-                  </div>
+            {/* Server Time & Schedule Card */}
+            <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm overflow-hidden relative">
+               <div className="absolute top-0 right-0 p-4 opacity-5">
+                  <Clock size={120} />
                </div>
-               <div className="text-center py-4">
+               <div className="flex items-center gap-2 mb-6">
+                  <Clock size={16} className="text-[#006E62]" />
+                  <h4 className="text-[11px] font-bold uppercase tracking-widest text-gray-500">Waktu Terverifikasi</h4>
+               </div>
+               <div className="text-center py-4 relative z-10">
                   <div className="text-5xl font-mono font-bold text-gray-800 tracking-tighter">
                     {serverTime.toLocaleTimeString('id-ID', { hour12: false })}
                   </div>
@@ -249,14 +309,42 @@ const PresenceMain: React.FC = () => {
                     {serverTime.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}
                   </div>
                </div>
-               <div className="grid grid-cols-2 gap-4 mt-8 pt-6 border-t border-gray-50">
+
+               {/* Detail Jadwal */}
+               <div className="mt-8 p-4 bg-emerald-50/50 rounded-xl border border-emerald-100/50 space-y-3">
+                  <div className="flex items-center gap-2 text-[10px] font-bold text-[#006E62] uppercase tracking-wider mb-2">
+                    <CalendarClock size={14} /> Jadwal Hari Ini
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                     <div>
+                        <p className="text-[9px] text-gray-400 font-bold uppercase">Jam Masuk</p>
+                        <p className="text-xs font-bold text-gray-700">{scheduleRule?.check_in_time ? scheduleRule.check_in_time.slice(0, 5) : '--:--'}</p>
+                     </div>
+                     <div>
+                        <p className="text-[9px] text-gray-400 font-bold uppercase">Jam Pulang</p>
+                        <p className="text-xs font-bold text-gray-700">{scheduleRule?.check_out_time ? scheduleRule.check_out_time.slice(0, 5) : '--:--'}</p>
+                     </div>
+                  </div>
+                  <div className="pt-2 border-t border-emerald-100/50">
+                    <p className="text-[9px] text-gray-400 font-bold uppercase">Toleransi</p>
+                    <p className="text-[10px] font-medium text-[#006E62]">
+                      Masuk: {account.schedule?.tolerance_checkin_minutes || 0}m • Pulang: {account.schedule?.tolerance_minutes || 0}m
+                    </p>
+                  </div>
+               </div>
+
+               <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-gray-50">
                   <div className="text-center">
-                    <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Masuk</p>
-                    <p className="text-sm font-bold text-gray-700">{todayAttendance?.check_in ? new Date(todayAttendance.check_in).toLocaleTimeString('id-ID', { hour12: false }) : '--:--'}</p>
+                    <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Status Masuk</p>
+                    <p className={`text-xs font-bold ${todayAttendance?.status_in === 'Terlambat' ? 'text-rose-500' : 'text-[#006E62]'}`}>
+                      {todayAttendance?.check_in ? todayAttendance.status_in : '--:--'}
+                    </p>
                   </div>
                   <div className="text-center border-l border-gray-50">
-                    <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Pulang</p>
-                    <p className="text-sm font-bold text-gray-700">{todayAttendance?.check_out ? new Date(todayAttendance.check_out).toLocaleTimeString('id-ID', { hour12: false }) : '--:--'}</p>
+                    <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Status Pulang</p>
+                    <p className={`text-xs font-bold ${todayAttendance?.status_out === 'Pulang Cepat' ? 'text-rose-500' : 'text-blue-500'}`}>
+                      {todayAttendance?.check_out ? todayAttendance.status_out : '--:--'}
+                    </p>
                   </div>
                </div>
             </div>
@@ -269,7 +357,7 @@ const PresenceMain: React.FC = () => {
                     <h4 className="text-[11px] font-bold uppercase tracking-widest text-gray-500">Status Geotag</h4>
                   </div>
                   <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-[9px] font-bold uppercase ${isWithinRadius ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
-                    <div className={`w-1.5 h-1.5 rounded-full ${isWithinRadius ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></div>
+                    <div className={`w-1.5 h-1.5 rounded-full ${isWithinRadius ? 'bg-emerald-500' : 'bg-rose-500'}`}></div>
                     {isWithinRadius ? 'Dalam Radius' : 'Luar Radius'}
                   </div>
                </div>
@@ -313,6 +401,15 @@ const PresenceMain: React.FC = () => {
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
           <PresenceHistory logs={recentLogs} isLoading={isLoading} />
         </div>
+      )}
+
+      {/* Modal Kamera Full Screen */}
+      {showCameraModal && (
+        <PresenceCamera 
+          onClose={() => setShowCameraModal(false)}
+          onCapture={handleAttendance}
+          isProcessing={isCapturing}
+        />
       )}
     </div>
   );

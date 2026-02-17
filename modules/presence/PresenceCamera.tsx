@@ -1,14 +1,15 @@
 
 import React, { useRef, useState, useEffect } from 'react';
-import { Camera, RefreshCw, ShieldCheck, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
+import { Camera, RefreshCw, ShieldCheck, ArrowRight, ArrowLeft, Loader2, X } from 'lucide-react';
 import { FaceLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
 
 interface PresenceCameraProps {
   onCapture: (blob: Blob) => void;
+  onClose: () => void;
   isProcessing?: boolean;
 }
 
-const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, isProcessing }) => {
+const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, onClose, isProcessing }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [step, setStep] = useState<'RIGHT' | 'LEFT' | 'READY'>('RIGHT');
@@ -57,9 +58,9 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, isProcessing
       const s = await navigator.mediaDevices.getUserMedia({ 
         video: { 
           facingMode: 'user', 
-          aspectRatio: 9/16,
-          width: { ideal: 1280 }, 
-          height: { ideal: 720 } 
+          aspectRatio: { ideal: 9/16 },
+          width: { ideal: 1080 }, 
+          height: { ideal: 1920 } 
         } 
       });
       setStream(s);
@@ -123,25 +124,34 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, isProcessing
   };
 
   return (
-    <div className="relative w-full max-w-md mx-auto aspect-[9/16] bg-slate-900 rounded-2xl overflow-hidden shadow-2xl border-4 border-white/10">
+    <div className="fixed inset-0 z-[1000] bg-slate-950 flex items-center justify-center">
+      {/* Background Video Layer */}
       {!isAiLoaded ? (
         <div className="absolute inset-0 flex flex-col items-center justify-center text-white/50 gap-4">
           <Loader2 className="animate-spin text-[#00FFE4]" size={40} />
           <p className="text-[10px] font-bold uppercase tracking-widest">Inisialisasi Keamanan AI...</p>
         </div>
       ) : (
-        <>
+        <div className="relative w-full h-full max-w-lg overflow-hidden flex flex-col">
           <video 
             ref={videoRef} 
             autoPlay 
             playsInline 
             muted 
-            className="w-full h-full object-cover scale-x-[-1]"
+            className="absolute inset-0 w-full h-full object-cover scale-x-[-1]"
           />
           
-          <div className="absolute inset-0 flex flex-col items-center justify-between p-8 pointer-events-none">
+          {/* Close Button */}
+          <button 
+            onClick={onClose}
+            className="absolute top-6 right-6 z-50 p-3 bg-black/40 backdrop-blur-md rounded-full text-white/80 hover:text-white"
+          >
+            <X size={24} />
+          </button>
+
+          <div className="relative h-full w-full flex flex-col items-center justify-between p-8 pointer-events-none">
             {/* Instruction Overlay */}
-            <div className="mt-12 bg-black/50 backdrop-blur-xl px-8 py-4 rounded-2xl border border-white/20 text-center animate-in fade-in zoom-in duration-500">
+            <div className="mt-12 bg-black/60 backdrop-blur-xl px-8 py-5 rounded-2xl border border-white/10 text-center animate-in fade-in zoom-in duration-500">
               {step === 'RIGHT' && (
                 <div className="flex flex-col items-center gap-3">
                   <div className="w-12 h-12 bg-[#00FFE4]/20 rounded-full flex items-center justify-center">
@@ -169,14 +179,14 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, isProcessing
             </div>
 
             {/* Face Guide Frame */}
-            <div className={`w-72 h-96 border-2 border-dashed rounded-[140px] transition-all duration-700 ${
+            <div className={`w-64 h-80 border-2 border-dashed rounded-[120px] transition-all duration-700 ${
               step === 'READY' 
-              ? 'border-emerald-500 bg-emerald-500/5 scale-105' 
+              ? 'border-emerald-500 bg-emerald-500/5 scale-105 shadow-[0_0_50px_rgba(16,185,129,0.2)]' 
               : 'border-white/20 bg-white/5'
             }`}></div>
 
             {/* Bottom Controls */}
-            <div className="w-full space-y-6 pointer-events-auto">
+            <div className="w-full space-y-6 pointer-events-auto mb-10">
               <div className="px-6">
                 <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
                   <div 
@@ -186,29 +196,29 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, isProcessing
                 </div>
               </div>
 
-              <div className="flex justify-center gap-4 pb-4">
+              <div className="flex justify-center gap-4">
                 <button 
                   onClick={() => { setStep('RIGHT'); predictLoop(); }}
-                  className="p-4 text-white/50 hover:text-white bg-white/5 backdrop-blur-lg rounded-full border border-white/10 transition-all hover:bg-white/10"
+                  className="p-5 text-white/50 hover:text-white bg-white/5 backdrop-blur-lg rounded-full border border-white/10 transition-all hover:bg-white/10"
                 >
-                  <RefreshCw size={24} />
+                  <RefreshCw size={28} />
                 </button>
                 <button 
                   onClick={handleCapture}
                   disabled={step !== 'READY' || isProcessing}
-                  className={`flex items-center gap-3 px-12 py-4 rounded-full font-extrabold uppercase text-xs tracking-[0.2em] shadow-2xl transition-all ${
+                  className={`flex items-center gap-3 px-14 py-5 rounded-full font-extrabold uppercase text-xs tracking-[0.2em] shadow-2xl transition-all ${
                     step === 'READY' 
                     ? 'bg-[#00FFE4] text-[#006E62] hover:scale-105 active:scale-95 shadow-[#00FFE4]/20' 
                     : 'bg-white/5 text-white/20 cursor-not-allowed border border-white/5'
                   }`}
                 >
-                  <Camera size={20} />
+                  <Camera size={24} />
                   {isProcessing ? 'PROSES...' : 'AMBIL FOTO'}
                 </button>
               </div>
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

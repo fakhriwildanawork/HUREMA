@@ -12,16 +12,20 @@ CREATE TABLE IF NOT EXISTS attendances (
     in_latitude NUMERIC,
     in_longitude NUMERIC,
     in_photo_id TEXT, -- ID Photo G-Drive dari proses Liveness
+    in_address TEXT,
     status_in TEXT DEFAULT 'Tepat Waktu', -- Tepat Waktu, Terlambat
     late_minutes INTEGER DEFAULT 0,
+    late_reason TEXT,
 
     -- Check Out Data
     check_out TIMESTAMP WITH TIME ZONE,
     out_latitude NUMERIC,
     out_longitude NUMERIC,
     out_photo_id TEXT, -- ID Photo G-Drive dari proses Liveness
+    out_address TEXT,
     status_out TEXT DEFAULT 'Tepat Waktu', -- Tepat Waktu, Pulang Cepat
     early_departure_minutes INTEGER DEFAULT 0,
+    early_departure_reason TEXT,
 
     -- Summary
     work_duration TEXT, -- Kalkulasi durasi (HH:mm:ss)

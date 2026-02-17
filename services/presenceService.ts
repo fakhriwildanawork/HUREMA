@@ -1,6 +1,6 @@
 
 import { supabase } from '../lib/supabase';
-import { Attendance, AttendanceInput, Account, Schedule } from '../types';
+import { Attendance, AttendanceInput, Account, Schedule, ScheduleRule } from '../types';
 
 const sanitizePayload = (payload: any) => {
   const sanitized = { ...payload };
@@ -28,6 +28,52 @@ export const presenceService = {
       }
     }
     return new Date(data);
+  },
+
+  /**
+   * Mendapatkan alamat dari koordinat (Nominatim API)
+   */
+  async getReverseGeocode(lat: number, lng: number): Promise<string> {
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
+      const data = await response.json();
+      return data.display_name || `${lat}, ${lng}`;
+    } catch (err) {
+      console.error("Reverse Geotag Error:", err);
+      return `${lat}, ${lng}`;
+    }
+  },
+
+  /**
+   * Menghitung keterlambatan atau pulang cepat berdasarkan jadwal
+   */
+  calculateStatus(currentTime: Date, schedule: Schedule, type: 'IN' | 'OUT'): { status: string, minutes: number } {
+    const dayOfWeek = currentTime.getDay();
+    const rule = schedule.rules?.find(r => r.day_of_week === dayOfWeek);
+
+    if (!rule || rule.is_holiday) return { status: 'Tepat Waktu', minutes: 0 };
+
+    const [targetH, targetM] = (type === 'IN' ? rule.check_in_time : rule.check_out_time || '00:00:00').split(':').map(Number);
+    const targetDate = new Date(currentTime);
+    targetDate.setHours(targetH, targetM, 0, 0);
+
+    const diffMs = currentTime.getTime() - targetDate.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+
+    if (type === 'IN') {
+      const tolerance = schedule.tolerance_checkin_minutes || 0;
+      if (diffMins > tolerance) {
+        return { status: 'Terlambat', minutes: diffMins };
+      }
+    } else {
+      const tolerance = schedule.tolerance_minutes || 0;
+      // Jika pulang sebelum waktu seharusnya (diffMins negatif) diluar toleransi
+      if (diffMins < -tolerance) {
+        return { status: 'Pulang Cepat', minutes: Math.abs(diffMins) };
+      }
+    }
+
+    return { status: 'Tepat Waktu', minutes: 0 };
   },
 
   /**
