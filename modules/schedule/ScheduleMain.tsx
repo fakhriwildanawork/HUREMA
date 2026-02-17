@@ -2,11 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, CalendarClock, Grid, List as ListIcon, Filter, Clock, Calendar } from 'lucide-react';
 import Swal from 'sweetalert2';
-import { scheduleService } from '../../services/scheduleService';
-import { Schedule, ScheduleInput } from '../../types';
-import ScheduleForm from './ScheduleForm';
-import { CardSkeleton } from '../../components/Common/Skeleton';
-import LoadingSpinner from '../../components/Common/LoadingSpinner';
+import { scheduleService } from '../../services/scheduleService.ts';
+import { Schedule, ScheduleInput } from '../../types.ts';
+import ScheduleForm from './ScheduleForm.tsx';
+import { CardSkeleton } from '../../components/Common/Skeleton.tsx';
+import LoadingSpinner from '../../components/Common/LoadingSpinner.tsx';
 
 const ScheduleMain: React.FC = () => {
   const [schedules, setSchedules] = useState<Schedule[]>([]);

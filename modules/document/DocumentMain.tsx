@@ -2,12 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Files, FileText, Image as ImageIcon, ExternalLink, Trash2, Filter, FolderOpen, Clock, Users } from 'lucide-react';
 import Swal from 'sweetalert2';
-import { documentService } from '../../services/documentService';
-import { DigitalDocument } from '../../types';
-import { googleDriveService } from '../../services/googleDriveService';
-import DocumentForm from './DocumentForm';
-import { CardSkeleton } from '../../components/Common/Skeleton';
-import LoadingSpinner from '../../components/Common/LoadingSpinner';
+import { documentService } from '../../services/documentService.ts';
+import { DigitalDocument } from '../../types.ts';
+import { googleDriveService } from '../../services/googleDriveService.ts';
+import DocumentForm from './DocumentForm.tsx';
+import { CardSkeleton } from '../../components/Common/Skeleton.tsx';
+import LoadingSpinner from '../../components/Common/LoadingSpinner.tsx';
 
 const DocumentMain: React.FC = () => {
   const [documents, setDocuments] = useState<DigitalDocument[]>([]);

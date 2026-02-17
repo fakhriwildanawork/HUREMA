@@ -1,12 +1,13 @@
+
 import React, { useState, useEffect } from 'react';
 import { History, Search, Filter, Download, FileUp, Paperclip, ExternalLink, UserCircle, Upload } from 'lucide-react';
 import Swal from 'sweetalert2';
-import { careerService } from '../../services/careerService';
-import { googleDriveService } from '../../services/googleDriveService';
-import { accountService } from '../../services/accountService';
-import { CareerLogExtended } from '../../types';
-import CareerImportModal from './CareerImportModal';
-import LoadingSpinner from '../../components/Common/LoadingSpinner';
+import { careerService } from '../../services/careerService.ts';
+import { googleDriveService } from '../../services/googleDriveService.ts';
+import { accountService } from '../../services/accountService.ts';
+import { CareerLogExtended } from '../../types.ts';
+import CareerImportModal from './CareerImportModal.tsx';
+import LoadingSpinner from '../../components/Common/LoadingSpinner.tsx';
 
 const CareerLogMain: React.FC = () => {
   const [logs, setLogs] = useState<CareerLogExtended[]>([]);

@@ -2,11 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { Award, Search, Paperclip, UserCircle, Upload, Calendar, FileUp, Download } from 'lucide-react';
 import Swal from 'sweetalert2';
-import { certificationService } from '../../services/certificationService';
-import { googleDriveService } from '../../services/googleDriveService';
-import { AccountCertificationExtended } from '../../types';
-import LoadingSpinner from '../../components/Common/LoadingSpinner';
-import CertificationImportModal from './CertificationImportModal';
+import { certificationService } from '../../services/certificationService.ts';
+import { googleDriveService } from '../../services/googleDriveService.ts';
+import { AccountCertificationExtended } from '../../types.ts';
+import LoadingSpinner from '../../components/Common/LoadingSpinner.tsx';
+import CertificationImportModal from './CertificationImportModal.tsx';
 
 const CertificationMain: React.FC = () => {
   const [certs, setCerts] = useState<AccountCertificationExtended[]>([]);

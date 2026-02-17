@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { X, FileUp, Download, CheckCircle, AlertTriangle, Save, Loader2 } from 'lucide-react';
 import Swal from 'sweetalert2';
-import { certificationService } from '../../services/certificationService';
+import { certificationService } from '../../services/certificationService.ts';
 
 interface CertificationImportModalProps {
   onClose: () => void;

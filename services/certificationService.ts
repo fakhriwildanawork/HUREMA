@@ -1,10 +1,10 @@
 
-import { supabase } from '../lib/supabase';
-import { AccountCertification, AccountCertificationExtended, AccountCertificationInput } from '../types';
+import { supabase } from '../lib/supabase.ts';
+import { AccountCertification, AccountCertificationExtended, AccountCertificationInput } from '../types.ts';
 import * as XLSX from 'xlsx';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-import { accountService } from './accountService';
+import { accountService } from './accountService.ts';
 
 const sanitizePayload = (payload: any) => {
   const sanitized = { ...payload };

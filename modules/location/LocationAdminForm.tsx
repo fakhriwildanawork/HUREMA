@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
 import { X, Save, Upload, Calendar, ChevronDown, Paperclip } from 'lucide-react';
-import { LocationAdminInput } from '../../types';
-import { googleDriveService } from '../../services/googleDriveService';
+import { LocationAdminInput } from '../../types.ts';
+import { googleDriveService } from '../../services/googleDriveService.ts';
 
 interface LocationAdminFormProps {
   onClose: () => void;

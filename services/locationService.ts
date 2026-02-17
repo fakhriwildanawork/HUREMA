@@ -1,5 +1,6 @@
-import { supabase } from '../lib/supabase';
-import { Location, LocationInput, LocationAdministration, LocationAdminInput } from '../types';
+
+import { supabase } from '../lib/supabase.ts';
+import { Location, LocationInput, LocationAdministration, LocationAdminInput } from '../types.ts';
 
 /**
  * Fungsi pembantu untuk membersihkan data sebelum dikirim ke Supabase.

@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Save, Upload, User, MapPin, Briefcase, GraduationCap, ShieldCheck, Heart, AlertCircle, Paperclip, ChevronDown, CalendarClock, FileBadge } from 'lucide-react';
-import { AccountInput, Location, Schedule } from '../../types';
-import { googleDriveService } from '../../services/googleDriveService';
-import { locationService } from '../../services/locationService';
-import { accountService } from '../../services/accountService';
-import { scheduleService } from '../../services/scheduleService';
+import { AccountInput, Location, Schedule } from '../../types.ts';
+import { googleDriveService } from '../../services/googleDriveService.ts';
+import { locationService } from '../../services/locationService.ts';
+import { accountService } from '../../services/accountService.ts';
+import { scheduleService } from '../../services/scheduleService.ts';
 
 interface AccountFormProps {
   onClose: () => void;

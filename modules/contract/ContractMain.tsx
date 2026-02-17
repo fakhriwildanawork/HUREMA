@@ -2,11 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { FileBadge, Search, Download, FileUp, Paperclip, UserCircle, Upload, FileText, AlertCircle, Calendar } from 'lucide-react';
 import Swal from 'sweetalert2';
-import { contractService } from '../../services/contractService';
-import { googleDriveService } from '../../services/googleDriveService';
-import { AccountContractExtended } from '../../types';
-import ContractImportModal from './ContractImportModal';
-import LoadingSpinner from '../../components/Common/LoadingSpinner';
+import { contractService } from '../../services/contractService.ts';
+import { googleDriveService } from '../../services/googleDriveService.ts';
+import { AccountContractExtended } from '../../types.ts';
+import ContractImportModal from './ContractImportModal.tsx';
+import LoadingSpinner from '../../components/Common/LoadingSpinner.tsx';
 
 const ContractMain: React.FC = () => {
   const [contracts, setContracts] = useState<AccountContractExtended[]>([]);

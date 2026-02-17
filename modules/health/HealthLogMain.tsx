@@ -2,12 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { Activity, Search, Download, FileUp, Paperclip, UserCircle, Upload } from 'lucide-react';
 import Swal from 'sweetalert2';
-import { healthService } from '../../services/healthService';
-import { googleDriveService } from '../../services/googleDriveService';
-import { accountService } from '../../services/accountService';
-import { HealthLogExtended } from '../../types';
-import HealthImportModal from './HealthImportModal';
-import LoadingSpinner from '../../components/Common/LoadingSpinner';
+import { healthService } from '../../services/healthService.ts';
+import { googleDriveService } from '../../services/googleDriveService.ts';
+import { accountService } from '../../services/accountService.ts';
+import { HealthLogExtended } from '../../types.ts';
+import HealthImportModal from './HealthImportModal.tsx';
+import LoadingSpinner from '../../components/Common/LoadingSpinner.tsx';
 
 const HealthLogMain: React.FC = () => {
   const [logs, setLogs] = useState<HealthLogExtended[]>([]);

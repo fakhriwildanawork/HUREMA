@@ -2,11 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { X, Edit2, Trash2, MapPin, Calendar, Clock, Image as ImageIcon, Phone, Target, Layers, Plus, FileText, ExternalLink, Paperclip } from 'lucide-react';
 import Swal from 'sweetalert2';
-import { Location, LocationAdministration } from '../../types';
-import { locationService } from '../../services/locationService';
-import { googleDriveService } from '../../services/googleDriveService';
-import LocationAdminForm from './LocationAdminForm';
-import LoadingSpinner from '../../components/Common/LoadingSpinner';
+import { Location, LocationAdministration } from '../../types.ts';
+import { locationService } from '../../services/locationService.ts';
+import { googleDriveService } from '../../services/googleDriveService.ts';
+import LocationAdminForm from './LocationAdminForm.tsx';
+import LoadingSpinner from '../../components/Common/LoadingSpinner.tsx';
 
 interface LocationDetailProps {
   id: string;

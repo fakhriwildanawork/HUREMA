@@ -1,11 +1,12 @@
+
 import React, { useState, useEffect } from 'react';
 import { ShieldAlert, LogOut, Search, Download, FileUp, Paperclip, UserCircle, Plus, Trash2, ArrowRight } from 'lucide-react';
 import Swal from 'sweetalert2';
-import { disciplineService } from '../../services/disciplineService';
-import { googleDriveService } from '../../services/googleDriveService';
-import { WarningLogExtended, TerminationLogExtended } from '../../types';
-import LoadingSpinner from '../../components/Common/LoadingSpinner';
-import DisciplineImportModal from './DisciplineImportModal';
+import { disciplineService } from '../../services/disciplineService.ts';
+import { googleDriveService } from '../../services/googleDriveService.ts';
+import { WarningLogExtended, TerminationLogExtended } from '../../types.ts';
+import LoadingSpinner from '../../components/Common/LoadingSpinner.tsx';
+import DisciplineImportModal from './DisciplineImportModal.tsx';
 
 const DisciplineMain: React.FC = () => {
   const [warnings, setWarnings] = useState<WarningLogExtended[]>([]);
