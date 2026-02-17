@@ -1,7 +1,6 @@
-
-import { supabase } from '../lib/supabase.ts';
-import { WarningLog, WarningLogExtended, WarningLogInput, TerminationLog, TerminationLogExtended, TerminationLogInput } from '../types.ts';
-import { accountService } from './accountService.ts';
+import { supabase } from '../lib/supabase';
+import { WarningLog, WarningLogExtended, WarningLogInput, TerminationLog, TerminationLogExtended, TerminationLogInput } from '../types';
+import { accountService } from './accountService';
 import ExcelJS from 'exceljs';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';

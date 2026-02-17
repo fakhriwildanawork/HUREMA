@@ -1,10 +1,9 @@
-
-import { supabase } from '../lib/supabase.ts';
-import { HealthLogExtended } from '../types.ts';
+import { supabase } from '../lib/supabase';
+import { HealthLogExtended } from '../types';
 import * as XLSX from 'xlsx';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-import { accountService } from './accountService.ts';
+import { accountService } from './accountService';
 
 export const healthService = {
   async getAllGlobal() {

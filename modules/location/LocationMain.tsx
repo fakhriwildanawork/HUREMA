@@ -2,12 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, MapPin, Grid, List as ListIcon, Filter, ArrowLeft } from 'lucide-react';
 import Swal from 'sweetalert2';
-import { locationService } from '../../services/locationService.ts';
-import { Location, LocationInput } from '../../types.ts';
-import LocationForm from './LocationForm.tsx';
-import LocationDetail from './LocationDetail.tsx';
-import { CardSkeleton } from '../../components/Common/Skeleton.tsx';
-import LoadingSpinner from '../../components/Common/LoadingSpinner.tsx';
+import { locationService } from '../../services/locationService';
+import { Location, LocationInput } from '../../types';
+import LocationForm from './LocationForm';
+import LocationDetail from './LocationDetail';
+import { CardSkeleton } from '../../components/Common/Skeleton';
+import LoadingSpinner from '../../components/Common/LoadingSpinner';
 
 const LocationMain: React.FC = () => {
   const [locations, setLocations] = useState<Location[]>([]);

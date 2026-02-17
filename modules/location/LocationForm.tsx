@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Upload, Save, MapPin, Navigation } from 'lucide-react';
-import { LocationInput } from '../../types.ts';
-import { googleDriveService } from '../../services/googleDriveService.ts';
+import { LocationInput } from '../../types';
+import { googleDriveService } from '../../services/googleDriveService';
 
 declare var L: any;
 

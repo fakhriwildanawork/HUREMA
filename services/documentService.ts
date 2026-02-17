@@ -1,6 +1,5 @@
-
-import { supabase } from '../lib/supabase.ts';
-import { DigitalDocument, DocumentInput } from '../types.ts';
+import { supabase } from '../lib/supabase';
+import { DigitalDocument, DocumentInput } from '../types';
 
 /**
  * Fungsi pembantu untuk membersihkan data sebelum dikirim ke Supabase.
@@ -72,8 +71,8 @@ export const documentService = {
     return doc as DigitalDocument;
   },
 
-  async update(id: string, input: Partial<DigitalDocument>) {
-    const { allowed_account_ids, ...docData } = input as any;
+  async update(id: string, input: Partial<DocumentInput>) {
+    const { allowed_account_ids, ...docData } = input;
 
     // 1. Update Master with sanitization
     const sanitizedDoc = sanitizePayload(docData);

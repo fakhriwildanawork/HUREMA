@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
 import { ShieldCheck, Lock, User, Loader2, AlertCircle } from 'lucide-react';
-import { authService } from '../../services/authService.ts';
-import { AuthUser } from '../../types.ts';
+import { authService } from '../../services/authService';
+import { AuthUser } from '../../types';
 
 interface LoginProps {
   onLoginSuccess: (user: AuthUser) => void;
@@ -59,8 +59,8 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                   required
                   type="text"
                   value={accessCode}
-                  onChange={(e) => setAccessCode(e.target.value)}
-                  placeholder="Masukkan Kode Akses"
+                  onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
+                  placeholder="CONTOH: SPADMIN"
                   className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#006E62]/20 focus:border-[#006E62] transition-all text-sm font-bold text-gray-700"
                 />
               </div>

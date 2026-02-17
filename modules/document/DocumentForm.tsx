@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Save, Upload, FileText, ChevronDown, Check, Users, Search, FolderKanban } from 'lucide-react';
 import Swal from 'sweetalert2';
-import { documentService } from '../../services/documentService.ts';
-import { accountService } from '../../services/accountService.ts';
-import { googleDriveService } from '../../services/googleDriveService.ts';
-import { DigitalDocument, Account } from '../../types.ts';
+import { documentService } from '../../services/documentService';
+import { accountService } from '../../services/accountService';
+import { googleDriveService } from '../../services/googleDriveService';
+import { DigitalDocument, Account } from '../../types';
 
 interface DocumentFormProps {
   onClose: () => void;

@@ -1,12 +1,11 @@
-
-import { supabase } from '../lib/supabase.ts';
-import { CareerLogExtended } from '../types.ts';
+import { supabase } from '../lib/supabase';
+import { CareerLogExtended } from '../types';
 import * as XLSX from 'xlsx';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-import { accountService } from './accountService.ts';
-import { locationService } from './locationService.ts';
-import { scheduleService } from './scheduleService.ts';
+import { accountService } from './accountService';
+import { locationService } from './locationService';
+import { scheduleService } from './scheduleService';
 
 export const careerService = {
   async getAllGlobal() {

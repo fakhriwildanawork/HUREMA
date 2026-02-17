@@ -1,17 +1,6 @@
 
-import { supabase } from '../lib/supabase.ts';
-import { Account, AccountInput, CareerLog, CareerLogInput, HealthLog, HealthLogInput } from '../types.ts';
-
-/**
- * Utilitas untuk men-hash string menggunakan SHA-256 (Web Crypto API)
- */
-async function hashPassword(password: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
+import { supabase } from '../lib/supabase';
+import { Account, AccountInput, CareerLog, CareerLogInput, HealthLog, HealthLogInput } from '../types';
 
 /**
  * Fungsi pembantu untuk membersihkan data sebelum dikirim ke Supabase.
@@ -109,12 +98,6 @@ export const accountService = {
 
   async create(account: AccountInput & { file_sk_id?: string, file_mcu_id?: string, contract_initial?: any }) {
     const { file_sk_id, file_mcu_id, contract_initial, ...rest } = account;
-    
-    // HASHING PASSWORD SEBELUM INSERT
-    if (rest.password) {
-      rest.password = await hashPassword(rest.password);
-    }
-    
     const sanitizedAccount = sanitizePayload(rest);
     
     // 1. Insert ke tabel accounts
@@ -176,12 +159,6 @@ export const accountService = {
   async update(id: string, account: Partial<AccountInput>) {
     // Pastikan field tambahan untuk log awal tidak ikut dikirim ke tabel accounts
     const { file_sk_id, file_mcu_id, contract_initial, ...rest } = account as any;
-    
-    // HASHING PASSWORD SEBELUM UPDATE JIKA ADA PERUBAHAN
-    if (rest.password && rest.password.length < 60) { // Cek sederhana apakah sudah di-hash
-       rest.password = await hashPassword(rest.password);
-    }
-    
     const sanitizedAccount = sanitizePayload(rest);
     
     const { data, error } = await supabase

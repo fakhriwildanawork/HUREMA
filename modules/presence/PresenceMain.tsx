@@ -2,15 +2,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Fingerprint, Clock, MapPin, History, AlertCircle, Map as MapIcon, Camera, Search, UserX } from 'lucide-react';
 import Swal from 'sweetalert2';
-import { presenceService } from '../../services/presenceService.ts';
-import { accountService } from '../../services/accountService.ts';
-import { authService } from '../../services/authService.ts';
-import { googleDriveService } from '../../services/googleDriveService.ts';
-import { Account, Attendance } from '../../types.ts';
-import PresenceCamera from './PresenceCamera.tsx';
-import PresenceMap from './PresenceMap.tsx';
-import PresenceHistory from './PresenceHistory.tsx';
-import LoadingSpinner from '../../components/Common/LoadingSpinner.tsx';
+import { presenceService } from '../../services/presenceService';
+import { accountService } from '../../services/accountService';
+import { authService } from '../../services/authService';
+import { googleDriveService } from '../../services/googleDriveService';
+import { Account, Attendance } from '../../types';
+import PresenceCamera from './PresenceCamera';
+import PresenceMap from './PresenceMap';
+import PresenceHistory from './PresenceHistory';
+import LoadingSpinner from '../../components/Common/LoadingSpinner';
 
 const PresenceMain: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'capture' | 'history'>('capture');

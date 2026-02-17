@@ -6,20 +6,20 @@ import {
   History, FileBadge, Award, Activity, ShieldAlert 
 } from 'lucide-react';
 import Swal from 'sweetalert2';
-import { accountService } from '../../services/accountService.ts';
-import { Account, AccountInput } from '../../types.ts';
-import AccountForm from './AccountForm.tsx';
-import AccountDetail from './AccountDetail.tsx';
-import { CardSkeleton } from '../../components/Common/Skeleton.tsx';
-import LoadingSpinner from '../../components/Common/LoadingSpinner.tsx';
-import { googleDriveService } from '../../services/googleDriveService.ts';
+import { accountService } from '../../services/accountService';
+import { Account, AccountInput } from '../../types';
+import AccountForm from './AccountForm';
+import AccountDetail from './AccountDetail';
+import { CardSkeleton } from '../../components/Common/Skeleton';
+import LoadingSpinner from '../../components/Common/LoadingSpinner';
+import { googleDriveService } from '../../services/googleDriveService';
 
 // Import sub-modules
-import CareerLogMain from '../career/CareerLogMain.tsx';
-import HealthLogMain from '../health/HealthLogMain.tsx';
-import ContractMain from '../contract/ContractMain.tsx';
-import CertificationMain from '../certification/CertificationMain.tsx';
-import DisciplineMain from '../discipline/DisciplineMain.tsx';
+import CareerLogMain from '../career/CareerLogMain';
+import HealthLogMain from '../health/HealthLogMain';
+import ContractMain from '../contract/ContractMain';
+import CertificationMain from '../certification/CertificationMain';
+import DisciplineMain from '../discipline/DisciplineMain';
 
 const AccountMain: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);

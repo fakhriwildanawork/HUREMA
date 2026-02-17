@@ -5,7 +5,7 @@ import {
   CalendarClock, Files, ChevronDown, ChevronRight, 
   Menu as MenuIcon, ChevronLeft, Database, Fingerprint, LogOut 
 } from 'lucide-react';
-import { authService } from '../../services/authService.ts';
+import { authService } from '../../services/authService';
 import Swal from 'sweetalert2';
 
 interface SidebarProps {

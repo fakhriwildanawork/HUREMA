@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { X, FileUp, Download, CheckCircle, AlertTriangle, Save, Loader2, Activity } from 'lucide-react';
 import Swal from 'sweetalert2';
-import { healthService } from '../../services/healthService.ts';
+import { healthService } from '../../services/healthService';
 
 interface HealthImportModalProps {
   onClose: () => void;
@@ -153,7 +153,7 @@ const HealthImportModal: React.FC<HealthImportModalProps> = ({ onClose, onSucces
           <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold text-gray-500 uppercase">Batal</button>
           {step === 2 && (
             <button 
-              onClick={handleCommit} 
+              onClick={handleCommit}
               disabled={isUploading}
               className="flex items-center gap-2 bg-[#006E62] text-white px-8 py-2 rounded shadow-md hover:bg-[#005a50] transition-all text-xs font-bold uppercase disabled:opacity-50"
             >

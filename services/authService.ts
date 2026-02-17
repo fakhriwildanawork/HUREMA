@@ -1,6 +1,6 @@
 
-import { supabase } from '../lib/supabase.ts';
-import { AuthUser } from '../types.ts';
+import { supabase } from '../lib/supabase';
+import { AuthUser } from '../types';
 
 const SESSION_KEY = 'hurema_user_session';
 

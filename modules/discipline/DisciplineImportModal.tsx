@@ -1,8 +1,7 @@
-
 import React, { useState } from 'react';
 import { X, FileUp, Download, CheckCircle, AlertTriangle, Save, Loader2 } from 'lucide-react';
 import Swal from 'sweetalert2';
-import { disciplineService } from '../../services/disciplineService.ts';
+import { disciplineService } from '../../services/disciplineService';
 
 interface DisciplineImportModalProps {
   onClose: () => void;
