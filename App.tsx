@@ -13,14 +13,14 @@ const App: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-  const NavItemMobile = ({ id, icon: Icon, label }: { id: any, icon: any, label: string }) => (
+  const NavItemMobile = ({ id, icon: Icon, label, indent = false }: { id: any, icon: any, label: string, indent?: boolean }) => (
     <button
       onClick={() => { setActiveTab(id); setIsMobileMenuOpen(false); }}
       className={`flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-200 w-full mb-1 ${
         activeTab === id 
           ? 'bg-[#006E62] text-white shadow-md' 
           : 'text-gray-600 hover:bg-gray-100'
-      }`}
+      } ${indent ? 'ml-4 w-[calc(100%-1rem)]' : ''}`}
     >
       <Icon size={20} />
       <span className="font-medium text-sm">{label}</span>
@@ -51,14 +51,18 @@ const App: React.FC = () => {
             </div>
             <button onClick={() => setIsMobileMenuOpen(false)}><X size={24} className="text-gray-400" /></button>
           </div>
-          <nav className="flex-1 space-y-1">
+          <nav className="flex-1 space-y-1 overflow-y-auto scrollbar-none">
             <NavItemMobile id="dashboard" icon={LayoutDashboard} label="Beranda" />
-            <div className="py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest px-4">Master</div>
-            <NavItemMobile id="account" icon={Users} label="Data Akun" />
-            <NavItemMobile id="location" icon={MapPin} label="Data Lokasi" />
-            <NavItemMobile id="schedule" icon={CalendarClock} label="Manajemen Jadwal" />
-            <NavItemMobile id="document" icon={Files} label="Dokumen Digital" />
-            <NavItemMobile id="settings" icon={Settings} label="Pengaturan" />
+            
+            <div className="py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest px-4 mt-2">Master</div>
+            <NavItemMobile id="location" icon={MapPin} label="Data Lokasi" indent />
+            <NavItemMobile id="schedule" icon={CalendarClock} label="Manajemen Jadwal" indent />
+            <NavItemMobile id="account" icon={Users} label="Akun" indent />
+
+            <div className="mt-4">
+              <NavItemMobile id="document" icon={Files} label="Dokumen Digital" />
+              <NavItemMobile id="settings" icon={Settings} label="Pengaturan" />
+            </div>
           </nav>
         </div>
       </aside>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Files, FileText, Image as ImageIcon, ExternalLink, Trash2, Filter, FolderOpen, Clock, Users } from 'lucide-react';
 import Swal from 'sweetalert2';
@@ -78,19 +79,24 @@ const DocumentMain: React.FC = () => {
           <input
             type="text"
             placeholder="Cari Dokumen (Nama, Jenis, Deskripsi)..."
-            className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#006E62] text-sm"
+            className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#006E62] focus:border-transparent transition-all text-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         
-        <button 
-          onClick={() => { setEditingDoc(null); setShowForm(true); }}
-          className="flex items-center gap-2 bg-[#006E62] text-white px-4 py-2 rounded-md hover:bg-[#005a50] transition-colors shadow-sm"
-        >
-          <Plus size={18} />
-          <span className="font-medium text-sm">Unggah Dokumen</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button className="p-2 border border-gray-200 rounded-md text-gray-500 hover:bg-gray-50 transition-colors">
+            <Filter size={18} />
+          </button>
+          <button 
+            onClick={() => { setEditingDoc(null); setShowForm(true); }}
+            className="flex items-center gap-2 bg-[#006E62] text-white px-4 py-2 rounded-md hover:bg-[#005a50] transition-colors shadow-sm"
+          >
+            <Plus size={18} />
+            <span className="font-medium text-sm">Unggah Dokumen</span>
+          </button>
+        </div>
       </div>
 
       {isLoading ? (

@@ -68,13 +68,16 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed,
           
           {(isMasterOpen || isCollapsed) && (
             <div className="mt-1">
-              <NavItem id="account" icon={Users} label="Data Akun" indent />
               <NavItem id="location" icon={MapPin} label="Data Lokasi" indent />
               <NavItem id="schedule" icon={CalendarClock} label="Manajemen Jadwal" indent />
-              <NavItem id="document" icon={Files} label="Dokumen Digital" indent />
-              <NavItem id="settings" icon={Settings} label="Pengaturan" indent />
+              <NavItem id="account" icon={Users} label="Akun" indent />
             </div>
           )}
+        </div>
+
+        <div className="mt-4">
+          <NavItem id="document" icon={Files} label="Dokumen Digital" />
+          <NavItem id="settings" icon={Settings} label="Pengaturan" />
         </div>
       </nav>
 

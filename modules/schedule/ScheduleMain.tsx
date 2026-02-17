@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, CalendarClock, Grid, List as ListIcon, Filter, Clock, Calendar } from 'lucide-react';
 import Swal from 'sweetalert2';
@@ -128,13 +129,18 @@ const ScheduleMain: React.FC = () => {
           />
         </div>
         
-        <button 
-          onClick={() => { setEditingSchedule(null); setShowForm(true); }}
-          className="flex items-center gap-2 bg-[#006E62] text-white px-4 py-2 rounded-md hover:bg-[#005a50] transition-colors shadow-sm"
-        >
-          <Plus size={18} />
-          <span className="font-medium text-sm">Tambah Jadwal</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button className="p-2 border border-gray-200 rounded-md text-gray-500 hover:bg-gray-50 transition-colors">
+            <Filter size={18} />
+          </button>
+          <button 
+            onClick={() => { setEditingSchedule(null); setShowForm(true); }}
+            className="flex items-center gap-2 bg-[#006E62] text-white px-4 py-2 rounded-md hover:bg-[#005a50] transition-colors shadow-sm"
+          >
+            <Plus size={18} />
+            <span className="font-medium text-sm">Tambah Jadwal</span>
+          </button>
+        </div>
       </div>
 
       {isLoading ? (
