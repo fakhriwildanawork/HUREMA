@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { 
   MapPin, LayoutDashboard, Settings, Users, 
   CalendarClock, Files, ChevronDown, ChevronRight, 
-  Menu as MenuIcon, ChevronLeft, Database 
+  Menu as MenuIcon, ChevronLeft, Database, Fingerprint 
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -78,6 +78,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed,
         </div>
 
         <div className="mt-4">
+          <NavItem id="presence" icon={Fingerprint} label="Presensi Reguler" />
           <NavItem id="document" icon={Files} label="Dokumen Digital" />
           <NavItem id="settings" icon={Settings} label="Pengaturan" />
         </div>

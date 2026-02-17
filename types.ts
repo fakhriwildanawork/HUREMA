@@ -105,6 +105,25 @@ export interface Account {
   search_all?: string;
 }
 
+export interface Attendance {
+  id: string;
+  account_id: string;
+  check_in: string | null;
+  check_out: string | null;
+  in_latitude: number | null;
+  in_longitude: number | null;
+  out_latitude: number | null;
+  out_longitude: number | null;
+  in_photo_id: string | null;
+  out_photo_id: string | null;
+  late_minutes: number;
+  early_departure_minutes: number;
+  status_in: string;
+  status_out: string;
+  work_duration: string | null;
+  created_at?: string;
+}
+
 export interface CareerLog {
   id: string;
   account_id: string;
@@ -252,3 +271,5 @@ export interface GoogleDriveFile {
   name: string;
   mimeType: string;
 }
+
+export type AttendanceInput = Omit<Attendance, 'id' | 'created_at'>;
