@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, LayoutDashboard, Users, MapPin, CalendarClock, Files, Settings, Database, Fingerprint } from 'lucide-react';
 import Sidebar from './components/Layout/Sidebar';
 import Header from './components/Layout/Header';
@@ -8,11 +8,36 @@ import AccountMain from './modules/account/AccountMain';
 import ScheduleMain from './modules/schedule/ScheduleMain';
 import DocumentMain from './modules/document/DocumentMain';
 import PresenceMain from './modules/presence/PresenceMain';
+import Login from './modules/auth/Login';
+import { authService } from './services/authService';
+import { AuthUser } from './types';
 
 const App: React.FC = () => {
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'document' | 'settings' | 'presence'>('presence');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+
+  useEffect(() => {
+    const currentUser = authService.getCurrentUser();
+    if (currentUser) {
+      setUser(currentUser);
+    }
+    setIsAuthChecking(false);
+  }, []);
+
+  if (isAuthChecking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="w-12 h-12 border-4 border-[#006E62] border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Login onLoginSuccess={(u) => setUser(u)} />;
+  }
 
   const NavItemMobile = ({ id, icon: Icon, label, indent = false }: { id: any, icon: any, label: string, indent?: boolean }) => (
     <button
@@ -74,7 +99,7 @@ const App: React.FC = () => {
 
       {/* Main Content */}
       <main className="flex-1 min-w-0 flex flex-col">
-        <Header activeTab={activeTab} onMenuClick={() => setIsMobileMenuOpen(true)} />
+        <Header activeTab={activeTab} onMenuClick={() => setIsMobileMenuOpen(true)} user={user} />
 
         <div className="p-4 md:p-8 max-w-6xl mx-auto w-full">
           {activeTab === 'location' ? (

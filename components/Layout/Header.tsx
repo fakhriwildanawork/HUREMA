@@ -1,13 +1,16 @@
 
 import React from 'react';
-import { Menu } from 'lucide-react';
+import { Menu, UserCircle } from 'lucide-react';
+import { AuthUser } from '../../types';
+import { googleDriveService } from '../../services/googleDriveService';
 
 interface HeaderProps {
   activeTab: string;
   onMenuClick: () => void;
+  user: AuthUser;
 }
 
-const Header: React.FC<HeaderProps> = ({ activeTab, onMenuClick }) => {
+const Header: React.FC<HeaderProps> = ({ activeTab, onMenuClick, user }) => {
   const getPageTitle = () => {
     switch (activeTab) {
       case 'location': return 'Manajemen Lokasi';
@@ -33,11 +36,15 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onMenuClick }) => {
       </div>
       <div className="flex items-center gap-4">
         <div className="flex flex-col items-end hidden sm:flex">
-          <span className="text-xs font-bold text-gray-800">Admin HUREMA</span>
-          <span className="text-[10px] text-gray-400 font-medium">Administrator</span>
+          <span className="text-xs font-bold text-gray-800">{user.full_name}</span>
+          <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">{user.internal_nik}</span>
         </div>
-        <div className="w-9 h-9 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-[#006E62] font-bold">
-          AD
+        <div className="w-9 h-9 rounded-full bg-emerald-50 border border-emerald-100 overflow-hidden flex items-center justify-center text-[#006E62] font-bold">
+          {user.photo_google_id ? (
+            <img src={googleDriveService.getFileUrl(user.photo_google_id)} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <UserCircle size={24} />
+          )}
         </div>
       </div>
     </header>

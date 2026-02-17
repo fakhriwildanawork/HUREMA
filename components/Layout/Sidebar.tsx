@@ -3,8 +3,10 @@ import React, { useState } from 'react';
 import { 
   MapPin, LayoutDashboard, Settings, Users, 
   CalendarClock, Files, ChevronDown, ChevronRight, 
-  Menu as MenuIcon, ChevronLeft, Database, Fingerprint 
+  Menu as MenuIcon, ChevronLeft, Database, Fingerprint, LogOut 
 } from 'lucide-react';
+import { authService } from '../../services/authService';
+import Swal from 'sweetalert2';
 
 interface SidebarProps {
   activeTab: string;
@@ -15,6 +17,21 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed, setIsCollapsed }) => {
   const [isMasterOpen, setIsMasterOpen] = useState(true);
+
+  const handleLogout = async () => {
+    const result = await Swal.fire({
+      title: 'Logout?',
+      text: "Anda harus masuk kembali untuk mengakses data.",
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#006E62',
+      confirmButtonText: 'Ya, Keluar'
+    });
+
+    if (result.isConfirmed) {
+      authService.logout();
+    }
+  };
 
   const NavItem = ({ id, icon: Icon, label, indent = false }: { id: any, icon: any, label: string, indent?: boolean }) => (
     <button
@@ -52,7 +69,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed,
       <nav className="flex-1 px-3 overflow-y-auto scrollbar-none">
         <NavItem id="dashboard" icon={LayoutDashboard} label="Beranda" />
         
-        {/* Master Menu Group - Enhanced for consistency */}
+        {/* Master Menu Group */}
         <div className="mt-4">
           <button 
             onClick={() => setIsMasterOpen(!isMasterOpen)}
@@ -84,7 +101,16 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed,
         </div>
       </nav>
 
-      <div className="p-4 border-t border-gray-50">
+      <div className="p-4 border-t border-gray-50 space-y-2">
+        <button 
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-4 py-3 text-rose-500 hover:bg-rose-50 rounded-md transition-all font-medium text-sm"
+          title={isCollapsed ? 'Keluar' : ''}
+        >
+          <LogOut size={20} className="shrink-0" />
+          {!isCollapsed && <span>Keluar</span>}
+        </button>
+        
         <button 
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="w-full flex items-center justify-center p-2 text-gray-400 hover:bg-gray-100 rounded-md transition-all"

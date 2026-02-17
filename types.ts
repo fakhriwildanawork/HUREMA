@@ -53,6 +53,14 @@ export interface ScheduleRule {
   is_holiday: boolean;
 }
 
+export interface AuthUser {
+  id: string;
+  full_name: string;
+  internal_nik: string;
+  access_code: string;
+  photo_google_id?: string | null;
+}
+
 export interface Account {
   id: string;
   // Identitas

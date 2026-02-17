@@ -4,6 +4,7 @@ import { Fingerprint, Clock, MapPin, History, AlertCircle, Map as MapIcon, Camer
 import Swal from 'sweetalert2';
 import { presenceService } from '../../services/presenceService';
 import { accountService } from '../../services/accountService';
+import { authService } from '../../services/authService';
 import { googleDriveService } from '../../services/googleDriveService';
 import { Account, Attendance } from '../../types';
 import PresenceCamera from './PresenceCamera';
@@ -24,10 +25,13 @@ const PresenceMain: React.FC = () => {
   const [distance, setDistance] = useState<number | null>(null);
   const watchId = useRef<number | null>(null);
 
-  // Hardcoded current session context - Ganti dengan ID Anda jika perlu
-  const [currentAccountId, setCurrentAccountId] = useState("81907722-19f8-410e-a895-36be0709b114");
+  // Ambil user dari session
+  const currentUser = authService.getCurrentUser();
+  const currentAccountId = currentUser?.id;
 
   useEffect(() => {
+    if (!currentAccountId) return;
+    
     fetchInitialData();
     const timeInterval = setInterval(() => {
       setServerTime(prev => new Date(prev.getTime() + 1000));
@@ -42,6 +46,7 @@ const PresenceMain: React.FC = () => {
   }, [currentAccountId]);
 
   const fetchInitialData = async () => {
+    if (!currentAccountId) return;
     try {
       setIsLoading(true);
       const [acc, attendance, history, sTime] = await Promise.all([
