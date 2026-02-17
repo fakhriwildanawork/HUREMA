@@ -137,10 +137,15 @@ const PresenceMain: React.FC = () => {
     try {
       setIsCapturing(true);
       
-      const address = await presenceService.getReverseGeocode(coords.lat, coords.lng);
-      const photoId = await googleDriveService.uploadFile(new File([photoBlob], `Presence_${isCheckOut ? 'OUT' : 'IN'}_${Date.now()}.jpg`));
+      // Tahap 1: Jalankan geocoding dan upload secara paralel untuk efisiensi
+      const [address, photoId] = await Promise.all([
+        presenceService.getReverseGeocode(coords.lat, coords.lng),
+        googleDriveService.uploadFile(new File([photoBlob], `Presence_${isCheckOut ? 'OUT' : 'IN'}_${Date.now()}.jpg`))
+      ]);
+
       const currentTimeStr = serverTime.toISOString();
       
+      // Tahap 2: Simpan ke database Supabase
       if (!isCheckOut) {
         const payload: any = {
           account_id: account.id,
@@ -168,7 +173,9 @@ const PresenceMain: React.FC = () => {
         await presenceService.checkOut(todayAttendance.id, payload);
       }
 
-      setIsCameraActive(false); // Tutup kamera hanya setelah seluruh proses asinkron berhasil
+      // Tahap 3: Finalisasi UI (hanya setelah simpan DB sukses)
+      setIsCameraActive(false); 
+      
       await Swal.fire({ 
         title: 'Berhasil!', 
         text: `Presensi ${isCheckOut ? 'Pulang' : 'Masuk'} berhasil dicatat.`, 
@@ -176,9 +183,17 @@ const PresenceMain: React.FC = () => {
         timer: 2000,
         showConfirmButton: false
       });
-      fetchInitialData();
+      
+      // Refresh data tampilan
+      await fetchInitialData();
     } catch (error) {
-      Swal.fire('Error', 'Gagal memproses presensi. Pastikan koneksi stabil.', 'error');
+      console.error("Attendance Process Error:", error);
+      Swal.fire({
+        title: 'Gagal Menyimpan',
+        text: 'Terjadi kesalahan sistem saat menyimpan data. Harap periksa koneksi internet Anda.',
+        icon: 'error',
+        confirmButtonColor: '#006E62'
+      });
     } finally {
       setIsCapturing(false);
     }

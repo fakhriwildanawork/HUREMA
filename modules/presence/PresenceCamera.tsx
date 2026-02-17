@@ -63,12 +63,12 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, onClose, isP
 
   const startCamera = async () => {
     try {
+      // Menggunakan resolusi 720p ideal untuk menghindari cropping digital (zoom) di perangkat mobile
       const s = await navigator.mediaDevices.getUserMedia({ 
         video: { 
           facingMode: 'user', 
-          aspectRatio: { ideal: 9/16 },
-          width: { ideal: 1080 }, 
-          height: { ideal: 1920 } 
+          width: { ideal: 720 }, 
+          height: { ideal: 1280 } 
         } 
       });
       

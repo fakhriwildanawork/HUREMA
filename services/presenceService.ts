@@ -31,16 +31,23 @@ export const presenceService = {
   },
 
   /**
-   * Mendapatkan alamat dari koordinat (Nominatim API)
+   * Mendapatkan alamat dari koordinat (Nominatim API) dengan timeout
    */
   async getReverseGeocode(lat: number, lng: number): Promise<string> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3500); // Timeout 3.5 detik
+
     try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
+      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
       const data = await response.json();
-      return data.display_name || `${lat}, ${lng}`;
+      return data.display_name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
     } catch (err) {
-      console.error("Reverse Geotag Error:", err);
-      return `${lat}, ${lng}`;
+      clearTimeout(timeoutId);
+      console.error("Reverse Geotag Error (Using Fallback):", err);
+      return `Koordinat: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
     }
   },
 
