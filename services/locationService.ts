@@ -1,6 +1,19 @@
-
 import { supabase } from '../lib/supabase';
 import { Location, LocationInput, LocationAdministration, LocationAdminInput } from '../types';
+
+/**
+ * Fungsi pembantu untuk membersihkan data sebelum dikirim ke Supabase.
+ * Mengubah string kosong ('') menjadi null agar tidak error saat masuk ke kolom DATE atau NUMERIC.
+ */
+const sanitizePayload = (payload: any) => {
+  const sanitized = { ...payload };
+  Object.keys(sanitized).forEach(key => {
+    if (sanitized[key] === '' || sanitized[key] === undefined) {
+      sanitized[key] = null;
+    }
+  });
+  return sanitized;
+};
 
 export const locationService = {
   async getAll() {
@@ -25,9 +38,10 @@ export const locationService = {
   },
 
   async create(location: LocationInput) {
+    const sanitizedLocation = sanitizePayload(location);
     const { data, error } = await supabase
       .from('locations')
-      .insert([location])
+      .insert([sanitizedLocation])
       .select();
     
     if (error) throw error;
@@ -35,9 +49,10 @@ export const locationService = {
   },
 
   async update(id: string, location: Partial<LocationInput>) {
+    const sanitizedLocation = sanitizePayload(location);
     const { data, error } = await supabase
       .from('locations')
-      .update(location)
+      .update(sanitizedLocation)
       .eq('id', id)
       .select();
     
@@ -68,9 +83,10 @@ export const locationService = {
   },
 
   async createAdministration(adminData: LocationAdminInput) {
+    const sanitizedAdmin = sanitizePayload(adminData);
     const { data, error } = await supabase
       .from('location_administrations')
-      .insert([adminData])
+      .insert([sanitizedAdmin])
       .select();
     
     if (error) throw error;

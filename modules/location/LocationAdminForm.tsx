@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { X, Save, Upload, Calendar, ChevronDown, Paperclip } from 'lucide-react';
 import { LocationAdminInput } from '../../types';
@@ -64,14 +63,8 @@ const LocationAdminForm: React.FC<LocationAdminFormProps> = ({ onClose, onSubmit
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Sanitasi data: ubah string kosong menjadi null agar diterima oleh kolom DATE di Supabase
-    const sanitizedData = {
-      ...formData,
-      due_date: formData.due_date === '' ? null : formData.due_date
-    };
-    
-    onSubmit(sanitizedData);
+    // Sanitasi data string kosong ke null sekarang dilakukan di locationService.ts
+    onSubmit(formData);
   };
 
   return (
@@ -153,7 +146,7 @@ const LocationAdminForm: React.FC<LocationAdminFormProps> = ({ onClose, onSubmit
             <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">File Dokumentasi (Multiple)</label>
             <div className="border border-dashed border-gray-200 rounded-md p-4 bg-gray-50">
               <div className="flex flex-wrap gap-2 mb-3">
-                {formData.file_ids.map((fid, i) => (
+                {formData.file_ids.map((fid: string, i: number) => (
                   <div key={i} className="flex items-center gap-2 bg-white border border-gray-200 px-2 py-1 rounded-md text-[10px] font-bold group">
                     <Paperclip size={10} className="text-[#006E62]" />
                     <span className="truncate max-w-[80px]">FILE {i + 1}</span>

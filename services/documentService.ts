@@ -1,6 +1,20 @@
 import { supabase } from '../lib/supabase';
 import { DigitalDocument, DocumentInput } from '../types';
 
+/**
+ * Fungsi pembantu untuk membersihkan data sebelum dikirim ke Supabase.
+ * Mengubah string kosong ('') menjadi null.
+ */
+const sanitizePayload = (payload: any) => {
+  const sanitized = { ...payload };
+  Object.keys(sanitized).forEach(key => {
+    if (sanitized[key] === '' || sanitized[key] === undefined) {
+      sanitized[key] = null;
+    }
+  });
+  return sanitized;
+};
+
 export const documentService = {
   async getAll() {
     const { data, error } = await supabase
@@ -31,10 +45,11 @@ export const documentService = {
   async create(input: DocumentInput) {
     const { allowed_account_ids, ...docData } = input;
     
-    // 1. Insert Master Document
+    // 1. Insert Master Document with sanitization
+    const sanitizedDoc = sanitizePayload(docData);
     const { data: doc, error: dError } = await supabase
       .from('documents')
-      .insert([docData])
+      .insert([sanitizedDoc])
       .select()
       .single();
     
@@ -59,10 +74,11 @@ export const documentService = {
   async update(id: string, input: Partial<DocumentInput>) {
     const { allowed_account_ids, ...docData } = input;
 
-    // 1. Update Master
+    // 1. Update Master with sanitization
+    const sanitizedDoc = sanitizePayload(docData);
     const { data: doc, error: dError } = await supabase
       .from('documents')
-      .update(docData)
+      .update(sanitizedDoc)
       .eq('id', id)
       .select()
       .single();

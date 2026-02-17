@@ -34,7 +34,6 @@ const DocumentForm: React.FC<DocumentFormProps> = ({ onClose, onSuccess, initial
 
   useEffect(() => {
     accountService.getAll().then(data => setAccounts(data as any));
-    // Fix: cast response to any to resolve Dispatch type incompatibility in useEffect
     documentService.getUniqueDocTypes().then((types: any) => setExistingTypes(types));
 
     const handleClickOutside = (event: MouseEvent) => {
@@ -73,7 +72,7 @@ const DocumentForm: React.FC<DocumentFormProps> = ({ onClose, onSuccess, initial
     setFormData(prev => ({
       ...prev,
       allowed_account_ids: prev.allowed_account_ids.includes(id)
-        ? prev.allowed_account_ids.filter(aid => aid !== id)
+        ? prev.allowed_account_ids.filter((aid: string) => aid !== id)
         : [...prev.allowed_account_ids, id]
     }));
   };

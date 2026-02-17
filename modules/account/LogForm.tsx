@@ -105,7 +105,8 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Filtrasi Payload Akhir sebelum dikirim ke Service (Mencegah Error 400)
+    // Filtrasi Payload Akhir sebelum dikirim ke Service (Mencegah polusi data antar tabel)
+    // Penanganan string kosong menjadi null akan diproses di accountService via sanitizePayload
     let finalPayload: any = {
       account_id: formData.account_id,
       notes: formData.notes,
