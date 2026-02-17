@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { 
   MapPin, LayoutDashboard, Settings, Users, 
   CalendarClock, Files, ChevronDown, ChevronRight, 
-  Menu as MenuIcon, ChevronLeft 
+  Menu as MenuIcon, ChevronLeft, Database 
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -52,22 +52,24 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed,
       <nav className="flex-1 px-3 overflow-y-auto scrollbar-none">
         <NavItem id="dashboard" icon={LayoutDashboard} label="Beranda" />
         
-        {/* Master Menu Group */}
+        {/* Master Menu Group - Enhanced for consistency */}
         <div className="mt-4">
-          {!isCollapsed ? (
-            <button 
-              onClick={() => setIsMasterOpen(!isMasterOpen)}
-              className="flex items-center justify-between w-full px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest hover:text-[#006E62] transition-colors"
-            >
-              <span>Master</span>
-              {isMasterOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-            </button>
-          ) : (
-            <div className="border-t border-gray-100 my-4"></div>
-          )}
+          <button 
+            onClick={() => setIsMasterOpen(!isMasterOpen)}
+            className={`flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-200 w-full mb-1 text-gray-600 hover:bg-gray-100`}
+            title={isCollapsed ? 'Master' : ''}
+          >
+            <Database size={20} className="shrink-0 text-gray-400" />
+            {!isCollapsed && (
+              <div className="flex items-center justify-between flex-1 overflow-hidden">
+                <span className="font-medium text-sm truncate">Master</span>
+                {isMasterOpen ? <ChevronDown size={16} className="text-gray-300" /> : <ChevronRight size={16} className="text-gray-300" />}
+              </div>
+            )}
+          </button>
           
           {(isMasterOpen || isCollapsed) && (
-            <div className="mt-1">
+            <div className={`mt-1 overflow-hidden transition-all duration-300 ${isCollapsed ? '' : 'max-h-96'}`}>
               <NavItem id="location" icon={MapPin} label="Data Lokasi" indent />
               <NavItem id="schedule" icon={CalendarClock} label="Manajemen Jadwal" indent />
               <NavItem id="account" icon={Users} label="Akun" indent />

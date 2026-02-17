@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { X, LayoutDashboard, Users, MapPin, CalendarClock, Files, Settings } from 'lucide-react';
+import { X, LayoutDashboard, Users, MapPin, CalendarClock, Files, Settings, Database } from 'lucide-react';
 import Sidebar from './components/Layout/Sidebar';
 import Header from './components/Layout/Header';
 import LocationMain from './modules/location/LocationMain';
@@ -54,7 +54,10 @@ const App: React.FC = () => {
           <nav className="flex-1 space-y-1 overflow-y-auto scrollbar-none">
             <NavItemMobile id="dashboard" icon={LayoutDashboard} label="Beranda" />
             
-            <div className="py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest px-4 mt-2">Master</div>
+            <div className="flex items-center gap-3 px-4 py-3 text-gray-400 mt-2">
+              <Database size={20} />
+              <span className="font-bold text-[10px] uppercase tracking-widest">Master</span>
+            </div>
             <NavItemMobile id="location" icon={MapPin} label="Data Lokasi" indent />
             <NavItemMobile id="schedule" icon={CalendarClock} label="Manajemen Jadwal" indent />
             <NavItemMobile id="account" icon={Users} label="Akun" indent />
