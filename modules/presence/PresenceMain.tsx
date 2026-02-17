@@ -23,7 +23,7 @@ const PresenceMain: React.FC = () => {
   const [distance, setDistance] = useState<number | null>(null);
   const watchId = useRef<number | null>(null);
 
-  // Hardcoded current session context for demo
+  // Hardcoded current session context
   const currentAccountId = "81907722-19f8-410e-a895-36be0709b114";
 
   useEffect(() => {
@@ -64,16 +64,22 @@ const PresenceMain: React.FC = () => {
     if (navigator.geolocation) {
       watchId.current = navigator.geolocation.watchPosition(
         (pos) => {
-          const newCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-          setCoords(newCoords);
+          // Hanya update jika akurasi mencukupi (misal < 100m) untuk mencegah lonjakan titik
+          if (pos.coords.accuracy < 100) {
+            setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          }
         },
-        (err) => console.error("GPS Watch Error:", err),
-        { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+        (err) => {
+          console.error("GPS Error:", err);
+          if (err.code === 1) {
+            Swal.fire('Akses Ditolak', 'Harap aktifkan izin lokasi di browser Anda.', 'error');
+          }
+        },
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 }
       );
     }
   };
 
-  // Re-calculate distance whenever coords or account changes
   useEffect(() => {
     if (coords && account?.location) {
       const d = presenceService.calculateDistance(
@@ -127,7 +133,7 @@ const PresenceMain: React.FC = () => {
         await presenceService.checkOut(todayAttendance.id, payload);
       }
 
-      Swal.fire({ 
+      await Swal.fire({ 
         title: 'Berhasil!', 
         text: `Presensi ${isCheckOut ? 'Pulang' : 'Masuk'} berhasil dicatat.`, 
         icon: 'success', 
