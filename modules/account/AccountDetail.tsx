@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { X, Edit2, Trash2, User, Phone, Mail, Calendar, MapPin, Briefcase, Shield, Heart, GraduationCap, Download, ExternalLink, Clock, Activity, Plus, Paperclip, FileBadge, Award, ShieldAlert, LogOut } from 'lucide-react';
@@ -38,6 +37,9 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
   const [showContractForm, setShowContractForm] = useState<{ show: boolean, data?: any }>({ show: false });
   const [showWarningForm, setShowWarningForm] = useState(false);
   const [showTerminationForm, setShowTerminationForm] = useState(false);
+  
+  // Media Preview States
+  const [previewMedia, setPreviewMedia] = useState<{ url: string, title: string, type: 'image' | 'qr' } | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -210,12 +212,38 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
     }
   };
 
+  const downloadQR = () => {
+    const svg = document.getElementById('qr-member-code');
+    if (!svg) return;
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx?.drawImage(img, 0, 0);
+      const pngFile = canvas.toDataURL('image/png');
+      const downloadLink = document.createElement('a');
+      downloadLink.download = `QR_${account?.full_name}_${account?.internal_nik}.png`;
+      downloadLink.href = `${pngFile}`;
+      downloadLink.click();
+    };
+    img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
+  };
+
   if (isLoading) return <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-[#006E62] border-t-transparent rounded-full animate-spin"></div></div>;
   if (!account) return null;
 
-  const DetailSection = ({ icon: Icon, title, onAdd, children }: { icon: any, title: string, onAdd?: () => void, children: React.ReactNode }) => (
-    <div className="bg-white border border-gray-100 p-5 rounded-md shadow-sm">
-      <div className="flex items-center justify-between border-b border-gray-50 pb-3 mb-4">
+  // Sync data with latest career log
+  const latestCareer = careerLogs[0];
+  const currentPosition = latestCareer?.position || account.position;
+  const currentGrade = latestCareer?.grade || account.grade;
+  const currentLocation = latestCareer?.location_name || account.location?.name || '-';
+
+  const DetailSection = ({ icon: Icon, title, onAdd, children, isScrollable = false }: { icon: any, title: string, onAdd?: () => void, children: React.ReactNode, isScrollable?: boolean }) => (
+    <div className="bg-white border border-gray-100 p-5 rounded-md shadow-sm flex flex-col">
+      <div className="flex items-center justify-between border-b border-gray-50 pb-3 mb-4 shrink-0">
         <div className="flex items-center gap-2">
           <Icon size={16} className="text-[#006E62]" />
           <h4 className="text-[11px] font-bold uppercase tracking-widest text-gray-400">{title}</h4>
@@ -226,7 +254,7 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
           </button>
         )}
       </div>
-      <div className="space-y-4">{children}</div>
+      <div className={`space-y-4 ${isScrollable ? 'max-h-[300px] overflow-y-auto pr-2 scrollbar-thin' : ''}`}>{children}</div>
     </div>
   );
 
@@ -234,9 +262,12 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
     <div>
       <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter mb-0.5">{label}</p>
       {isFile && value ? (
-        <a href={googleDriveService.getFileUrl(value).replace('=s1600', '=s0')} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[11px] text-[#006E62] font-bold hover:underline">
+        <button 
+          onClick={() => setPreviewMedia({ url: googleDriveService.getFileUrl(value).replace('=s1600', '=s0'), title: label, type: 'image' })}
+          className="flex items-center gap-1.5 text-[11px] text-[#006E62] font-bold hover:underline"
+        >
           <Paperclip size={10} /> LIHAT DOKUMEN
-        </a>
+        </button>
       ) : (
         <p className="text-xs text-gray-700 font-medium leading-tight">{value || '-'}</p>
       )}
@@ -259,7 +290,10 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
       
       {/* Header Profile */}
       <div className="bg-white rounded-md border border-gray-100 p-6 flex flex-col md:flex-row gap-6 items-start shadow-sm">
-        <div className="w-32 h-32 rounded-md border-4 border-gray-50 overflow-hidden shrink-0 shadow-inner">
+        <div 
+          className="w-32 h-32 rounded-md border-4 border-gray-50 overflow-hidden shrink-0 shadow-inner cursor-pointer hover:opacity-90 transition-opacity"
+          onClick={() => account.photo_google_id && setPreviewMedia({ url: googleDriveService.getFileUrl(account.photo_google_id), title: 'Foto Profil', type: 'image' })}
+        >
           {account.photo_google_id ? (
             <img src={googleDriveService.getFileUrl(account.photo_google_id)} className="w-full h-full object-cover" />
           ) : (
@@ -273,16 +307,19 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
              <span className="px-2 py-0.5 bg-[#006E62]/10 text-[#006E62] text-[10px] font-bold uppercase rounded">{account.employee_type}</span>
              {termination && <span className="px-2 py-0.5 bg-red-50 text-red-600 text-[10px] font-bold uppercase rounded">NON-AKTIF</span>}
           </div>
-          <p className="text-sm font-bold text-gray-500 uppercase tracking-widest">{account.position} • {account.internal_nik}</p>
+          <p className="text-sm font-bold text-gray-500 uppercase tracking-widest">{currentPosition} • {currentGrade} • {account.internal_nik}</p>
           <div className="flex flex-wrap gap-4 pt-2">
-             <div className="flex items-center gap-1.5 text-xs text-gray-600"><MapPin size={14} className="text-gray-400" /> {account.location?.name || '-'}</div>
+             <div className="flex items-center gap-1.5 text-xs text-gray-600"><MapPin size={14} className="text-gray-400" /> {currentLocation}</div>
              <div className="flex items-center gap-1.5 text-xs text-gray-600"><Mail size={14} className="text-gray-400" /> {account.email || '-'}</div>
              <div className="flex items-center gap-1.5 text-xs text-gray-600"><Phone size={14} className="text-gray-400" /> {account.phone || '-'}</div>
           </div>
         </div>
 
-        <div className="p-3 bg-gray-50 rounded border border-gray-100 flex flex-col items-center gap-2">
-          <QRCodeSVG value={account.id} size={80} bgColor="#F9FAFB" />
+        <div 
+          className="p-3 bg-gray-50 rounded border border-gray-100 flex flex-col items-center gap-2 cursor-pointer hover:bg-gray-100 transition-colors"
+          onClick={() => setPreviewMedia({ url: account.id, title: 'Member QR Code', type: 'qr' })}
+        >
+          <QRCodeSVG id="qr-member-code" value={account.id} size={80} bgColor="#F9FAFB" />
           <p className="text-[8px] font-bold text-gray-400 tracking-widest uppercase">Member ID</p>
         </div>
 
@@ -293,6 +330,7 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* a. Informasi Personal */}
         <DetailSection icon={User} title="Informasi Personal">
           <div className="grid grid-cols-2 gap-4">
              <DataRow label="NIK KTP" value={account.nik_ktp} />
@@ -306,10 +344,11 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
           <DataRow label="Alamat Domisili" value={account.address} />
         </DetailSection>
 
+        {/* b. Karier & Penempatan */}
         <DetailSection icon={Briefcase} title="Karier & Penempatan">
           <div className="grid grid-cols-2 gap-4">
-             <DataRow label="Jabatan" value={account.position} />
-             <DataRow label="Golongan" value={account.grade} />
+             <DataRow label="Jabatan" value={currentPosition} />
+             <DataRow label="Golongan" value={currentGrade} />
              <DataRow label="NIK Internal" value={account.internal_nik} />
              <DataRow label="Jadwal" value={account.schedule_type} />
              <DataRow label="Mulai Kerja" value={formatDate(account.start_date || '')} />
@@ -317,7 +356,192 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
           </div>
         </DetailSection>
 
-        <DetailSection icon={ShieldAlert} title="Status Kedisiplinan" onAdd={() => setShowWarningForm(true)}>
+        {/* c. Presensi & Akses */}
+        <DetailSection icon={Shield} title="Presensi & Akses">
+           <div className="space-y-3">
+              <div className="flex items-center justify-between p-2 bg-gray-50 rounded text-[11px] font-bold">
+                <span className="text-gray-500">KODE AKSES</span>
+                <span className="text-[#006E62] tracking-widest">{account.access_code}</span>
+              </div>
+              <p className="text-[9px] font-bold text-gray-400 uppercase mt-2">Kebijakan Radius Presensi</p>
+              <div className="grid grid-cols-2 gap-2">
+                 {[
+                   { id: 'is_presence_limited_checkin', label: 'Check-in Datang' },
+                   { id: 'is_presence_limited_checkout', label: 'Check-out Pulang' },
+                   { id: 'is_presence_limited_ot_in', label: 'Check-in Lembur' },
+                   { id: 'is_presence_limited_ot_out', label: 'Check-out Lembur' }
+                 ].map(item => (
+                   <div key={item.id} className="flex items-center justify-between px-2 py-1.5 border border-gray-100 rounded bg-gray-50/50">
+                      <span className="text-[9px] font-medium text-gray-600">{item.label}</span>
+                      <span className={`text-[8px] font-bold uppercase ${account[item.id as keyof Account] ? 'text-[#006E62]' : 'text-orange-500'}`}>{account[item.id as keyof Account] ? 'Terbatas' : 'Bebas'}</span>
+                   </div>
+                 ))}
+              </div>
+           </div>
+        </DetailSection>
+
+        {/* d. Pendidikan & Dokumen */}
+        <DetailSection icon={GraduationCap} title="Pendidikan & Dokumen">
+           <div>
+             <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter mb-0.5">Pendidikan Terakhir</p>
+             <p className="text-xs text-gray-700 font-medium leading-tight">{account.last_education} {account.major ? `- ${account.major}` : ''}</p>
+           </div>
+           <div className="grid grid-cols-1 gap-4 pt-2">
+              <DataRow label="Scan Ijazah" value={account.diploma_google_id} isFile />
+           </div>
+        </DetailSection>
+
+        {/* e. Kontak Darurat */}
+        <DetailSection icon={Heart} title="Kontak Darurat">
+           <div className="mt-2">
+              <div className="space-y-3">
+                <DataRow label="Nama Kontak" value={account.emergency_contact_name} />
+                <div className="grid grid-cols-2 gap-4">
+                  <DataRow label="Hubungan" value={account.emergency_contact_rel} />
+                  <DataRow label="No HP" value={account.emergency_contact_phone} />
+                </div>
+              </div>
+           </div>
+        </DetailSection>
+
+        {/* f. Riwayat Kontrak Kerja */}
+        <DetailSection 
+          icon={FileBadge} 
+          title="Riwayat Kontrak Kerja"
+          onAdd={() => setShowContractForm({ show: true, data: { account_id: id } })}
+          isScrollable
+        >
+           <div className="space-y-3">
+            {contracts.length === 0 ? (
+              <p className="text-[10px] text-gray-400 italic">Belum ada riwayat kontrak.</p>
+            ) : (
+              contracts.map(c => (
+                <div key={c.id} className="flex group justify-between items-start border-l-2 border-emerald-100 pl-3 py-1 relative">
+                  <div className="flex-1 min-w-0 pr-4">
+                    <p className="text-[10px] font-bold text-[#006E62] leading-tight">{c.contract_number}</p>
+                    <p className="text-[9px] text-gray-500 font-medium uppercase tracking-tighter">{c.contract_type}</p>
+                    <div className="flex justify-between items-center mt-1">
+                      <p className="text-[8px] text-gray-400 uppercase font-bold">{formatDate(c.start_date)} - {c.end_date ? formatDate(c.end_date) : 'TETAP'}</p>
+                      {c.file_id && (
+                        <button onClick={() => setPreviewMedia({ url: googleDriveService.getFileUrl(c.file_id!).replace('=s1600', '=s0'), title: `Kontrak ${c.contract_number}`, type: 'image' })} className="text-[#006E62] hover:text-[#005a50] flex items-center gap-0.5 text-[8px] font-bold"><Paperclip size={10} /> DOK</button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => setShowContractForm({ show: true, data: c })} className="text-gray-300 hover:text-[#006E62]"><Edit2 size={12} /></button>
+                    <button onClick={() => handleDeleteContract(c.id)} className="text-gray-300 hover:text-red-500"><Trash2 size={12} /></button>
+                  </div>
+                </div>
+              ))
+            )}
+           </div>
+        </DetailSection>
+
+        {/* g. Riwayat Karir */}
+        <DetailSection 
+          icon={Clock} 
+          title="Riwayat Karir" 
+          onAdd={() => setShowLogForm({ type: 'career', data: account })}
+          isScrollable
+        >
+          <div className="space-y-3">
+            {careerLogs.length === 0 ? (
+              <p className="text-[10px] text-gray-400 italic">Belum ada riwayat perubahan karir.</p>
+            ) : (
+              careerLogs.map((log) => (
+                <div key={log.id} className="flex group justify-between items-start border-l-2 border-gray-100 pl-3 py-1 relative">
+                  <div className="absolute -left-[5px] top-2 w-2 h-2 rounded-full bg-[#006E62]"></div>
+                  <div className="flex-1 min-w-0 pr-4">
+                    <p className="text-[10px] font-bold text-[#006E62] leading-tight">{log.position} • {log.grade}</p>
+                    <p className="text-[9px] text-gray-400 font-medium">{log.location_name}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <p className="text-[8px] text-gray-300 font-bold uppercase">{formatDate(log.change_date)}</p>
+                      {log.file_sk_id && (
+                        <button onClick={() => setPreviewMedia({ url: googleDriveService.getFileUrl(log.file_sk_id!).replace('=s1600', '=s0'), title: 'SK Kenaikan/Mutasi', type: 'image' })} className="text-[#006E62] hover:underline flex items-center gap-0.5 text-[8px] font-bold"><Paperclip size={8} /> SK</button>
+                      )}
+                    </div>
+                    {log.notes && <p className="text-[9px] text-gray-400 italic mt-1 line-clamp-1">"{log.notes}"</p>}
+                  </div>
+                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => setShowLogForm({ type: 'career', data: log, isEdit: true })} className="text-gray-300 hover:text-[#006E62]"><Edit2 size={12} /></button>
+                    <button onClick={() => handleDeleteLog(log.id, 'career')} className="text-gray-300 hover:text-red-500"><Trash2 size={12} /></button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </DetailSection>
+
+        {/* h. Daftar Sertifikasi */}
+        <DetailSection 
+          icon={Award} 
+          title="Daftar Sertifikasi" 
+          onAdd={() => setShowCertForm({ show: true, data: { account_id: id } })}
+          isScrollable
+        >
+          <div className="space-y-3">
+            {certs.length === 0 ? (
+              <p className="text-[10px] text-gray-400 italic">Belum ada data sertifikasi.</p>
+            ) : (
+              certs.map((cert) => (
+                <div key={cert.id} className="flex group justify-between items-start border-l-2 border-emerald-100 pl-3 py-1 relative">
+                  <div className="absolute -left-[5px] top-2 w-2 h-2 rounded-full bg-[#006E62]"></div>
+                  <div className="flex-1 min-w-0 pr-4">
+                    <p className="text-[10px] font-bold text-[#006E62] leading-tight">{cert.cert_name}</p>
+                    <p className="text-[9px] text-gray-500 font-medium uppercase tracking-tighter">{cert.cert_type}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <p className="text-[8px] text-gray-400 font-bold uppercase">{formatDate(cert.cert_date)}</p>
+                      {cert.file_id && (
+                        <button onClick={() => setPreviewMedia({ url: googleDriveService.getFileUrl(cert.file_id!).replace('=s1600', '=s0'), title: `Sertifikat ${cert.cert_name}`, type: 'image' })} className="text-[#006E62] hover:underline flex items-center gap-0.5 text-[8px] font-bold"><Paperclip size={8} /> FILE</button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => setShowCertForm({ show: true, data: cert })} className="text-gray-300 hover:text-[#006E62]"><Edit2 size={12} /></button>
+                    <button onClick={() => handleDeleteCert(cert.id)} className="text-gray-300 hover:text-red-500"><Trash2 size={12} /></button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </DetailSection>
+
+        {/* i. Riwayat Kesehatan */}
+        <DetailSection 
+          icon={Activity} 
+          title="Riwayat Kesehatan" 
+          onAdd={() => setShowLogForm({ type: 'health', data: account })}
+          isScrollable
+        >
+          <div className="space-y-3">
+            {healthLogs.length === 0 ? (
+              <p className="text-[10px] text-gray-400 italic">Belum ada riwayat kesehatan.</p>
+            ) : (
+              healthLogs.map((log) => (
+                <div key={log.id} className="flex group justify-between items-start border-l-2 border-gray-100 pl-3 py-1 relative">
+                  <div className="absolute -left-[5px] top-2 w-2 h-2 rounded-full bg-[#00FFE4]"></div>
+                  <div className="flex-1 min-w-0 pr-4">
+                    <p className="text-[10px] font-bold text-gray-700 leading-tight">MCU: {log.mcu_status || '-'}</p>
+                    <p className="text-[9px] text-red-400 font-medium">Risiko: {log.health_risk || '-'}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <p className="text-[8px] text-gray-300 font-bold uppercase">{formatDate(log.change_date)}</p>
+                      {log.file_mcu_id && (
+                        <button onClick={() => setPreviewMedia({ url: googleDriveService.getFileUrl(log.file_mcu_id!).replace('=s1600', '=s0'), title: 'Hasil MCU', type: 'image' })} className="text-[#006E62] hover:underline flex items-center gap-0.5 text-[8px] font-bold"><Paperclip size={8} /> MCU</button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => setShowLogForm({ type: 'health', data: log, isEdit: true })} className="text-gray-300 hover:text-[#006E62]"><Edit2 size={12} /></button>
+                    <button onClick={() => handleDeleteLog(log.id, 'health')} className="text-gray-300 hover:text-red-500"><Trash2 size={12} /></button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </DetailSection>
+
+        {/* j. Status Kedisiplinan */}
+        <DetailSection icon={ShieldAlert} title="Status Kedisiplinan" onAdd={() => setShowWarningForm(true)} isScrollable>
           <div className="space-y-3">
             {warnings.length === 0 ? <p className="text-[10px] text-gray-400 italic">Belum ada riwayat peringatan.</p> : (
               warnings.map(w => (
@@ -326,7 +550,7 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
                     <p className="text-[10px] font-bold text-orange-600 leading-tight">{w.warning_type}</p>
                     <p className="text-[8px] text-gray-400 uppercase font-bold">{formatDate(w.issue_date)}</p>
                     <p className="text-[10px] text-gray-600 mt-1 line-clamp-1">{w.reason}</p>
-                    {w.file_id && <a href={googleDriveService.getFileUrl(w.file_id)} target="_blank" className="text-[9px] font-bold text-[#006E62] mt-1 inline-block">LIHAT SURAT</a>}
+                    {w.file_id && <button onClick={() => setPreviewMedia({ url: googleDriveService.getFileUrl(w.file_id!).replace('=s1600', '=s0'), title: `Surat ${w.warning_type}`, type: 'image' })} className="text-[9px] font-bold text-[#006E62] mt-1 inline-block">LIHAT SURAT</button>}
                   </div>
                   <button onClick={() => handleDeleteWarning(w.id)} className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={12} /></button>
                 </div>
@@ -335,6 +559,7 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
           </div>
         </DetailSection>
 
+        {/* k. Status Exit / Pemberhentian */}
         <DetailSection icon={LogOut} title="Status Exit / Pemberhentian" onAdd={!termination ? () => setShowTerminationForm(true) : undefined}>
           {termination ? (
             <div className="space-y-3 p-3 bg-red-50/50 border border-red-100 rounded">
@@ -372,180 +597,34 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
             </div>
           )}
         </DetailSection>
-
-        <DetailSection icon={Shield} title="Presensi & Akses">
-           <div className="space-y-3">
-              <div className="flex items-center justify-between p-2 bg-gray-50 rounded text-[11px] font-bold">
-                <span className="text-gray-500">KODE AKSES</span>
-                <span className="text-[#006E62] tracking-widest">{account.access_code}</span>
-              </div>
-              <p className="text-[9px] font-bold text-gray-400 uppercase mt-2">Kebijakan Radius Presensi</p>
-              <div className="grid grid-cols-2 gap-2">
-                 {[
-                   { id: 'is_presence_limited_checkin', label: 'Check-in Datang' },
-                   { id: 'is_presence_limited_checkout', label: 'Check-out Pulang' },
-                   { id: 'is_presence_limited_ot_in', label: 'Check-in Lembur' },
-                   { id: 'is_presence_limited_ot_out', label: 'Check-out Lembur' }
-                 ].map(item => (
-                   <div key={item.id} className="flex items-center justify-between px-2 py-1.5 border border-gray-100 rounded bg-gray-50/50">
-                      <span className="text-[9px] font-medium text-gray-600">{item.label}</span>
-                      <span className={`text-[8px] font-bold uppercase ${account[item.id as keyof Account] ? 'text-[#006E62]' : 'text-orange-500'}`}>{account[item.id as keyof Account] ? 'Terbatas' : 'Bebas'}</span>
-                   </div>
-                 ))}
-              </div>
-           </div>
-        </DetailSection>
-
-        <DetailSection 
-          icon={FileBadge} 
-          title="Riwayat Kontrak Kerja"
-          onAdd={() => setShowContractForm({ show: true, data: { account_id: id } })}
-        >
-           <div className="space-y-3">
-            {contracts.length === 0 ? (
-              <p className="text-[10px] text-gray-400 italic">Belum ada riwayat kontrak.</p>
-            ) : (
-              contracts.map(c => (
-                <div key={c.id} className="flex group justify-between items-start border-l-2 border-emerald-100 pl-3 py-1 relative">
-                  <div className="flex-1 min-w-0 pr-4">
-                    <p className="text-[10px] font-bold text-[#006E62] leading-tight">{c.contract_number}</p>
-                    <p className="text-[9px] text-gray-500 font-medium uppercase tracking-tighter">{c.contract_type}</p>
-                    <div className="flex justify-between items-center mt-1">
-                      <p className="text-[8px] text-gray-400 uppercase font-bold">{formatDate(c.start_date)} - {c.end_date ? formatDate(c.end_date) : 'TETAP'}</p>
-                      {c.file_id && (
-                        <a href={googleDriveService.getFileUrl(c.file_id).replace('=s1600', '=s0')} target="_blank" rel="noreferrer" className="text-[#006E62] hover:text-[#005a50] flex items-center gap-0.5 text-[8px] font-bold"><Paperclip size={10} /> PDF</a>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => setShowContractForm({ show: true, data: c })} className="text-gray-300 hover:text-[#006E62]"><Edit2 size={12} /></button>
-                    <button onClick={() => handleDeleteContract(c.id)} className="text-gray-300 hover:text-red-500"><Trash2 size={12} /></button>
-                  </div>
-                </div>
-              ))
-            )}
-           </div>
-        </DetailSection>
-
-        <DetailSection 
-          icon={Award} 
-          title="Daftar Sertifikasi" 
-          onAdd={() => setShowCertForm({ show: true, data: { account_id: id } })}
-        >
-          <div className="space-y-3">
-            {certs.length === 0 ? (
-              <p className="text-[10px] text-gray-400 italic">Belum ada data sertifikasi.</p>
-            ) : (
-              certs.map((cert) => (
-                <div key={cert.id} className="flex group justify-between items-start border-l-2 border-emerald-100 pl-3 py-1 relative">
-                  <div className="absolute -left-[5px] top-2 w-2 h-2 rounded-full bg-[#006E62]"></div>
-                  <div className="flex-1 min-w-0 pr-4">
-                    <p className="text-[10px] font-bold text-[#006E62] leading-tight">{cert.cert_name}</p>
-                    <p className="text-[9px] text-gray-500 font-medium uppercase tracking-tighter">{cert.cert_type}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <p className="text-[8px] text-gray-400 font-bold uppercase">{formatDate(cert.cert_date)}</p>
-                      {cert.file_id && (
-                        <a href={googleDriveService.getFileUrl(cert.file_id).replace('=s1600', '=s0')} target="_blank" rel="noreferrer" className="text-[#006E62] hover:underline flex items-center gap-0.5 text-[8px] font-bold"><Paperclip size={8} /> FILE</a>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => setShowCertForm({ show: true, data: cert })} className="text-gray-300 hover:text-[#006E62]"><Edit2 size={12} /></button>
-                    <button onClick={() => handleDeleteCert(cert.id)} className="text-gray-300 hover:text-red-500"><Trash2 size={12} /></button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </DetailSection>
-
-        <DetailSection 
-          icon={Clock} 
-          title="Riwayat Karir" 
-          onAdd={() => setShowLogForm({ type: 'career', data: account })}
-        >
-          <div className="space-y-3">
-            {careerLogs.length === 0 ? (
-              <p className="text-[10px] text-gray-400 italic">Belum ada riwayat perubahan karir.</p>
-            ) : (
-              careerLogs.map((log) => (
-                <div key={log.id} className="flex group justify-between items-start border-l-2 border-gray-100 pl-3 py-1 relative">
-                  <div className="absolute -left-[5px] top-2 w-2 h-2 rounded-full bg-[#006E62]"></div>
-                  <div className="flex-1 min-w-0 pr-4">
-                    <p className="text-[10px] font-bold text-[#006E62] leading-tight">{log.position} • {log.grade}</p>
-                    <p className="text-[9px] text-gray-400 font-medium">{log.location_name}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <p className="text-[8px] text-gray-300 font-bold uppercase">{formatDate(log.change_date)}</p>
-                      {log.file_sk_id && (
-                        <a href={googleDriveService.getFileUrl(log.file_sk_id).replace('=s1600', '=s0')} target="_blank" rel="noreferrer" className="text-[#006E62] hover:underline flex items-center gap-0.5 text-[8px] font-bold"><Paperclip size={8} /> SK</a>
-                      )}
-                    </div>
-                    {log.notes && <p className="text-[9px] text-gray-400 italic mt-1 line-clamp-1">"{log.notes}"</p>}
-                  </div>
-                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => setShowLogForm({ type: 'career', data: log, isEdit: true })} className="text-gray-300 hover:text-[#006E62]"><Edit2 size={12} /></button>
-                    <button onClick={() => handleDeleteLog(log.id, 'career')} className="text-gray-300 hover:text-red-500"><Trash2 size={12} /></button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </DetailSection>
-
-        <DetailSection 
-          icon={Activity} 
-          title="Riwayat Kesehatan" 
-          onAdd={() => setShowLogForm({ type: 'health', data: account })}
-        >
-          <div className="space-y-3">
-            {healthLogs.length === 0 ? (
-              <p className="text-[10px] text-gray-400 italic">Belum ada riwayat kesehatan.</p>
-            ) : (
-              healthLogs.map((log) => (
-                <div key={log.id} className="flex group justify-between items-start border-l-2 border-gray-100 pl-3 py-1 relative">
-                  <div className="absolute -left-[5px] top-2 w-2 h-2 rounded-full bg-[#00FFE4]"></div>
-                  <div className="flex-1 min-w-0 pr-4">
-                    <p className="text-[10px] font-bold text-gray-700 leading-tight">MCU: {log.mcu_status || '-'}</p>
-                    <p className="text-[9px] text-red-400 font-medium">Risiko: {log.health_risk || '-'}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <p className="text-[8px] text-gray-300 font-bold uppercase">{formatDate(log.change_date)}</p>
-                      {log.file_mcu_id && (
-                        <a href={googleDriveService.getFileUrl(log.file_mcu_id).replace('=s1600', '=s0')} target="_blank" rel="noreferrer" className="text-[#006E62] hover:underline flex items-center gap-0.5 text-[8px] font-bold"><Paperclip size={8} /> MCU</a>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => setShowLogForm({ type: 'health', data: log, isEdit: true })} className="text-gray-300 hover:text-[#006E62]"><Edit2 size={12} /></button>
-                    <button onClick={() => handleDeleteLog(log.id, 'health')} className="text-gray-300 hover:text-red-500"><Trash2 size={12} /></button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </DetailSection>
-
-        <DetailSection icon={GraduationCap} title="Pendidikan & Dokumen">
-           <div>
-             <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter mb-0.5">Pendidikan Terakhir</p>
-             <p className="text-xs text-gray-700 font-medium leading-tight">{account.last_education} {account.major ? `- ${account.major}` : ''}</p>
-           </div>
-           <div className="grid grid-cols-1 gap-4 pt-2">
-              <DataRow label="Scan Ijazah" value={account.diploma_google_id} isFile />
-           </div>
-        </DetailSection>
-
-        <DetailSection icon={Heart} title="Kontak Darurat">
-           <div className="mt-2">
-              <div className="space-y-3">
-                <DataRow label="Nama Kontak" value={account.emergency_contact_name} />
-                <div className="grid grid-cols-2 gap-4">
-                  <DataRow label="Hubungan" value={account.emergency_contact_rel} />
-                  <DataRow label="No HP" value={account.emergency_contact_phone} />
-                </div>
-              </div>
-           </div>
-        </DetailSection>
       </div>
+
+      {/* Modal Preview Media */}
+      {previewMedia && (
+        <div className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-md max-w-4xl w-full overflow-hidden flex flex-col max-h-[90vh]">
+             <div className="px-6 py-3 border-b flex justify-between items-center">
+                <h4 className="text-sm font-bold text-[#006E62] uppercase tracking-widest">{previewMedia.title}</h4>
+                <div className="flex gap-4 items-center">
+                   {previewMedia.type === 'qr' && (
+                     <button onClick={downloadQR} className="text-[#006E62] hover:text-[#005a50] flex items-center gap-1 text-xs font-bold"><Download size={14} /> DOWNLOAD</button>
+                   )}
+                   <button onClick={() => setPreviewMedia(null)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+                </div>
+             </div>
+             <div className="flex-1 overflow-auto bg-gray-50 flex items-center justify-center p-8">
+                {previewMedia.type === 'image' ? (
+                  <img src={previewMedia.url} className="max-w-full max-h-full object-contain shadow-xl rounded" />
+                ) : (
+                  <div className="bg-white p-8 rounded-xl shadow-2xl">
+                    <QRCodeSVG value={previewMedia.url} size={250} />
+                    <p className="text-center mt-4 font-mono text-gray-400 text-xs">ID: {previewMedia.url}</p>
+                  </div>
+                )}
+             </div>
+          </div>
+        </div>
+      )}
 
       {showLogForm && (
         <LogForm type={showLogForm.type} accountId={id} initialData={showLogForm.data} isEdit={showLogForm.isEdit} onClose={() => setShowLogForm(null)} onSubmit={handleLogSubmit} />

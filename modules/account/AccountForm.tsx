@@ -108,6 +108,11 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
           updated.schedule_id = '';
        }
 
+       // KOREKSI: Reset end_date if type is "Tetap"
+       if (name === 'employee_type' && value === 'Tetap') {
+          updated.end_date = '';
+       }
+
        // Auto-update schedule_type name if schedule_id is selected
        if (name === 'schedule_id' && value) {
           const selected = schedules.find(s => s.id === value);
@@ -196,7 +201,12 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
           className="flex-1 overflow-y-auto p-6 scrollbar-thin" 
           onSubmit={(e) => { 
             e.preventDefault(); 
-            onSubmit(formData); 
+            // Final check to ensure end_date is null for Tetap
+            const payload = { ...formData };
+            if (payload.employee_type === 'Tetap') {
+               payload.end_date = '';
+            }
+            onSubmit(payload); 
           }}
         >
           <div className="bg-orange-50/50 border border-orange-100 p-2 rounded mb-4 flex items-center gap-2">
