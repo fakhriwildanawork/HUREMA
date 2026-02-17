@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { X, Edit2, Trash2, User, Phone, Mail, Calendar, MapPin, Briefcase, Shield, Heart, GraduationCap, Download, ExternalLink, Clock, Activity, Plus, Paperclip, FileBadge, Award, ShieldAlert, LogOut } from 'lucide-react';
@@ -235,6 +236,9 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
   if (isLoading) return <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-[#006E62] border-t-transparent rounded-full animate-spin"></div></div>;
   if (!account) return null;
 
+  const today = new Date().toISOString().split('T')[0];
+  const isInactive = account.end_date && account.end_date <= today;
+
   // Sync data with latest career log
   const latestCareer = careerLogs[0];
   const currentPosition = latestCareer?.position || account.position;
@@ -304,8 +308,10 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
         <div className="flex-1 space-y-2">
           <div className="flex items-center gap-3">
              <h2 className="text-2xl font-bold text-gray-800 tracking-tight">{account.full_name}</h2>
-             <span className="px-2 py-0.5 bg-[#006E62]/10 text-[#006E62] text-[10px] font-bold uppercase rounded">{account.employee_type}</span>
-             {termination && <span className="px-2 py-0.5 bg-red-50 text-red-600 text-[10px] font-bold uppercase rounded">NON-AKTIF</span>}
+             <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded ${isInactive ? 'bg-gray-100 text-gray-400' : 'bg-[#006E62]/10 text-[#006E62]'}`}>
+               {account.employee_type}
+             </span>
+             {(termination || isInactive) && <span className="px-2 py-0.5 bg-red-50 text-red-600 text-[10px] font-bold uppercase rounded">NON-AKTIF</span>}
           </div>
           <p className="text-sm font-bold text-gray-500 uppercase tracking-widest">{currentPosition} • {currentGrade} • {account.internal_nik}</p>
           <div className="flex flex-wrap gap-4 pt-2">
@@ -560,26 +566,31 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
         </DetailSection>
 
         {/* k. Status Exit / Pemberhentian */}
-        <DetailSection icon={LogOut} title="Status Exit / Pemberhentian" onAdd={!termination ? () => setShowTerminationForm(true) : undefined}>
-          {termination ? (
+        <DetailSection icon={LogOut} title="Status Exit / Pemberhentian" onAdd={!termination && !isInactive ? () => setShowTerminationForm(true) : undefined}>
+          {termination || isInactive ? (
             <div className="space-y-3 p-3 bg-red-50/50 border border-red-100 rounded">
               <div className="flex justify-between items-center">
-                <span className="text-[10px] font-bold text-red-600 uppercase tracking-widest">{termination.termination_type}</span>
-                <span className="text-[10px] font-bold text-gray-500">{formatDate(termination.termination_date)}</span>
+                <span className="text-[10px] font-bold text-red-600 uppercase tracking-widest">{termination?.termination_type || 'KONTRAK BERAKHIR'}</span>
+                <span className="text-[10px] font-bold text-gray-500">{formatDate(termination?.termination_date || account.end_date || '')}</span>
               </div>
-              <DataRow label="Alasan Keluar" value={termination.reason} />
-              {termination.termination_type === 'Pemecatan' ? (
+              <DataRow label="Alasan Keluar" value={termination?.reason || 'Masa kontrak telah habis atau akun dinonaktifkan secara otomatis.'} />
+              {termination?.termination_type === 'Pemecatan' && (
                 <DataRow label="Uang Pesangon" value={formatCurrency(termination.severance_amount)} />
-              ) : (
+              )}
+              {termination?.termination_type === 'Resign' && (
                 <DataRow label="Biaya Penalti" value={formatCurrency(termination.penalty_amount)} />
               )}
-              {termination.file_id && <DataRow label="Surat Pemberhentian" value={termination.file_id} isFile />}
+              {termination?.file_id && <DataRow label="Surat Pemberhentian" value={termination.file_id} isFile />}
               <button 
                 onClick={async () => {
                   const res = await Swal.fire({ title: 'Batalkan Pemberhentian?', text: 'Akun akan diaktifkan kembali.', icon: 'question', showCancelButton: true, confirmButtonColor: '#006E62' });
                   if (res.isConfirmed) {
                     setIsSaving(true);
-                    await disciplineService.deleteTermination(termination.id, id);
+                    if (termination) {
+                      await disciplineService.deleteTermination(termination.id, id);
+                    } else {
+                      await accountService.update(id, { end_date: null });
+                    }
                     setTermination(null);
                     setAccount(prev => prev ? { ...prev, end_date: null } : null);
                     setIsSaving(false);
@@ -587,7 +598,7 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
                 }}
                 className="w-full mt-2 py-1.5 text-[10px] font-bold uppercase text-red-600 border border-red-200 rounded hover:bg-white transition-colors"
               >
-                Batalkan Exit
+                Batalkan Exit / Aktifkan Kembali
               </button>
             </div>
           ) : (
@@ -618,7 +629,7 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
                 ) : (
                   <div className="bg-white p-8 rounded-xl shadow-2xl">
                     <QRCodeSVG value={previewMedia.url} size={250} />
-                    <p className="text-center mt-4 font-mono text-gray-400 text-xs">ID: {previewMedia.url}</p>
+                    <p className="center mt-4 font-mono text-gray-400 text-xs">ID: {previewMedia.url}</p>
                   </div>
                 )}
              </div>
