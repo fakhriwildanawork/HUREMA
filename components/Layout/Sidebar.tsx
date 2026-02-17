@@ -1,0 +1,93 @@
+
+import React, { useState } from 'react';
+import { 
+  MapPin, LayoutDashboard, Settings, Users, 
+  CalendarClock, Files, ChevronDown, ChevronRight, 
+  Menu as MenuIcon, ChevronLeft 
+} from 'lucide-react';
+
+interface SidebarProps {
+  activeTab: string;
+  setActiveTab: (tab: any) => void;
+  isCollapsed: boolean;
+  setIsCollapsed: (collapsed: boolean) => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed, setIsCollapsed }) => {
+  const [isMasterOpen, setIsMasterOpen] = useState(true);
+
+  const NavItem = ({ id, icon: Icon, label, indent = false }: { id: any, icon: any, label: string, indent?: boolean }) => (
+    <button
+      onClick={() => setActiveTab(id)}
+      className={`flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-200 w-full mb-1 ${
+        activeTab === id 
+          ? 'bg-[#006E62] text-white shadow-md' 
+          : 'text-gray-600 hover:bg-gray-100'
+      } ${indent && !isCollapsed ? 'ml-4 w-[calc(100%-1rem)]' : ''}`}
+      title={isCollapsed ? label : ''}
+    >
+      <Icon size={20} className="shrink-0" />
+      {!isCollapsed && <span className="font-medium text-sm truncate">{label}</span>}
+    </button>
+  );
+
+  return (
+    <aside 
+      className={`hidden md:flex flex-col border-r border-gray-100 bg-white sticky top-0 h-screen transition-all duration-300 ${
+        isCollapsed ? 'w-20' : 'w-64'
+      }`}
+    >
+      <div className="flex items-center justify-between p-4 mb-4">
+        {!isCollapsed && (
+          <div className="flex items-center gap-2 overflow-hidden">
+            <div className="w-8 h-8 bg-[#006E62] rounded flex items-center justify-center text-white font-bold italic shrink-0">H</div>
+            <h1 className="text-xl font-bold tracking-tight text-[#006E62] truncate">HUREMA</h1>
+          </div>
+        )}
+        {isCollapsed && (
+          <div className="w-8 h-8 bg-[#006E62] rounded flex items-center justify-center text-white font-bold italic mx-auto">H</div>
+        )}
+      </div>
+      
+      <nav className="flex-1 px-3 overflow-y-auto scrollbar-none">
+        <NavItem id="dashboard" icon={LayoutDashboard} label="Beranda" />
+        
+        {/* Master Menu Group */}
+        <div className="mt-4">
+          {!isCollapsed ? (
+            <button 
+              onClick={() => setIsMasterOpen(!isMasterOpen)}
+              className="flex items-center justify-between w-full px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest hover:text-[#006E62] transition-colors"
+            >
+              <span>Master</span>
+              {isMasterOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            </button>
+          ) : (
+            <div className="border-t border-gray-100 my-4"></div>
+          )}
+          
+          {(isMasterOpen || isCollapsed) && (
+            <div className="mt-1">
+              <NavItem id="account" icon={Users} label="Data Akun" indent />
+              <NavItem id="location" icon={MapPin} label="Data Lokasi" indent />
+              <NavItem id="schedule" icon={CalendarClock} label="Manajemen Jadwal" indent />
+              <NavItem id="document" icon={Files} label="Dokumen Digital" indent />
+              <NavItem id="settings" icon={Settings} label="Pengaturan" indent />
+            </div>
+          )}
+        </div>
+      </nav>
+
+      <div className="p-4 border-t border-gray-50">
+        <button 
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="w-full flex items-center justify-center p-2 text-gray-400 hover:bg-gray-100 rounded-md transition-all"
+        >
+          {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+        </button>
+      </div>
+    </aside>
+  );
+};
+
+export default Sidebar;

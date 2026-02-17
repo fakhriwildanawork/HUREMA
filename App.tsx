@@ -1,23 +1,22 @@
+
 import React, { useState } from 'react';
-import { MapPin, LayoutDashboard, Settings, Menu, X, Users, CalendarClock, History, FileBadge, Award, Activity, ShieldAlert, Files } from 'lucide-react';
+import { X, LayoutDashboard, Users, MapPin, CalendarClock, Files, Settings } from 'lucide-react';
+import Sidebar from './components/Layout/Sidebar';
+import Header from './components/Layout/Header';
 import LocationMain from './modules/location/LocationMain';
 import AccountMain from './modules/account/AccountMain';
 import ScheduleMain from './modules/schedule/ScheduleMain';
-import CareerLogMain from './modules/career/CareerLogMain';
-import HealthLogMain from './modules/health/HealthLogMain';
-import ContractMain from './modules/contract/ContractMain';
-import CertificationMain from './modules/certification/CertificationMain';
-import DisciplineMain from './modules/discipline/DisciplineMain';
 import DocumentMain from './modules/document/DocumentMain';
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'career' | 'health' | 'contract' | 'certification' | 'discipline' | 'document' | 'settings'>('location');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'document' | 'settings'>('location');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-  const NavItem = ({ id, icon: Icon, label }: { id: any, icon: any, label: string }) => (
+  const NavItemMobile = ({ id, icon: Icon, label }: { id: any, icon: any, label: string }) => (
     <button
       onClick={() => { setActiveTab(id); setIsMobileMenuOpen(false); }}
-      className={`flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-200 w-full ${
+      className={`flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-200 w-full mb-1 ${
         activeTab === id 
           ? 'bg-[#006E62] text-white shadow-md' 
           : 'text-gray-600 hover:bg-gray-100'
@@ -30,27 +29,12 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen flex bg-white text-gray-800">
-      {/* Sidebar Desktop */}
-      <aside className="hidden md:flex flex-col w-64 border-r border-gray-100 p-4 sticky top-0 h-screen">
-        <div className="flex items-center gap-2 mb-8 px-2">
-          <div className="w-8 h-8 bg-[#006E62] rounded flex items-center justify-center text-white font-bold italic">H</div>
-          <h1 className="text-xl font-bold tracking-tight text-[#006E62]">HUREMA</h1>
-        </div>
-        
-        <nav className="flex-1 space-y-1">
-          <NavItem id="dashboard" icon={LayoutDashboard} label="Beranda" />
-          <NavItem id="account" icon={Users} label="Data Akun" />
-          <NavItem id="location" icon={MapPin} label="Data Lokasi" />
-          <NavItem id="schedule" icon={CalendarClock} label="Manajemen Jadwal" />
-          <NavItem id="career" icon={History} label="Log Karir" />
-          <NavItem id="health" icon={Activity} label="Log Kesehatan" />
-          <NavItem id="contract" icon={FileBadge} label="Kontrak Kerja" />
-          <NavItem id="certification" icon={Award} label="Sertifikasi" />
-          <NavItem id="discipline" icon={ShieldAlert} label="Peringatan & Keluar" />
-          <NavItem id="document" icon={Files} label="Dokumen Digital" />
-          <NavItem id="settings" icon={Settings} label="Pengaturan" />
-        </nav>
-      </aside>
+      <Sidebar 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        isCollapsed={isSidebarCollapsed} 
+        setIsCollapsed={setIsSidebarCollapsed} 
+      />
 
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
@@ -59,76 +43,42 @@ const App: React.FC = () => {
       
       {/* Sidebar Mobile */}
       <aside className={`fixed inset-y-0 left-0 w-64 bg-white z-50 transform transition-transform duration-300 md:hidden ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="p-4">
+        <div className="p-4 h-full flex flex-col">
           <div className="flex items-center justify-between mb-8 px-2">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-[#006E62] rounded flex items-center justify-center text-white font-bold italic">H</div>
               <h1 className="text-xl font-bold text-[#006E62]">HUREMA</h1>
             </div>
-            <button onClick={() => setIsMobileMenuOpen(false)}><X size={24} /></button>
+            <button onClick={() => setIsMobileMenuOpen(false)}><X size={24} className="text-gray-400" /></button>
           </div>
-          <nav className="space-y-1">
-            <NavItem id="dashboard" icon={LayoutDashboard} label="Beranda" />
-            <NavItem id="account" icon={Users} label="Data Akun" />
-            <NavItem id="location" icon={MapPin} label="Data Lokasi" />
-            <NavItem id="schedule" icon={CalendarClock} label="Manajemen Jadwal" />
-            <NavItem id="career" icon={History} label="Log Karir" />
-            <NavItem id="health" icon={Activity} label="Log Kesehatan" />
-            <NavItem id="contract" icon={FileBadge} label="Kontrak Kerja" />
-            <NavItem id="certification" icon={Award} label="Sertifikasi" />
-            <NavItem id="discipline" icon={ShieldAlert} label="Peringatan & Keluar" />
-            <NavItem id="document" icon={Files} label="Dokumen Digital" />
-            <NavItem id="settings" icon={Settings} label="Pengaturan" />
+          <nav className="flex-1 space-y-1">
+            <NavItemMobile id="dashboard" icon={LayoutDashboard} label="Beranda" />
+            <div className="py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest px-4">Master</div>
+            <NavItemMobile id="account" icon={Users} label="Data Akun" />
+            <NavItemMobile id="location" icon={MapPin} label="Data Lokasi" />
+            <NavItemMobile id="schedule" icon={CalendarClock} label="Manajemen Jadwal" />
+            <NavItemMobile id="document" icon={Files} label="Dokumen Digital" />
+            <NavItemMobile id="settings" icon={Settings} label="Pengaturan" />
           </nav>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 min-w-0">
-        <header className="h-16 border-b border-gray-100 flex items-center justify-between px-4 md:px-8 bg-white sticky top-0 z-30">
-          <div className="flex items-center gap-4">
-            <button className="md:hidden p-2 hover:bg-gray-100 rounded" onClick={() => setIsMobileMenuOpen(true)}>
-              <Menu size={20} />
-            </button>
-            <h2 className="text-lg font-semibold capitalize text-gray-700">
-              {activeTab === 'location' ? 'Manajemen Lokasi' : 
-               activeTab === 'account' ? 'Manajemen Akun' : 
-               activeTab === 'schedule' ? 'Manajemen Jadwal' : 
-               activeTab === 'career' ? 'Log Pergerakan Karir' : 
-               activeTab === 'health' ? 'Log Kesehatan Karyawan' :
-               activeTab === 'contract' ? 'Manajemen Kontrak Kerja' : 
-               activeTab === 'certification' ? 'Daftar Sertifikasi Karyawan' : 
-               activeTab === 'discipline' ? 'Kedisiplinan & Exit Management' : 
-               activeTab === 'document' ? 'Repositori Dokumen Digital' : activeTab}
-            </h2>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="w-8 h-8 rounded-full bg-gray-200 border border-gray-300"></div>
-          </div>
-        </header>
+      <main className="flex-1 min-w-0 flex flex-col">
+        <Header activeTab={activeTab} onMenuClick={() => setIsMobileMenuOpen(true)} />
 
-        <div className="p-4 md:p-8 max-w-6xl mx-auto">
+        <div className="p-4 md:p-8 max-w-6xl mx-auto w-full">
           {activeTab === 'location' ? (
             <LocationMain />
           ) : activeTab === 'account' ? (
             <AccountMain />
           ) : activeTab === 'schedule' ? (
             <ScheduleMain />
-          ) : activeTab === 'career' ? (
-            <CareerLogMain />
-          ) : activeTab === 'health' ? (
-            <HealthLogMain />
-          ) : activeTab === 'contract' ? (
-            <ContractMain />
-          ) : activeTab === 'certification' ? (
-            <CertificationMain />
-          ) : activeTab === 'discipline' ? (
-            <DisciplineMain />
           ) : activeTab === 'document' ? (
             <DocumentMain />
           ) : (
-            <div className="flex items-center justify-center h-64 text-gray-400">
-              <p>Modul "{activeTab}" sedang dalam pengembangan.</p>
+            <div className="flex flex-col items-center justify-center h-64 text-gray-400 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+              <p className="font-medium text-sm">Modul "{activeTab}" sedang dalam pengembangan.</p>
             </div>
           )}
         </div>
