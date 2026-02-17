@@ -20,7 +20,7 @@ const PresenceMain: React.FC = () => {
   const [recentLogs, setRecentLogs] = useState<Attendance[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCapturing, setIsCapturing] = useState(false);
-  const [showCameraModal, setShowCameraModal] = useState(false);
+  const [isCameraActive, setIsCameraActive] = useState(false);
   const [serverTime, setServerTime] = useState<Date>(new Date());
   const [coords, setCoords] = useState<{lat: number, lng: number} | null>(null);
   const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
@@ -99,7 +99,7 @@ const PresenceMain: React.FC = () => {
 
     const locationRadius = account.location?.radius || 100;
     if (distance > locationRadius) {
-       setShowCameraModal(false);
+       setIsCameraActive(false);
        return Swal.fire({
          title: 'Gagal',
          text: `Anda berada diluar radius penempatan (${Math.round(distance)}m > ${locationRadius}m)`,
@@ -168,7 +168,7 @@ const PresenceMain: React.FC = () => {
         await presenceService.checkOut(todayAttendance.id, payload);
       }
 
-      setShowCameraModal(false); // Tutup modal hanya setelah proses selesai
+      setIsCameraActive(false); // Tutup kamera hanya setelah seluruh proses asinkron berhasil
       await Swal.fire({ 
         title: 'Berhasil!', 
         text: `Presensi ${isCheckOut ? 'Pulang' : 'Masuk'} berhasil dicatat.`, 
@@ -239,7 +239,13 @@ const PresenceMain: React.FC = () => {
       {activeTab === 'capture' ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start animate-in fade-in duration-500">
           <div className="lg:col-span-7">
-            {(!todayAttendance || !todayAttendance.check_out) ? (
+            {isCameraActive ? (
+              <PresenceCamera 
+                onCapture={handleAttendance}
+                onClose={() => setIsCameraActive(false)}
+                isProcessing={isCapturing}
+              />
+            ) : (!todayAttendance || !todayAttendance.check_out) ? (
               <div className="bg-white rounded-2xl border border-gray-100 p-12 flex flex-col items-center justify-center shadow-sm text-center">
                 <div className={`w-24 h-24 rounded-full flex items-center justify-center mb-8 shadow-xl transition-all duration-500 ${isWithinRadius ? 'bg-emerald-50 text-[#006E62]' : 'bg-rose-50 text-rose-500'}`}>
                    <Fingerprint size={48} />
@@ -254,7 +260,7 @@ const PresenceMain: React.FC = () => {
                 </p>
                 <button 
                   disabled={!isWithinRadius || isCapturing}
-                  onClick={() => setShowCameraModal(true)}
+                  onClick={() => setIsCameraActive(true)}
                   className={`mt-10 flex items-center gap-3 px-12 py-4 rounded-2xl font-bold uppercase text-xs tracking-widest shadow-lg transition-all ${
                     isWithinRadius && !isCapturing
                     ? 'bg-[#006E62] text-white hover:bg-[#005a50] hover:scale-105 active:scale-95' 
@@ -262,7 +268,7 @@ const PresenceMain: React.FC = () => {
                   }`}
                 >
                   <Camera size={18} />
-                  {isCapturing ? 'MEMPROSES...' : 'AMBIL FOTO & VERIFIKASI'}
+                  {isCapturing ? 'MEMPROSES...' : 'MULAI VERIFIKASI WAJAH'}
                 </button>
               </div>
             ) : (
@@ -383,14 +389,6 @@ const PresenceMain: React.FC = () => {
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
           <PresenceHistory logs={recentLogs} isLoading={isLoading} />
         </div>
-      )}
-
-      {showCameraModal && (
-        <PresenceCamera 
-          onClose={() => setShowCameraModal(false)}
-          onCapture={handleAttendance}
-          isProcessing={isCapturing}
-        />
       )}
     </div>
   );

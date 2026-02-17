@@ -149,15 +149,14 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, onClose, isP
   };
 
   return (
-    <div className="fixed inset-0 z-[1000] bg-slate-950 flex items-center justify-center">
+    <div className="w-full max-w-md mx-auto animate-in fade-in zoom-in duration-500">
       {!isAiLoaded ? (
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-white/50 gap-4">
+        <div className="aspect-[9/16] w-full bg-slate-950 rounded-3xl flex flex-col items-center justify-center text-white/50 gap-4 border border-white/5">
           <Loader2 className="animate-spin text-[#00FFE4]" size={40} />
-          <p className="text-[10px] font-bold uppercase tracking-widest">Inisialisasi Keamanan AI...</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-center px-6">Inisialisasi Keamanan AI...</p>
         </div>
       ) : (
-        <div className="relative w-full h-full max-w-lg overflow-hidden flex flex-col bg-black">
-          {/* Perbaikan: object-cover untuk portrait penuh tanpa black space */}
+        <div className="relative w-full aspect-[9/16] bg-black rounded-3xl overflow-hidden shadow-2xl ring-1 ring-white/10">
           <video 
             ref={videoRef} 
             autoPlay 
@@ -169,47 +168,47 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, onClose, isP
           <button 
             onClick={onClose}
             disabled={isProcessing}
-            className="absolute top-6 right-6 z-50 p-3 bg-black/40 backdrop-blur-md rounded-full text-white/80 hover:text-white disabled:opacity-50"
+            className="absolute top-5 right-5 z-50 p-2.5 bg-black/40 backdrop-blur-md rounded-full text-white/80 hover:text-white disabled:opacity-50 transition-all border border-white/10"
           >
-            <X size={24} />
+            <X size={20} />
           </button>
 
-          <div className="relative h-full w-full flex flex-col items-center justify-between p-8 pointer-events-none">
-            <div className="mt-12 bg-black/60 backdrop-blur-xl px-8 py-5 rounded-2xl border border-white/10 text-center animate-in fade-in zoom-in duration-500">
+          <div className="relative h-full w-full flex flex-col items-center justify-between p-6 pointer-events-none">
+            <div className="mt-8 bg-black/60 backdrop-blur-xl px-6 py-4 rounded-2xl border border-white/10 text-center animate-in fade-in zoom-in duration-500 w-fit">
               {step === 'RIGHT' && (
-                <div className="flex flex-col items-center gap-3">
-                  <div className="w-12 h-12 bg-[#00FFE4]/20 rounded-full flex items-center justify-center">
-                    <ArrowRight className="text-[#00FFE4] animate-bounce" size={28} />
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-10 h-10 bg-[#00FFE4]/20 rounded-full flex items-center justify-center">
+                    <ArrowRight className="text-[#00FFE4] animate-bounce" size={24} />
                   </div>
-                  <p className="text-white text-xs font-bold uppercase tracking-widest">Tengok ke Kanan</p>
+                  <p className="text-white text-[10px] font-bold uppercase tracking-widest">Tengok ke Kanan</p>
                 </div>
               )}
               {step === 'LEFT' && (
-                <div className="flex flex-col items-center gap-3">
-                  <div className="w-12 h-12 bg-[#00FFE4]/20 rounded-full flex items-center justify-center">
-                    <ArrowLeft className="text-[#00FFE4] animate-bounce" size={28} />
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-10 h-10 bg-[#00FFE4]/20 rounded-full flex items-center justify-center">
+                    <ArrowLeft className="text-[#00FFE4] animate-bounce" size={24} />
                   </div>
-                  <p className="text-white text-xs font-bold uppercase tracking-widest">Tengok ke Kiri</p>
+                  <p className="text-white text-[10px] font-bold uppercase tracking-widest">Tengok ke Kiri</p>
                 </div>
               )}
               {step === 'READY' && (
-                <div className="flex flex-col items-center gap-3">
-                  <div className="w-12 h-12 bg-emerald-500/20 rounded-full flex items-center justify-center">
-                    <ShieldCheck className="text-emerald-400" size={32} />
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-10 h-10 bg-emerald-500/20 rounded-full flex items-center justify-center">
+                    <ShieldCheck className="text-emerald-400" size={26} />
                   </div>
-                  <p className="text-emerald-400 text-xs font-bold uppercase tracking-widest">Identitas Valid</p>
+                  <p className="text-emerald-400 text-[10px] font-bold uppercase tracking-widest">Identitas Valid</p>
                 </div>
               )}
             </div>
 
-            <div className={`w-64 h-80 border-2 border-dashed rounded-[120px] transition-all duration-700 ${
+            <div className={`w-56 h-72 border-2 border-dashed rounded-[100px] transition-all duration-700 ${
               step === 'READY' 
               ? 'border-emerald-500 bg-emerald-500/5 scale-105 shadow-[0_0_50px_rgba(16,185,129,0.2)]' 
               : 'border-white/20 bg-white/5'
             }`}></div>
 
-            <div className="w-full space-y-6 pointer-events-auto mb-10">
-              <div className="px-6">
+            <div className="w-full space-y-5 pointer-events-auto mb-6">
+              <div className="px-4">
                 <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-[#00FFE4] transition-all duration-700 ease-out shadow-[0_0_15px_rgba(0,255,228,0.5)]" 
@@ -218,27 +217,27 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, onClose, isP
                 </div>
               </div>
 
-              <div className="flex justify-center gap-4">
+              <div className="flex justify-center gap-3">
                 <button 
                   onClick={() => { 
                     setStep('RIGHT');
                     lastVideoTimeRef.current = -1;
                   }}
                   disabled={isProcessing}
-                  className="p-5 text-white/50 hover:text-white bg-white/5 backdrop-blur-lg rounded-full border border-white/10 transition-all hover:bg-white/10 disabled:opacity-30"
+                  className="p-4 text-white/50 hover:text-white bg-white/5 backdrop-blur-lg rounded-full border border-white/10 transition-all hover:bg-white/10 disabled:opacity-30"
                 >
-                  <RefreshCw size={28} />
+                  <RefreshCw size={24} />
                 </button>
                 <button 
                   onClick={handleCapture}
                   disabled={step !== 'READY' || isProcessing}
-                  className={`flex items-center gap-3 px-14 py-5 rounded-full font-extrabold uppercase text-xs tracking-[0.2em] shadow-2xl transition-all ${
+                  className={`flex items-center gap-2 px-10 py-4 rounded-full font-extrabold uppercase text-[10px] tracking-[0.2em] shadow-2xl transition-all ${
                     step === 'READY' 
                     ? 'bg-[#00FFE4] text-[#006E62] hover:scale-105 active:scale-95 shadow-[#00FFE4]/20' 
                     : 'bg-white/5 text-white/20 cursor-not-allowed border border-white/5'
                   }`}
                 >
-                  <Camera size={24} />
+                  <Camera size={20} />
                   {isProcessing ? 'PROSES...' : 'AMBIL FOTO'}
                 </button>
               </div>
