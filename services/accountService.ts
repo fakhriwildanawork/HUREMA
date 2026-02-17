@@ -1,6 +1,7 @@
 
 import { supabase } from '../lib/supabase';
 import { Account, AccountInput, CareerLog, CareerLogInput, HealthLog, HealthLogInput } from '../types';
+import { hashPassword } from './authService';
 
 /**
  * Fungsi pembantu untuk membersihkan data sebelum dikirim ke Supabase.
@@ -98,6 +99,12 @@ export const accountService = {
 
   async create(account: AccountInput & { file_sk_id?: string, file_mcu_id?: string, contract_initial?: any }) {
     const { file_sk_id, file_mcu_id, contract_initial, ...rest } = account;
+    
+    // Hashing password sebelum disimpan ke database
+    if (rest.password) {
+      rest.password = await hashPassword(rest.password);
+    }
+    
     const sanitizedAccount = sanitizePayload(rest);
     
     // 1. Insert ke tabel accounts
@@ -159,6 +166,12 @@ export const accountService = {
   async update(id: string, account: Partial<AccountInput>) {
     // Pastikan field tambahan untuk log awal tidak ikut dikirim ke tabel accounts
     const { file_sk_id, file_mcu_id, contract_initial, ...rest } = account as any;
+    
+    // Hashing password jika password diperbarui lewat form
+    if (rest.password) {
+      rest.password = await hashPassword(rest.password);
+    }
+    
     const sanitizedAccount = sanitizePayload(rest);
     
     const { data, error } = await supabase
