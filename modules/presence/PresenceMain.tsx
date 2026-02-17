@@ -71,8 +71,8 @@ const PresenceMain: React.FC = () => {
       watchId.current = navigator.geolocation.watchPosition(
         (pos) => {
           setGpsAccuracy(pos.coords.accuracy);
-          // Hanya update titik map jika akurasi di bawah 100m untuk visual yang tenang
-          if (pos.coords.accuracy < 100) {
+          // Dilonggarkan ke 500m agar titik user muncul di peta meski sinyal kurang kuat (misal di dalam gedung)
+          if (pos.coords.accuracy < 500) {
             setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
           }
         },
@@ -97,11 +97,11 @@ const PresenceMain: React.FC = () => {
   const handleAttendance = async (photoBlob: Blob) => {
     if (!account || !coords || distance === null) return;
 
-    // Tambahan Validasi Akurasi GPS (Mandatory untuk Geotag Presisi)
+    // Validasi Akurasi GPS Tetap Ketat (50m) saat tombol ditekan demi presisi data entry
     if (gpsAccuracy && gpsAccuracy > 50) {
        return Swal.fire({
          title: 'Sinyal Lemah',
-         text: `Akurasi GPS Anda terlalu rendah (${Math.round(gpsAccuracy)}m). Harap cari area terbuka.`,
+         text: `Akurasi GPS Anda terlalu rendah (${Math.round(gpsAccuracy)}m). Harap cari area terbuka atau nyalakan GPS mode akurasi tinggi.`,
          icon: 'warning',
          confirmButtonColor: '#006E62'
        });

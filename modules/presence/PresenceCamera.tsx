@@ -1,6 +1,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { Camera, RefreshCw, ShieldCheck, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
+import { FaceLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
 
 interface PresenceCameraProps {
   onCapture: (blob: Blob) => void;
@@ -18,16 +19,7 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, isProcessing
 
   useEffect(() => {
     isComponentMounted.current = true;
-    
-    // Tunggu library dimuat jika belum ada di window
-    const checkAndInit = () => {
-      if ((window as any).vision) {
-        initializeAi();
-      } else {
-        setTimeout(checkAndInit, 500);
-      }
-    };
-    checkAndInit();
+    initializeAi();
 
     return () => {
       isComponentMounted.current = false;
@@ -36,14 +28,11 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, isProcessing
   }, []);
 
   const initializeAi = async () => {
-    const vision = (window as any).vision;
-    if (!vision) return;
-
     try {
-      const filesetResolver = await vision.FilesetResolver.forVisionTasks(
+      const filesetResolver = await FilesetResolver.forVisionTasks(
         "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
       );
-      const landmarker = await vision.FaceLandmarker.createFromOptions(filesetResolver, {
+      const landmarker = await FaceLandmarker.createFromOptions(filesetResolver, {
         baseOptions: {
           modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`,
           delegate: "GPU"
@@ -52,9 +41,12 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, isProcessing
         runningMode: "VIDEO",
         numFaces: 1
       });
-      setFaceLandmarker(landmarker);
-      setIsAiLoaded(true);
-      startCamera();
+      
+      if (isComponentMounted.current) {
+        setFaceLandmarker(landmarker);
+        setIsAiLoaded(true);
+        startCamera();
+      }
     } catch (err) {
       console.error("AI Init Error:", err);
     }
@@ -96,18 +88,13 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, isProcessing
 
       if (results.faceLandmarks && results.faceLandmarks.length > 0) {
         const landmarks = results.faceLandmarks[0];
-        
-        // Landmark indices: 4 (Nose tip), 234 (Right temple/ear), 454 (Left temple/ear)
         const nose = landmarks[4];
         const rightEdge = landmarks[234];
         const leftEdge = landmarks[454];
 
-        // Hitung rasio posisi hidung terhadap lebar wajah (Yaw approximation)
-        // Karena video mirrored, koordinat terbalik
         const faceWidth = Math.abs(leftEdge.x - rightEdge.x);
         const noseRelativeX = (nose.x - Math.min(rightEdge.x, leftEdge.x)) / faceWidth;
 
-        // Sensitivitas: Kanan < 0.35, Kiri > 0.65
         if (step === 'RIGHT' && noseRelativeX < 0.35) {
           setStep('LEFT');
         } else if (step === 'LEFT' && noseRelativeX > 0.65) {
@@ -128,7 +115,6 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, isProcessing
     canvas.height = videoRef.current.videoHeight;
     const ctx = canvas.getContext('2d');
     
-    // Simpan dalam format normal (tidak mirrored) untuk data database
     ctx?.drawImage(videoRef.current, 0, 0);
     
     canvas.toBlob((blob) => {
