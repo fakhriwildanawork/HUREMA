@@ -55,6 +55,11 @@ export const presenceService = {
    * Menghitung keterlambatan atau pulang cepat berdasarkan jadwal
    */
   calculateStatus(currentTime: Date, schedule: Schedule, type: 'IN' | 'OUT'): { status: string, minutes: number } {
+    // Mode Fleksibel Bypass
+    if (schedule.id === 'FLEKSIBEL') {
+      return { status: 'Tepat Waktu', minutes: 0 };
+    }
+
     const dayOfWeek = currentTime.getDay();
     const rule = schedule.rules?.find(r => r.day_of_week === dayOfWeek);
 
