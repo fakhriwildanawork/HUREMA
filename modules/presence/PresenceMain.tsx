@@ -134,8 +134,8 @@ const PresenceMain: React.FC = () => {
     
     // Resolve Target Schedule (Statis vs Dinamis vs Fleksibel)
     let targetSchedule: Schedule | null = null;
-    if (account?.schedule_type === 'Jadwal Fleksibel') {
-      targetSchedule = { id: 'FLEKSIBEL', name: 'Jadwal Fleksibel' } as any;
+    if (account?.schedule_type === 'Fleksibel') {
+      targetSchedule = { id: 'FLEKSIBEL', name: 'Fleksibel' } as any;
     } else if (account?.schedule_type === 'Shift Dinamis') {
       if (!selectedShift) return Swal.fire('Peringatan', 'Pilih shift terlebih dahulu.', 'warning');
       targetSchedule = selectedShift;
@@ -147,7 +147,7 @@ const PresenceMain: React.FC = () => {
     const isHolidayToday = !!activeHoliday || !!scheduleRule?.is_holiday;
 
     // Blokir jika hari libur (kecuali Fleksibel)
-    if (isHolidayToday && account?.schedule_type !== 'Jadwal Fleksibel') {
+    if (isHolidayToday && account?.schedule_type !== 'Fleksibel') {
       const holidayLabel = activeHoliday ? `khusus (${activeHoliday.name})` : 'terjadwal (Off Day)';
       return Swal.fire('Akses Ditolak', `Hari ini adalah hari libur ${holidayLabel}. Presensi dinonaktifkan.`, 'info');
     }
@@ -301,7 +301,7 @@ const PresenceMain: React.FC = () => {
   if (account.schedule_type === 'Shift Dinamis') displaySchedule = selectedShift || undefined;
   
   const scheduleRule = displaySchedule?.rules?.find(r => r.day_of_week === todayDay);
-  const isHolidayToday = account.schedule_type !== 'Jadwal Fleksibel' && (!!activeHoliday || !!scheduleRule?.is_holiday);
+  const isHolidayToday = account.schedule_type !== 'Fleksibel' && (!!activeHoliday || !!scheduleRule?.is_holiday);
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -439,7 +439,7 @@ const PresenceMain: React.FC = () => {
                     <h4 className="text-[11px] font-bold uppercase tracking-widest text-gray-500">Waktu Terverifikasi</h4>
                   </div>
                   <span className="text-[10px] font-bold text-[#00FFE4] bg-[#006E62]/5 px-2 py-0.5 rounded uppercase tracking-tighter">
-                    {displaySchedule?.name || (account.schedule_type === 'Jadwal Fleksibel' ? 'Fleksibel' : 'Reguler')}
+                    {displaySchedule?.name || (account.schedule_type === 'Fleksibel' ? 'Fleksibel' : 'Reguler')}
                   </span>
                </div>
                <div className="text-center py-4 relative z-10">
@@ -460,7 +460,7 @@ const PresenceMain: React.FC = () => {
                   )}
                </div>
 
-               {account.schedule_type !== 'Jadwal Fleksibel' && (
+               {account.schedule_type !== 'Fleksibel' && (
                  <div className="mt-8 p-4 bg-emerald-50/50 rounded-xl border border-emerald-100/50 space-y-3">
                     <div className="flex items-center gap-2 text-[10px] font-bold text-[#006E62] uppercase tracking-wider mb-2">
                       <CalendarClock size={14} /> {account.schedule_type === 'Shift Dinamis' ? 'Shift Terpilih' : 'Jadwal Hari Ini'}

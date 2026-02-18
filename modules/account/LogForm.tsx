@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Save, Upload, FileText, Paperclip, ChevronDown, Calendar, CalendarClock } from 'lucide-react';
 import { locationService } from '../../services/locationService';
@@ -114,13 +115,29 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
     };
 
     if (type === 'career') {
+      // Map virtual types for schedule_type logic (handled in accountService/createCareerLog)
+      let finalScheduleType = '';
+      let finalScheduleId = formData.schedule_id;
+
+      if (finalScheduleId === 'FLEKSIBEL') {
+        finalScheduleType = 'Fleksibel';
+        finalScheduleId = '';
+      } else if (finalScheduleId === 'DINAMIS') {
+        finalScheduleType = 'Shift Dinamis';
+        finalScheduleId = '';
+      } else {
+        const sch = schedules.find(s => s.id === finalScheduleId);
+        if (sch) finalScheduleType = sch.name;
+      }
+
       finalPayload = {
         ...finalPayload,
         position: formData.position,
         grade: formData.grade,
         location_id: formData.location_id,
         location_name: formData.location_name,
-        schedule_id: formData.schedule_id,
+        schedule_id: finalScheduleId || null,
+        schedule_type: finalScheduleType, // Service will update the main account schedule_type
         file_sk_id: formData.file_sk_id
       };
     } else {
@@ -146,6 +163,9 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
   const filteredGrades = suggestions.grades.filter(g => 
     g.toLowerCase().includes(formData.grade.toLowerCase())
   );
+
+  // Cek ketersediaan tipe shift (type 2) di lokasi terpilih
+  const hasShiftSchedules = schedules.some(s => s.type === 2);
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-40 p-4">
@@ -278,6 +298,10 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
                     className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded outline-none focus:ring-1 focus:ring-[#006E62] appearance-none bg-white disabled:bg-gray-50"
                   >
                     <option value="">-- {formData.location_id ? 'Pilih Jadwal' : 'Pilih Lokasi Terlebih Dahulu'} --</option>
+                    <option value="FLEKSIBEL">✨ Fleksibel (Tanpa Potongan)</option>
+                    <option value="DINAMIS" disabled={!hasShiftSchedules}>
+                      🔄 Shift Dinamis {!hasShiftSchedules ? '(Shift Tidak Tersedia)' : '(Pilih Saat Presensi)'}
+                    </option>
                     {schedules.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
                   <CalendarClock size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />

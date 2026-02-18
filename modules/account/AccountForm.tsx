@@ -117,7 +117,7 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
        // Auto-update schedule_type name if schedule_id is selected
        if (name === 'schedule_id' && value) {
           if (value === 'FLEKSIBEL') {
-            updated.schedule_type = 'Jadwal Fleksibel';
+            updated.schedule_type = 'Fleksibel';
           } else if (value === 'DINAMIS') {
             updated.schedule_type = 'Shift Dinamis';
           } else {
@@ -190,6 +190,9 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
   const filteredGrades = suggestions.grades.filter(g => 
     g.toLowerCase().includes(formData.grade.toLowerCase())
   );
+
+  // Cek ketersediaan tipe shift (type 2) di lokasi terpilih
+  const hasShiftSchedules = schedules.some(s => s.type === 2);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4">
@@ -557,8 +560,10 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
                         className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none bg-white disabled:bg-gray-50 appearance-none pr-8"
                       >
                         <option value="">-- {formData.location_id ? 'Pilih Jadwal' : 'Pilih Lokasi Terlebih Dahulu'} --</option>
-                        <option value="FLEKSIBEL">✨ Jadwal Fleksibel (Tanpa Potongan)</option>
-                        <option value="DINAMIS">🔄 Shift Dinamis (Pilih Saat Presensi)</option>
+                        <option value="FLEKSIBEL">✨ Fleksibel (Tanpa Potongan)</option>
+                        <option value="DINAMIS" disabled={!hasShiftSchedules}>
+                          🔄 Shift Dinamis {!hasShiftSchedules ? '(Shift Tidak Tersedia di Lokasi)' : '(Pilih Saat Presensi)'}
+                        </option>
                         {schedules.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                       </select>
                       <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
