@@ -1,3 +1,4 @@
+
 import { supabase } from '../lib/supabase';
 import { Schedule, ScheduleInput, ScheduleRule } from '../types';
 
@@ -46,8 +47,15 @@ export const scheduleService = {
   },
 
   async create(input: ScheduleInput) {
-    const { rules, location_ids, ...scheduleData } = input;
+    let { rules, location_ids, ...scheduleData } = input;
     
+    // Sanitasi Tipe 3 (Libur Khusus): Tidak boleh ada aturan jam dan toleransi
+    if (scheduleData.type === 3) {
+      scheduleData.tolerance_minutes = 0;
+      scheduleData.tolerance_checkin_minutes = 0;
+      rules = [];
+    }
+
     // 1. Insert schedule with sanitization
     const sanitizedSchedule = sanitizePayload(scheduleData);
     const { data: schedule, error: sError } = await supabase
@@ -82,7 +90,14 @@ export const scheduleService = {
   },
 
   async update(id: string, input: Partial<ScheduleInput>) {
-    const { rules, location_ids, ...scheduleData } = input;
+    let { rules, location_ids, ...scheduleData } = input;
+
+    // Sanitasi Tipe 3 (Libur Khusus)
+    if (scheduleData.type === 3) {
+      scheduleData.tolerance_minutes = 0;
+      scheduleData.tolerance_checkin_minutes = 0;
+      rules = [];
+    }
 
     // 1. Update master with sanitization
     const sanitizedSchedule = sanitizePayload(scheduleData);
@@ -96,7 +111,7 @@ export const scheduleService = {
     if (sError) throw sError;
 
     // 2. Update rules (delete and re-insert for simplicity)
-    if (rules) {
+    if (rules !== undefined) {
       await supabase.from('schedule_rules').delete().eq('schedule_id', id);
       if (rules.length > 0) {
         const rulesToInsert = rules.map(r => sanitizePayload({ ...r, schedule_id: id }));

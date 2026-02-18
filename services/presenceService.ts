@@ -116,6 +116,27 @@ export const presenceService = {
     return data as Attendance | null;
   },
 
+  /**
+   * Cek apakah hari ini Libur Khusus (Tipe 3) di lokasi user
+   */
+  async checkHolidayStatus(accountId: string, locationId: string, checkDate: Date) {
+    const dateStr = checkDate.toISOString().split('T')[0];
+    
+    const { data, error } = await supabase
+      .from('schedules')
+      .select('*, schedule_locations!inner(location_id)')
+      .eq('type', 3) // Libur Khusus
+      .eq('schedule_locations.location_id', locationId)
+      .lte('start_date', dateStr)
+      .gte('end_date', dateStr);
+
+    if (error) return null;
+    
+    // Filter out if user is excluded
+    const activeHoliday = data?.find(s => !s.excluded_account_ids?.includes(accountId));
+    return activeHoliday || null;
+  },
+
   async checkIn(input: Partial<AttendanceInput>) {
     const sanitized = sanitizePayload(input);
     const { data, error } = await supabase

@@ -167,10 +167,12 @@ const ScheduleMain: React.FC = () => {
                 </div>
                 
                 <div className="space-y-2 mb-4">
-                   <div className="flex items-center gap-2 text-[11px] text-gray-500">
-                      <Clock size={12} className="text-gray-300" /> 
-                      Toleransi: <span className="font-bold text-gray-700">{schedule.tolerance_minutes} Menit</span>
-                   </div>
+                   {schedule.type !== 3 && (
+                    <div className="flex items-center gap-2 text-[11px] text-gray-500">
+                        <Clock size={12} className="text-gray-300" /> 
+                        Toleransi: <span className="font-bold text-gray-700">{schedule.tolerance_checkin_minutes || 0} In / {schedule.tolerance_minutes || 0} Out</span>
+                    </div>
+                   )}
                    {schedule.type >= 3 && (
                       <div className="flex items-center gap-2 text-[11px] text-gray-500">
                         <Calendar size={12} className="text-gray-300" />

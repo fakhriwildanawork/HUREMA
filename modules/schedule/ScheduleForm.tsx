@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Save, Clock, Calendar, Users, MapPin, Check, ChevronDown } from 'lucide-react';
 import { ScheduleInput, Location, Account } from '../../types';
@@ -59,11 +60,30 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onClose, onSubmit, initialD
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    // Add || 0 to prevent NaN if value is empty string for numeric fields
-    setFormData(prev => ({ 
-      ...prev, 
-      [name]: (name === 'type' || name === 'tolerance_minutes' || name === 'tolerance_checkin_minutes') ? parseInt(value) || 0 : value 
-    }));
+    const parsedValue = (name === 'type' || name === 'tolerance_minutes' || name === 'tolerance_checkin_minutes') ? parseInt(value) || 0 : value;
+    
+    setFormData(prev => {
+      const newData = { ...prev, [name]: parsedValue };
+      
+      // LOGIKA AUTO-RESET: Jika ganti ke Tipe 3, nolkan toleransi & rules
+      if (name === 'type' && parsedValue === 3) {
+        newData.tolerance_minutes = 0;
+        newData.tolerance_checkin_minutes = 0;
+        newData.rules = [];
+        // Jika sedang di tab Toleransi atau Rules, pindah ke Info
+        if (activeTab === 'toleransi' || activeTab === 'rules') setActiveTab('info');
+      } else if (name === 'type' && parsedValue !== 3 && prev.type === 3) {
+        // Balikin rules default jika pindah dari Tipe 3 ke kerja
+        newData.rules = days.map((_, idx) => ({
+          day_of_week: idx,
+          check_in_time: '08:00',
+          check_out_time: '17:00',
+          is_holiday: idx === 0 || idx === 6
+        }));
+      }
+
+      return newData;
+    });
   };
 
   const handleRuleChange = (idx: number, field: string, value: any) => {
@@ -92,25 +112,31 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onClose, onSubmit, initialD
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // For type 3: rules can be empty
-    let finalRules = formData.rules;
-    if (formData.type === 3) {
-       finalRules = [];
+    
+    // Validasi Tanggal untuk Tipe Periodik
+    if ((formData.type === 3 || formData.type === 4) && (!formData.start_date || !formData.end_date)) {
+      alert('Tanggal Mulai dan Selesai wajib diisi untuk tipe jadwal ini.');
+      return;
     }
 
-    onSubmit({ ...formData, rules: finalRules });
+    onSubmit(formData);
   };
 
   const filteredAccounts = accounts.filter(acc => 
     formData.location_ids.length === 0 || (acc.location_id && formData.location_ids.includes(acc.location_id))
   );
 
+  // LOGIKA TABS DINAMIS
   const tabs = [
     { id: 'info', label: 'Informasi' },
-    { id: 'toleransi', label: 'Toleransi' },
-    { id: 'rules', label: 'Aturan Jam' },
-    { id: 'locations', label: 'Lokasi' }
   ];
+
+  if (formData.type !== 3) {
+    tabs.push({ id: 'toleransi', label: 'Toleransi' });
+    tabs.push({ id: 'rules', label: 'Aturan Jam' });
+  }
+
+  tabs.push({ id: 'locations', label: 'Lokasi' });
 
   if (formData.type === 3 || formData.type === 4) {
     tabs.push({ id: 'exclusions', label: 'Pengecualian' });
@@ -169,10 +195,23 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onClose, onSubmit, initialD
                   <option value={4}>4. Hari Kerja Khusus</option>
                 </select>
               </div>
+
+              {formData.type >= 3 && (
+                <div className="grid grid-cols-2 gap-4 p-4 bg-orange-50 border border-orange-100 rounded animate-in slide-in-from-top duration-200 mt-2">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-orange-600 uppercase">Mulai Tanggal</label>
+                    <input type="date" required name="start_date" value={formData.start_date} onChange={handleChange} className="w-full px-3 py-2 text-xs border border-orange-200 rounded outline-none" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-orange-600 uppercase">Sampai Tanggal</label>
+                    <input type="date" required name="end_date" value={formData.end_date} onChange={handleChange} className="w-full px-3 py-2 text-xs border border-orange-200 rounded outline-none" />
+                  </div>
+                </div>
+               )}
             </div>
           )}
 
-          {activeTab === 'toleransi' && (
+          {activeTab === 'toleransi' && formData.type !== 3 && (
             <div className="space-y-4 animate-in fade-in duration-200">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
@@ -190,28 +229,8 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onClose, onSubmit, initialD
             </div>
           )}
 
-          {activeTab === 'rules' && (
+          {activeTab === 'rules' && formData.type !== 3 && (
             <div className="space-y-4 animate-in fade-in duration-200">
-               {/* Start and End Date for Type 3 & 4 moved here */}
-               {formData.type >= 3 && (
-                <div className="grid grid-cols-2 gap-4 p-4 bg-orange-50 border border-orange-100 rounded animate-in slide-in-from-top duration-200 mb-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-orange-600 uppercase">Mulai Tanggal</label>
-                    <input type="date" required name="start_date" value={formData.start_date} onChange={handleChange} className="w-full px-3 py-2 text-xs border border-orange-200 rounded outline-none" />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-orange-600 uppercase">Sampai Tanggal</label>
-                    <input type="date" required name="end_date" value={formData.end_date} onChange={handleChange} className="w-full px-3 py-2 text-xs border border-orange-200 rounded outline-none" />
-                  </div>
-                </div>
-               )}
-
-               {formData.type === 3 ? (
-                 <div className="flex flex-col items-center justify-center py-10 text-gray-400 bg-gray-50 rounded border border-dashed border-gray-200">
-                   <Clock size={40} strokeWidth={1} className="mb-2" />
-                   <p className="text-xs font-bold uppercase tracking-widest">Tipe Libur: Tidak Perlu Jam Kerja</p>
-                 </div>
-               ) : (
                  <div className="space-y-2">
                    <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">Tentukan Hari & Jam Kerja</p>
                    {days.map((day, idx) => (
@@ -229,7 +248,6 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onClose, onSubmit, initialD
                       </div>
                    ))}
                  </div>
-               )}
             </div>
           )}
 

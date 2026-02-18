@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 /* Added ShieldCheck to lucide-react imports */
-import { Fingerprint, Clock, MapPin, History, AlertCircle, Map as MapIcon, Camera, Search, UserX, CalendarClock, MessageSquare, ShieldCheck } from 'lucide-react';
+import { Fingerprint, Clock, MapPin, History, AlertCircle, Map as MapIcon, Camera, Search, UserX, CalendarClock, MessageSquare, ShieldCheck, Umbrella } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { presenceService } from '../../services/presenceService';
 import { accountService } from '../../services/accountService';
@@ -25,6 +25,7 @@ const PresenceMain: React.FC = () => {
   const [coords, setCoords] = useState<{lat: number, lng: number} | null>(null);
   const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
   const [distance, setDistance] = useState<number | null>(null);
+  const [activeHoliday, setActiveHoliday] = useState<any>(null);
   const watchId = useRef<number | null>(null);
 
   const currentUser = authService.getCurrentUser();
@@ -60,6 +61,12 @@ const PresenceMain: React.FC = () => {
       setTodayAttendance(attendance);
       setRecentLogs(history);
       setServerTime(sTime);
+
+      // Cek apakah hari ini Libur Khusus (Type 3)
+      if (acc && acc.location_id) {
+        const holiday = await presenceService.checkHolidayStatus(currentAccountId, acc.location_id, sTime);
+        setActiveHoliday(holiday);
+      }
     } catch (error) {
       console.error(error);
     } finally {
@@ -96,7 +103,11 @@ const PresenceMain: React.FC = () => {
   }, [coords, account]);
 
   const handleAttendance = async (photoBlob: Blob) => {
-    // Memberikan feedback eksplisit daripada silent return
+    // Blokir jika hari libur
+    if (activeHoliday) {
+      return Swal.fire('Akses Ditolak', `Hari ini adalah hari libur khusus (${activeHoliday.name}). Presensi dinonaktifkan.`, 'info');
+    }
+
     if (!account) {
       return Swal.fire('Gagal', 'Data akun tidak ditemukan.', 'error');
     }
@@ -279,6 +290,17 @@ const PresenceMain: React.FC = () => {
                 onClose={() => setIsCameraActive(false)}
                 isProcessing={isCapturing}
               />
+            ) : activeHoliday ? (
+              <div className="bg-white rounded-2xl border border-gray-100 p-12 flex flex-col items-center justify-center shadow-sm text-center">
+                <div className="w-24 h-24 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center mb-8 shadow-xl">
+                   <Umbrella size={48} />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-800">Hari Libur Khusus</h3>
+                <p className="text-sm text-rose-600 font-bold mt-2 max-w-xs uppercase tracking-tight">"{activeHoliday.name}"</p>
+                <div className="mt-8 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                  <p className="text-xs text-gray-500 leading-relaxed font-medium">Sesuai kebijakan manajemen, sistem presensi dinonaktifkan selama periode libur ini. Nikmati waktu istirahat Anda.</p>
+                </div>
+              </div>
             ) : (!todayAttendance || !todayAttendance.check_out) ? (
               <div className="bg-white rounded-2xl border border-gray-100 p-12 flex flex-col items-center justify-center shadow-sm text-center">
                 <div className={`w-24 h-24 rounded-full flex items-center justify-center mb-8 shadow-xl transition-all duration-500 ${isWithinRadius ? 'bg-emerald-50 text-[#006E62]' : 'bg-rose-50 text-rose-500'}`}>

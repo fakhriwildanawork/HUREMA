@@ -1,3 +1,4 @@
+
 -- Tables for Schedule Management Module
 
 -- 1. Master Schedules Table
@@ -12,7 +13,12 @@ CREATE TABLE IF NOT EXISTS schedules (
     end_date DATE,   -- For type 3 & 4
     excluded_account_ids UUID[] DEFAULT '{}', -- Selective exclusion for Type 3 & 4
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    -- Proteksi Lapis Terakhir di Database
+    CONSTRAINT check_periodic_dates CHECK (
+        (type IN (3, 4) AND start_date IS NOT NULL AND end_date IS NOT NULL) OR 
+        (type IN (1, 2))
+    )
 );
 
 -- 2. Schedule Rules (Time details)
