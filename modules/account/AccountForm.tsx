@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Save, Upload, User, MapPin, Briefcase, GraduationCap, ShieldCheck, Heart, AlertCircle, Paperclip, ChevronDown, CalendarClock, FileBadge } from 'lucide-react';
 import { AccountInput, Location, Schedule } from '../../types';
@@ -91,7 +90,10 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
   // Effect to handle dynamic dependent schedule dropdown
   useEffect(() => {
     if (formData.location_id) {
-       scheduleService.getByLocation(formData.location_id).then(setSchedules);
+       scheduleService.getByLocation(formData.location_id).then(data => {
+         // Filter: Hanya tampilkan Jadwal Tipe 1 (Fixed) dan Tipe 2 (Shift)
+         setSchedules(data.filter(s => s.type === 1 || s.type === 2));
+       });
     } else {
        setSchedules([]);
     }
@@ -305,10 +307,10 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
                 </div>
               </div>
 
-              <SectionHeader icon={MapPin} title="Kontak & Alamat" />
+              <SectionHeader icon={MapPin} title="Alamat Domisili" />
               <div className="space-y-3">
                 <div className="space-y-1">
-                  <Label required>Alamat Domisili</Label>
+                  <Label required>Alamat Lengkap</Label>
                   <textarea name="address" value={formData.address} onChange={handleChange} rows={2} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none resize-none" required />
                 </div>
                 <div className="grid grid-cols-2 gap-2">

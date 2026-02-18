@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Save, Upload, FileText, Paperclip, ChevronDown, Calendar, CalendarClock } from 'lucide-react';
 import { locationService } from '../../services/locationService';
@@ -65,7 +64,10 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
   // Effect to handle dynamic dependent schedule dropdown in Career Log
   useEffect(() => {
     if (type === 'career' && formData.location_id) {
-       scheduleService.getByLocation(formData.location_id).then(setSchedules);
+       scheduleService.getByLocation(formData.location_id).then(data => {
+         // Filter: Hanya tampilkan Jadwal Tipe 1 (Fixed) dan Tipe 2 (Shift)
+         setSchedules(data.filter(s => s.type === 1 || s.type === 2));
+       });
     } else {
        setSchedules([]);
     }
@@ -298,9 +300,9 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
                     className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded outline-none focus:ring-1 focus:ring-[#006E62] appearance-none bg-white disabled:bg-gray-50"
                   >
                     <option value="">-- {formData.location_id ? 'Pilih Jadwal' : 'Pilih Lokasi Terlebih Dahulu'} --</option>
-                    <option value="FLEKSIBEL">✨ Fleksibel (Tanpa Potongan)</option>
+                    <option value="FLEKSIBEL">Fleksibel</option>
                     <option value="DINAMIS" disabled={!hasShiftSchedules}>
-                      🔄 Shift Dinamis {!hasShiftSchedules ? '(Shift Tidak Tersedia)' : '(Pilih Saat Presensi)'}
+                      Shift Dinamis{!hasShiftSchedules ? '(Shift Tidak Tersedia)' : '(Pilih Saat Presensi)'}
                     </option>
                     {schedules.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
