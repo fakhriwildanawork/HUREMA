@@ -39,7 +39,8 @@ export const accountService = {
       .from('accounts')
       .select(`
         *,
-        location:locations(*)
+        location:locations(*),
+        schedule:schedules(*, rules:schedule_rules(*))
       `)
       .eq('id', id)
       .maybeSingle(); // Menggunakan maybeSingle() agar tidak error jika record tidak ditemukan

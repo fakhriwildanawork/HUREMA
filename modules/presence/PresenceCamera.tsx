@@ -1,6 +1,6 @@
 
 import React, { useRef, useState, useEffect } from 'react';
-import { Camera, RefreshCw, ShieldCheck, ArrowRight, ArrowLeft, Loader2, X } from 'lucide-react';
+import { Camera, RefreshCw, ShieldCheck, ArrowRight, ArrowLeft, Loader2, X, AlertTriangle } from 'lucide-react';
 import { FaceLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
 
 interface PresenceCameraProps {
@@ -17,6 +17,7 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, onClose, isP
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [step, setStep] = useState<'RIGHT' | 'LEFT' | 'READY'>('RIGHT');
   const [isAiLoaded, setIsAiLoaded] = useState(false);
+  const [isMaskDetected, setIsMaskDetected] = useState(false);
   const isComponentMounted = useRef(true);
   const lastVideoTimeRef = useRef(-1);
 
@@ -111,18 +112,41 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, onClose, isP
 
         if (results.faceLandmarks && results.faceLandmarks.length > 0) {
           const landmarks = results.faceLandmarks[0];
-          const nose = landmarks[4];
-          const rightEdge = landmarks[234];
-          const leftEdge = landmarks[454];
+          
+          // Deteksi Masker Sederhana Berdasarkan Visibilitas Landmarks Bibir
+          // Titik 13 (bibir atas) dan 14 (bibir bawah)
+          const lipUpper = landmarks[13];
+          const lipLower = landmarks[14];
+          const noseTip = landmarks[1];
+          const chin = landmarks[152];
+          
+          // Jika jarak bibir terlalu rapat secara vertikal dibanding skala wajah, 
+          // atau jika confidence blendshape mouthClose sangat statis, indikasikan masker.
+          const mouthHeight = Math.abs(lipLower.y - lipUpper.y);
+          const faceHeight = Math.abs(chin.y - noseTip.y);
+          const mouthRatio = mouthHeight / faceHeight;
 
-          const faceWidth = Math.abs(leftEdge.x - rightEdge.x);
-          const noseRelativeX = (nose.x - Math.min(rightEdge.x, leftEdge.x)) / faceWidth;
+          // Rasio normal bibir terbuka/tertutup biasanya > 0.02. 
+          // Dibawah itu (sangat flat) seringkali indikasi tertutup kain/masker bagi model AI ini.
+          const maskDetected = mouthRatio < 0.015;
+          setIsMaskDetected(maskDetected);
 
-          setStep(prev => {
-            if (prev === 'RIGHT' && noseRelativeX < 0.35) return 'LEFT';
-            if (prev === 'LEFT' && noseRelativeX > 0.65) return 'READY';
-            return prev;
-          });
+          if (!maskDetected) {
+            const nose = landmarks[4];
+            const rightEdge = landmarks[234];
+            const leftEdge = landmarks[454];
+
+            const faceWidth = Math.abs(leftEdge.x - rightEdge.x);
+            const noseRelativeX = (nose.x - Math.min(rightEdge.x, leftEdge.x)) / faceWidth;
+
+            setStep(prev => {
+              if (prev === 'RIGHT' && noseRelativeX < 0.35) return 'LEFT';
+              if (prev === 'LEFT' && noseRelativeX > 0.65) return 'READY';
+              return prev;
+            });
+          }
+        } else {
+          setIsMaskDetected(false);
         }
       } catch (e) {
         console.error("In-loop detection error:", e);
@@ -136,7 +160,7 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, onClose, isP
 
   const handleCapture = () => {
     const video = videoRef.current;
-    if (!video || video.readyState < 2 || isProcessing) return;
+    if (!video || video.readyState < 2 || isProcessing || isMaskDetected) return;
 
     const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth;
@@ -182,33 +206,45 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, onClose, isP
           {/* Area Deteksi & UI */}
           <div className="relative h-full w-full flex flex-col items-center justify-between p-6 pointer-events-none z-40">
             <div className="mt-8 bg-black/60 backdrop-blur-xl px-6 py-4 rounded-2xl border border-white/10 text-center animate-in fade-in zoom-in duration-500 w-fit">
-              {step === 'RIGHT' && (
+              {isMaskDetected ? (
                 <div className="flex flex-col items-center gap-2">
-                  <div className="w-10 h-10 bg-[#00FFE4]/20 rounded-full flex items-center justify-center">
-                    <ArrowRight className="text-[#00FFE4] animate-bounce" size={24} />
+                  <div className="w-10 h-10 bg-rose-500/20 rounded-full flex items-center justify-center">
+                    <AlertTriangle className="text-rose-400 animate-pulse" size={24} />
                   </div>
-                  <p className="text-white text-[10px] font-bold uppercase tracking-widest">Tengok ke Kanan</p>
+                  <p className="text-rose-400 text-[10px] font-bold uppercase tracking-widest">Buka Masker/Penutup Wajah</p>
                 </div>
-              )}
-              {step === 'LEFT' && (
-                <div className="flex flex-col items-center gap-2">
-                  <div className="w-10 h-10 bg-[#00FFE4]/20 rounded-full flex items-center justify-center">
-                    <ArrowLeft className="text-[#00FFE4] animate-bounce" size={24} />
-                  </div>
-                  <p className="text-white text-[10px] font-bold uppercase tracking-widest">Tengok ke Kiri</p>
-                </div>
-              )}
-              {step === 'READY' && (
-                <div className="flex flex-col items-center gap-2">
-                  <div className="w-10 h-10 bg-emerald-500/20 rounded-full flex items-center justify-center">
-                    <ShieldCheck className="text-emerald-400" size={26} />
-                  </div>
-                  <p className="text-emerald-400 text-[10px] font-bold uppercase tracking-widest">Identitas Valid</p>
-                </div>
+              ) : (
+                <>
+                  {step === 'RIGHT' && (
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-10 h-10 bg-[#00FFE4]/20 rounded-full flex items-center justify-center">
+                        <ArrowRight className="text-[#00FFE4] animate-bounce" size={24} />
+                      </div>
+                      <p className="text-white text-[10px] font-bold uppercase tracking-widest">Tengok ke Kanan</p>
+                    </div>
+                  )}
+                  {step === 'LEFT' && (
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-10 h-10 bg-[#00FFE4]/20 rounded-full flex items-center justify-center">
+                        <ArrowLeft className="text-[#00FFE4] animate-bounce" size={24} />
+                      </div>
+                      <p className="text-white text-[10px] font-bold uppercase tracking-widest">Tengok ke Kiri</p>
+                    </div>
+                  )}
+                  {step === 'READY' && (
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-10 h-10 bg-emerald-500/20 rounded-full flex items-center justify-center">
+                        <ShieldCheck className="text-emerald-400" size={26} />
+                      </div>
+                      <p className="text-emerald-400 text-[10px] font-bold uppercase tracking-widest">Identitas Valid</p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
             <div className={`w-56 h-72 border-2 border-dashed rounded-[100px] transition-all duration-700 ${
+              isMaskDetected ? 'border-rose-500 bg-rose-500/5' :
               step === 'READY' 
               ? 'border-emerald-500 bg-emerald-500/5 scale-105 shadow-[0_0_50px_rgba(16,185,129,0.2)]' 
               : 'border-white/20 bg-white/5'
@@ -218,7 +254,7 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, onClose, isP
               <div className="px-4">
                 <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
                   <div 
-                    className="h-full bg-[#00FFE4] transition-all duration-700 ease-out shadow-[0_0_15px_rgba(0,255,228,0.5)]" 
+                    className={`h-full transition-all duration-700 ease-out shadow-[0_0_15px_rgba(0,255,228,0.5)] ${isMaskDetected ? 'bg-rose-500' : 'bg-[#00FFE4]'}`} 
                     style={{ width: step === 'RIGHT' ? '33%' : step === 'LEFT' ? '66%' : '100%' }}
                   />
                 </div>
@@ -237,9 +273,9 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, onClose, isP
                 </button>
                 <button 
                   onClick={handleCapture}
-                  disabled={step !== 'READY' || isProcessing}
+                  disabled={step !== 'READY' || isProcessing || isMaskDetected}
                   className={`flex items-center gap-2 px-10 py-4 rounded-full font-extrabold uppercase text-[10px] tracking-[0.2em] shadow-2xl transition-all ${
-                    step === 'READY' 
+                    step === 'READY' && !isMaskDetected
                     ? 'bg-[#00FFE4] text-[#006E62] hover:scale-105 active:scale-95 shadow-[#00FFE4]/20' 
                     : 'bg-white/5 text-white/20 cursor-not-allowed border border-white/5'
                   }`}
