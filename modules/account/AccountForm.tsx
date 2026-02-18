@@ -560,9 +560,9 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
                         className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none bg-white disabled:bg-gray-50 appearance-none pr-8"
                       >
                         <option value="">-- {formData.location_id ? 'Pilih Jadwal' : 'Pilih Lokasi Terlebih Dahulu'} --</option>
-                        <option value="FLEKSIBEL">✨ Fleksibel (Tanpa Potongan)</option>
+                        <option value="FLEKSIBEL">Fleksibel</option>
                         <option value="DINAMIS" disabled={!hasShiftSchedules}>
-                          🔄 Shift Dinamis {!hasShiftSchedules ? '(Shift Tidak Tersedia di Lokasi)' : '(Pilih Saat Presensi)'}
+                          Shift Dinamis {!hasShiftSchedules ? '(Shift Tidak Tersedia di Lokasi)' : '(Pilih Saat Presensi)'}
                         </option>
                         {schedules.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                       </select>
