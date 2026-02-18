@@ -117,6 +117,14 @@ export const presenceService = {
   },
 
   /**
+   * Memastikan user tidak sedang dalam sesi kerja reguler (Mutual Exclusion)
+   */
+  async isRegularSessionActive(accountId: string): Promise<boolean> {
+    const attendance = await this.getTodayAttendance(accountId);
+    return !!(attendance && attendance.check_in && !attendance.check_out);
+  },
+
+  /**
    * Cek apakah hari ini Libur Khusus (Tipe 3) di lokasi user
    */
   async checkHolidayStatus(accountId: string, locationId: string, checkDate: Date) {

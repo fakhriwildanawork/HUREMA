@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { 
   MapPin, LayoutDashboard, Settings, Users, 
   CalendarClock, Files, ChevronDown, ChevronRight, 
-  Menu as MenuIcon, ChevronLeft, Database, Fingerprint, LogOut 
+  Menu as MenuIcon, ChevronLeft, Database, Fingerprint, LogOut, Timer 
 } from 'lucide-react';
 import { authService } from '../../services/authService';
 import Swal from 'sweetalert2';
@@ -96,6 +96,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed,
 
         <div className="mt-4">
           <NavItem id="presence" icon={Fingerprint} label="Presensi Reguler" />
+          <NavItem id="overtime" icon={Timer} label="Presensi Lembur" />
           <NavItem id="document" icon={Files} label="Dokumen Digital" />
           <NavItem id="settings" icon={Settings} label="Pengaturan" />
         </div>

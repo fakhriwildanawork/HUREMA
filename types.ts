@@ -137,6 +137,24 @@ export interface Attendance {
   created_at?: string;
 }
 
+export interface Overtime {
+  id: string;
+  account_id: string;
+  check_in: string | null;
+  check_out: string | null;
+  in_latitude: number | null;
+  in_longitude: number | null;
+  out_latitude: number | null;
+  out_longitude: number | null;
+  in_photo_id: string | null;
+  out_photo_id: string | null;
+  in_address: string | null;
+  out_address: string | null;
+  duration_minutes: number;
+  work_duration: string | null;
+  created_at?: string;
+}
+
 export interface CareerLog {
   id: string;
   account_id: string;
@@ -286,3 +304,4 @@ export interface GoogleDriveFile {
 }
 
 export type AttendanceInput = Omit<Attendance, 'id' | 'created_at'>;
+export type OvertimeInput = Omit<Overtime, 'id' | 'created_at'>;

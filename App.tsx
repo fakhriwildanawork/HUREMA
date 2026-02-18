@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, LayoutDashboard, Users, MapPin, CalendarClock, Files, Settings, Database, Fingerprint } from 'lucide-react';
+import { X, LayoutDashboard, Users, MapPin, CalendarClock, Files, Settings, Database, Fingerprint, Timer } from 'lucide-react';
 import Sidebar from './components/Layout/Sidebar';
 import Header from './components/Layout/Header';
 import LocationMain from './modules/location/LocationMain';
@@ -8,13 +8,14 @@ import AccountMain from './modules/account/AccountMain';
 import ScheduleMain from './modules/schedule/ScheduleMain';
 import DocumentMain from './modules/document/DocumentMain';
 import PresenceMain from './modules/presence/PresenceMain';
+import OvertimeMain from './modules/overtime/OvertimeMain';
 import Login from './modules/auth/Login';
 import { authService } from './services/authService';
 import { AuthUser } from './types';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'document' | 'settings' | 'presence'>('presence');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'document' | 'settings' | 'presence' | 'overtime'>('presence');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
@@ -90,6 +91,7 @@ const App: React.FC = () => {
 
             <div className="mt-4">
               <NavItemMobile id="presence" icon={Fingerprint} label="Presensi Reguler" />
+              <NavItemMobile id="overtime" icon={Timer} label="Presensi Lembur" />
               <NavItemMobile id="document" icon={Files} label="Dokumen Digital" />
               <NavItemMobile id="settings" icon={Settings} label="Pengaturan" />
             </div>
@@ -112,6 +114,8 @@ const App: React.FC = () => {
             <DocumentMain />
           ) : activeTab === 'presence' ? (
             <PresenceMain />
+          ) : activeTab === 'overtime' ? (
+            <OvertimeMain />
           ) : (
             <div className="flex flex-col items-center justify-center h-64 text-gray-400 bg-gray-50 rounded-lg border border-dashed border-gray-200">
               <p className="font-medium text-sm">Modul "{activeTab}" sedang dalam pengembangan.</p>
