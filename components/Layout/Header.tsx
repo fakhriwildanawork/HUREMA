@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Menu, UserCircle } from 'lucide-react';
 import { AuthUser } from '../../types';
@@ -18,6 +17,8 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onMenuClick, user }) => {
       case 'schedule': return 'Manajemen Jadwal';
       case 'document': return 'Repositori Dokumen Digital';
       case 'presence': return 'Presensi & Kehadiran Karyawan';
+      case 'overtime': return 'Presensi Lembur';
+      case 'submission': return 'Manajemen Pengajuan & Workflow';
       case 'dashboard': return 'Beranda';
       case 'settings': return 'Pengaturan';
       default: return activeTab;

@@ -279,6 +279,28 @@ export interface DigitalDocument {
   allowed_account_ids?: string[];
 }
 
+export type SubmissionStatus = 'Pending' | 'Disetujui' | 'Ditolak' | 'Dibatalkan';
+
+export interface Submission {
+  id: string;
+  account_id: string;
+  type: 'Lembur' | 'Cuti' | 'Izin' | 'Koreksi Absen' | string;
+  status: SubmissionStatus;
+  submission_data: any; // Flexible JSON Data
+  description: string;
+  verifier_id?: string | null;
+  verified_at?: string | null;
+  verification_notes?: string | null;
+  file_id?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  // Join properties
+  account?: {
+    full_name: string;
+    internal_nik: string;
+  };
+}
+
 export type LocationInput = Omit<Location, 'id' | 'created_at' | 'updated_at' | 'search_all'>;
 export type LocationAdminInput = Omit<LocationAdministration, 'id' | 'created_at'>;
 export type AccountInput = Omit<Account, 'id' | 'created_at' | 'updated_at' | 'search_all' | 'location'>;
@@ -292,6 +314,7 @@ export type TerminationLogInput = Omit<TerminationLog, 'id' | 'created_at'>;
 export type DocumentInput = Omit<DigitalDocument, 'id' | 'created_at' | 'updated_at' | 'allowed_account_ids'> & {
   allowed_account_ids: string[];
 };
+export type SubmissionInput = Omit<Submission, 'id' | 'created_at' | 'updated_at' | 'status' | 'verifier_id' | 'verified_at' | 'verification_notes' | 'account'>;
 
 export type ScheduleInput = Omit<Schedule, 'id' | 'created_at' | 'updated_at' | 'rules' | 'location_ids'> & {
   rules: Omit<ScheduleRule, 'id' | 'schedule_id'>[];

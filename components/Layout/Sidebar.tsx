@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import { 
   MapPin, LayoutDashboard, Settings, Users, 
   CalendarClock, Files, ChevronDown, ChevronRight, 
-  Menu as MenuIcon, ChevronLeft, Database, Fingerprint, LogOut, Timer 
+  Menu as MenuIcon, ChevronLeft, Database, Fingerprint, LogOut, Timer, ClipboardCheck
 } from 'lucide-react';
 import { authService } from '../../services/authService';
 import Swal from 'sweetalert2';
@@ -33,7 +32,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed,
     }
   };
 
-  const NavItem = ({ id, icon: Icon, label, indent = false }: { id: any, icon: any, label: string, indent?: boolean }) => (
+  const NavItem = ({ id, icon: Icon, label, indent = false, badge }: { id: any, icon: any, label: string, indent?: boolean, badge?: number }) => (
     <button
       onClick={() => setActiveTab(id)}
       className={`flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-200 w-full mb-1 ${
@@ -43,8 +42,22 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed,
       } ${indent && !isCollapsed ? 'ml-4 w-[calc(100%-1rem)]' : ''}`}
       title={isCollapsed ? label : ''}
     >
-      <Icon size={20} className="shrink-0" />
-      {!isCollapsed && <span className="font-medium text-sm truncate">{label}</span>}
+      <div className="relative shrink-0">
+        <Icon size={20} />
+        {badge !== undefined && badge > 0 && isCollapsed && (
+          <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border border-white"></div>
+        )}
+      </div>
+      {!isCollapsed && (
+        <div className="flex items-center justify-between flex-1 overflow-hidden">
+          <span className="font-medium text-sm truncate">{label}</span>
+          {badge !== undefined && badge > 0 && (
+            <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+              {badge}
+            </span>
+          )}
+        </div>
+      )}
     </button>
   );
 
@@ -97,6 +110,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed,
         <div className="mt-4">
           <NavItem id="presence" icon={Fingerprint} label="Presensi Reguler" />
           <NavItem id="overtime" icon={Timer} label="Presensi Lembur" />
+          <NavItem id="submission" icon={ClipboardCheck} label="Pengajuan" />
           <NavItem id="document" icon={Files} label="Dokumen Digital" />
           <NavItem id="settings" icon={Settings} label="Pengaturan" />
         </div>
