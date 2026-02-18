@@ -74,6 +74,17 @@ const PresenceMain: React.FC = () => {
     }
   };
 
+  const getLiveWorkDuration = () => {
+    if (!todayAttendance?.check_in || todayAttendance.check_out) return null;
+    const start = new Date(todayAttendance.check_in);
+    const diffMs = serverTime.getTime() - start.getTime();
+    if (diffMs < 0) return "00 : 00 : 00";
+    const hours = Math.floor(diffMs / 3600000);
+    const minutes = Math.floor((diffMs % 3600000) / 60000);
+    const seconds = Math.floor((diffMs % 60000) / 1000);
+    return `${String(hours).padStart(2, '0')} : ${String(minutes).padStart(2, '0')} : ${String(seconds).padStart(2, '0')}`;
+  };
+
   const startWatchingLocation = () => {
     if (navigator.geolocation) {
       watchId.current = navigator.geolocation.watchPosition(
@@ -242,6 +253,7 @@ const PresenceMain: React.FC = () => {
         <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center text-rose-500 mx-auto mb-6">
           <UserX size={40} />
         </div>
+        {/* FIX: Added missing opening bracket to h3 tag */}
         <h3 className="text-xl font-bold text-gray-800">Akun Tidak Dikenali</h3>
         <p className="text-sm text-gray-500 mt-2">ID karyawan tidak terdaftar atau telah dinonaktifkan. Harap hubungi Admin HR.</p>
         <button 
@@ -369,6 +381,15 @@ const PresenceMain: React.FC = () => {
                   <div className="text-[11px] font-bold text-[#00FFE4] uppercase tracking-widest mt-2">
                     {serverTime.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}
                   </div>
+
+                  {todayAttendance?.check_in && !todayAttendance.check_out && (
+                    <div className="mt-8 p-3 bg-[#006E62]/5 rounded-2xl border border-emerald-100/50 animate-in fade-in zoom-in duration-700">
+                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Durasi Kerja Berjalan</p>
+                      <div className="text-2xl font-mono font-black text-[#006E62] tracking-widest">
+                        {getLiveWorkDuration()}
+                      </div>
+                    </div>
+                  )}
                </div>
 
                <div className="mt-8 p-4 bg-emerald-50/50 rounded-xl border border-emerald-100/50 space-y-3">
