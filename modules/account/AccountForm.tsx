@@ -191,9 +191,6 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
     g.toLowerCase().includes(formData.grade.toLowerCase())
   );
 
-  // Logic to determine if Shift Dinamis should be enabled based on location schedule availability
-  const hasShiftSchedules = schedules.some(s => s.type === 2);
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4">
       <div className="bg-white rounded-md shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col max-h-[95vh] animate-in zoom-in duration-200">
@@ -309,4 +306,341 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
               <div className="space-y-3">
                 <div className="space-y-1">
                   <Label required>Alamat Domisili</Label>
-                  <textarea name="address" value={formData.address} onChange={handleChange} rows={2} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E
+                  <textarea name="address" value={formData.address} onChange={handleChange} rows={2} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none resize-none" required />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label required>Email</Label>
+                    <input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required />
+                  </div>
+                  <div className="space-y-1">
+                    <Label required>No Telepon</Label>
+                    <input name="phone" value={formData.phone} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label required>Status Pernikahan</Label>
+                    <select name="marital_status" value={formData.marital_status} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required>
+                      <option value="Belum Menikah">Belum Menikah</option>
+                      <option value="Menikah">Menikah</option>
+                      <option value="Cerai Hidup">Cerai Hidup</option>
+                      <option value="Cerai Mati">Cerai Mati</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Tanggungan</Label>
+                    <input type="number" name="dependents_count" value={formData.dependents_count} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Kolom Tengah: Karier & Pendidikan */}
+            <div className="space-y-4">
+              <SectionHeader icon={Briefcase} title="Karier & Penempatan" />
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label required>NIK Internal</Label>
+                    <input name="internal_nik" value={formData.internal_nik} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required />
+                  </div>
+                  <div className="space-y-1">
+                    <Label required>Lokasi</Label>
+                    <select name="location_id" value={formData.location_id} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required>
+                      <option value="">-- Pilih Lokasi --</option>
+                      {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1 relative" ref={posRef}>
+                    <Label required>Jabatan</Label>
+                    <div className="relative">
+                      <input 
+                        name="position" 
+                        autoComplete="off"
+                        value={formData.position} 
+                        onChange={(e) => { handleChange(e); setShowPosDropdown(true); }}
+                        onFocus={() => setShowPosDropdown(true)}
+                        className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none pr-7 bg-white" 
+                        required 
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => setShowPosDropdown(!showPosDropdown)}
+                        className="absolute right-0 top-0 bottom-0 px-2 flex items-center text-gray-400"
+                      >
+                        <ChevronDown size={14} />
+                      </button>
+                    </div>
+                    {showPosDropdown && filteredPositions.length > 0 && (
+                      <div className="absolute z-[70] w-full mt-1 bg-white border border-gray-100 rounded shadow-lg max-h-40 overflow-y-auto">
+                        {filteredPositions.map(p => (
+                          <div 
+                            key={p} 
+                            className="px-3 py-2 text-xs hover:bg-gray-50 cursor-pointer text-gray-700"
+                            onClick={() => {
+                              setFormData(prev => ({ ...prev, position: p }));
+                              setShowPosDropdown(false);
+                            }}
+                          >
+                            {p}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-1 relative" ref={gradeRef}>
+                    <Label>Golongan</Label>
+                    <div className="relative">
+                      <input 
+                        name="grade" 
+                        autoComplete="off"
+                        value={formData.grade} 
+                        onChange={(e) => { handleChange(e); setShowGradeDropdown(true); }}
+                        onFocus={() => setShowGradeDropdown(true)}
+                        className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none pr-7 bg-white" 
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => setShowGradeDropdown(!showGradeDropdown)}
+                        className="absolute right-0 top-0 bottom-0 px-2 flex items-center text-gray-400"
+                      >
+                        <ChevronDown size={14} />
+                      </button>
+                    </div>
+                    {showGradeDropdown && filteredGrades.length > 0 && (
+                      <div className="absolute z-[70] w-full mt-1 bg-white border border-gray-100 rounded shadow-lg max-h-40 overflow-y-auto">
+                        {filteredGrades.map(g => (
+                          <div 
+                            key={g} 
+                            className="px-3 py-2 text-xs hover:bg-gray-50 cursor-pointer text-gray-700"
+                            onClick={() => {
+                              setFormData(prev => ({ ...prev, grade: g }));
+                              setShowGradeDropdown(false);
+                            }}
+                          >
+                            {g}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {!initialData && (
+                  <div className="space-y-1 p-2 bg-gray-50 rounded border border-gray-100">
+                    <Label>Upload SK Awal (G-Drive)</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <label className="flex items-center gap-2 px-3 py-1.5 bg-white border border-dashed border-gray-300 rounded cursor-pointer hover:bg-gray-100 transition-colors flex-1 overflow-hidden">
+                        {formData.file_sk_id ? (
+                          <div className="w-5 h-5 rounded overflow-hidden border border-gray-100 shrink-0">
+                            <img src={googleDriveService.getFileUrl(formData.file_sk_id)} className="w-full h-full object-cover" />
+                          </div>
+                        ) : (
+                          <Upload size={12} className="text-gray-400 shrink-0" />
+                        )}
+                        <span className="text-[10px] text-gray-500 truncate">{formData.file_sk_id ? 'SK Terlampir' : 'PDF/Gambar SK'}</span>
+                        <input type="file" className="hidden" accept="image/*,application/pdf" onChange={(e) => handleFileUpload(e, 'file_sk_id')} />
+                      </label>
+                      {uploading['file_sk_id'] && <div className="w-4 h-4 border-2 border-[#006E62] border-t-transparent rounded-full animate-spin"></div>}
+                    </div>
+                  </div>
+                )}
+                <div className="space-y-1">
+                  <Label required>Jenis Karyawan</Label>
+                  <select name="employee_type" value={formData.employee_type} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required>
+                    <option value="Tetap">Tetap</option>
+                    <option value="Kontrak">Kontrak</option>
+                    <option value="Harian">Harian</option>
+                    <option value="Magang">Magang</option>
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label required>Tgl Mulai</Label>
+                    <input type="date" name="start_date" value={formData.start_date} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Tgl Akhir</Label>
+                    <input 
+                      type="date" 
+                      name="end_date" 
+                      value={formData.end_date} 
+                      onChange={handleChange} 
+                      disabled={formData.employee_type === 'Tetap'}
+                      className={`w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none transition-colors ${formData.employee_type === 'Tetap' ? 'bg-gray-100 cursor-not-allowed opacity-60' : 'bg-white'}`} 
+                    />
+                  </div>
+                </div>
+
+                {!initialData && (
+                  <>
+                    <SectionHeader icon={FileBadge} title="Dokumen Kontrak Awal" />
+                    <div className="space-y-3 p-3 bg-emerald-50/50 border border-emerald-100 rounded">
+                      <div className="space-y-1">
+                        <Label>Nomor Kontrak</Label>
+                        <input name="contract_number" value={formData.contract_initial.contract_number} onChange={handleContractChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none bg-white" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Upload PDF Kontrak</Label>
+                        <div className="flex items-center gap-2">
+                          <label className="flex items-center gap-2 px-3 py-1.5 bg-white border border-dashed border-gray-300 rounded cursor-pointer hover:bg-gray-50 flex-1 overflow-hidden transition-colors">
+                            <Upload size={12} className="text-gray-400 shrink-0" />
+                            <span className="text-[10px] text-gray-500 truncate">{formData.contract_initial.file_id ? 'PDF Kontrak OK' : 'Pilih File PDF'}</span>
+                            <input type="file" className="hidden" accept="application/pdf" onChange={(e) => handleFileUpload(e, 'contract_file')} />
+                          </label>
+                          {uploading['contract_file'] && <div className="w-4 h-4 border-2 border-[#006E62] border-t-transparent rounded-full animate-spin"></div>}
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <SectionHeader icon={GraduationCap} title="Pendidikan & Dokumen" />
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label required>Pendidikan Terakhir</Label>
+                    <select name="last_education" value={formData.last_education} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required>
+                      {educationOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label required>Jurusan</Label>
+                    <input name="major" value={formData.major} onChange={handleChange} placeholder="cth: Teknik Sipil" className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 gap-3">
+                   <label className="flex items-center gap-4 p-2 border border-dashed border-gray-300 rounded cursor-pointer hover:bg-gray-50 group transition-colors">
+                      <div className="w-10 h-10 rounded bg-white flex items-center justify-center shrink-0 border border-gray-100 overflow-hidden">
+                        {formData.diploma_google_id ? (
+                           <img src={googleDriveService.getFileUrl(formData.diploma_google_id)} className="w-full h-full object-cover" />
+                        ) : (
+                          <Upload size={14} className="text-gray-300 group-hover:text-[#006E62]" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-[8px] font-bold text-gray-400 group-hover:text-[#006E62] uppercase leading-none mb-1">Upload Ijazah</div>
+                        <div className="text-[10px] text-gray-300 truncate">{formData.diploma_google_id ? 'FILE TERSIMPAN' : 'Pilih File (PDF/Gambar)'}</div>
+                      </div>
+                      <input type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => handleFileUpload(e, 'diploma_google_id')} />
+                      {uploading['diploma_google_id'] && <div className="shrink-0"><div className="w-3 h-3 border-2 border-[#006E62] border-t-transparent rounded-full animate-spin"></div></div>}
+                   </label>
+                </div>
+              </div>
+              
+              <SectionHeader icon={Heart} title="Kontak Darurat" />
+              <div className="space-y-2">
+                <input name="emergency_contact_name" value={formData.emergency_contact_name} onChange={handleChange} placeholder="Nama Lengkap" className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
+                <div className="grid grid-cols-2 gap-2">
+                  <input name="emergency_contact_rel" value={formData.emergency_contact_rel} onChange={handleChange} placeholder="Hubungan" className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
+                  <input name="emergency_contact_phone" value={formData.emergency_contact_phone} onChange={handleChange} placeholder="No HP" className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
+                </div>
+              </div>
+            </div>
+
+            {/* Kolom Kanan: Pengaturan & Keamanan */}
+            <div className="space-y-4">
+              <SectionHeader icon={ShieldCheck} title="Presensi & Keamanan" />
+              <div className="space-y-3">
+                 <div className="space-y-1">
+                    <Label required>Pilih Jadwal Kerja</Label>
+                    <div className="relative">
+                      <select 
+                        required 
+                        name="schedule_id" 
+                        value={formData.schedule_id} 
+                        onChange={handleChange} 
+                        disabled={!formData.location_id}
+                        className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none bg-white disabled:bg-gray-50 appearance-none pr-8"
+                      >
+                        <option value="">-- {formData.location_id ? 'Pilih Jadwal' : 'Pilih Lokasi Terlebih Dahulu'} --</option>
+                        <option value="FLEKSIBEL">✨ Jadwal Fleksibel (Tanpa Potongan)</option>
+                        <option value="DINAMIS">🔄 Shift Dinamis (Pilih Saat Presensi)</option>
+                        {schedules.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                      </select>
+                      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
+                    </div>
+                 </div>
+                 <div className="space-y-2 pt-2">
+                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter mb-2">Batasan Radius Presensi</p>
+                    <div className="space-y-1.5">
+                       {[
+                         { id: 'is_presence_limited_checkin', label: 'Check-in Datang' },
+                         { id: 'is_presence_limited_checkout', label: 'Check-out Pulang' },
+                         { id: 'is_presence_limited_ot_in', label: 'Check-in Lembur' },
+                         { id: 'is_presence_limited_ot_out', label: 'Check-out Lembur' }
+                       ].map(item => (
+                         <label key={item.id} className="flex items-center justify-between p-2 bg-gray-50 rounded border border-gray-100 cursor-pointer hover:bg-white transition-colors">
+                            <span className="text-[10px] font-medium text-gray-600">{item.label}</span>
+                            <div className="relative inline-flex items-center cursor-pointer">
+                              <input type="checkbox" name={item.id} checked={(formData as any)[item.id]} onChange={handleChange} className="sr-only peer" />
+                              <div className="w-7 h-4 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-[#006E62]"></div>
+                            </div>
+                         </label>
+                       ))}
+                    </div>
+                 </div>
+
+                 <div className="grid grid-cols-2 gap-2 mt-4">
+                    <div className="space-y-1">
+                      <Label required>Kode Akses</Label>
+                      <input name="access_code" value={formData.access_code} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required />
+                    </div>
+                    <div className="space-y-1">
+                      <Label required>Password</Label>
+                      <input type="password" name="password" value={formData.password} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required />
+                    </div>
+                 </div>
+
+                 <div className="space-y-1 pt-2">
+                    <Label>Status Medis / MCU</Label>
+                    <input name="mcu_status" value={formData.mcu_status} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
+                 </div>
+                 <div className="space-y-1">
+                    <Label>Risiko Kesehatan</Label>
+                    <input name="health_risk" value={formData.health_risk} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
+                 </div>
+                 {!initialData && (
+                  <div className="space-y-1 p-2 bg-gray-50 rounded border border-gray-100 mt-2">
+                    <Label>Upload Hasil MCU Awal</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <label className="flex items-center gap-2 px-3 py-1.5 bg-white border border-dashed border-gray-300 rounded cursor-pointer hover:bg-gray-100 transition-colors flex-1 overflow-hidden">
+                        {formData.file_mcu_id ? (
+                           <div className="w-5 h-5 rounded overflow-hidden border border-gray-100 shrink-0">
+                              <img src={googleDriveService.getFileUrl(formData.file_mcu_id)} className="w-full h-full object-cover" />
+                           </div>
+                        ) : (
+                          <Upload size={12} className="text-gray-400 shrink-0" />
+                        )}
+                        <span className="text-[10px] text-gray-500 truncate">{formData.file_mcu_id ? 'Hasil MCU OK' : 'Upload PDF Hasil MCU'}</span>
+                        <input type="file" className="hidden" accept="image/*,application/pdf" onChange={(e) => handleFileUpload(e, 'file_mcu_id')} />
+                      </label>
+                      {uploading['file_mcu_id'] && <div className="w-4 h-4 border-2 border-[#006E62] border-t-transparent rounded-full animate-spin"></div>}
+                    </div>
+                  </div>
+                 )}
+              </div>
+            </div>
+          </div>
+        </form>
+
+        <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50">
+          <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold text-gray-500 uppercase">Batal</button>
+          <button 
+            type="submit"
+            form="account-form"
+            disabled={Object.values(uploading).some(v => v)}
+            className="flex items-center gap-2 bg-[#006E62] text-white px-8 py-2 rounded shadow-md hover:bg-[#005a50] transition-all text-xs font-bold uppercase disabled:opacity-50"
+          >
+            <Save size={14} /> Simpan Akun
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AccountForm;
