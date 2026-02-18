@@ -49,7 +49,6 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
     mcu_status: initialData?.mcu_status || '',
     health_risk: initialData?.health_risk || '',
     photo_google_id: initialData?.photo_google_id || '',
-    this_is_dummy: false, // Hidden helper
     ktp_google_id: initialData?.ktp_google_id || '',
     diploma_google_id: initialData?.diploma_google_id || '',
     // Tambahan untuk log awal
