@@ -8,6 +8,7 @@ import ScheduleMain from './modules/schedule/ScheduleMain';
 import DocumentMain from './modules/document/DocumentMain';
 import PresenceMain from './modules/presence/PresenceMain';
 import OvertimeMain from './modules/overtime/OvertimeMain';
+import SubmissionMain from './modules/submission/SubmissionMain';
 import Login from './modules/auth/Login';
 import { authService } from './services/authService';
 import { AuthUser } from './types';
@@ -116,6 +117,8 @@ const App: React.FC = () => {
             <PresenceMain />
           ) : activeTab === 'overtime' ? (
             <OvertimeMain />
+          ) : activeTab === 'submission' ? (
+            <SubmissionMain />
           ) : (
             <div className="flex flex-col items-center justify-center h-64 text-gray-400 bg-gray-50 rounded-lg border border-dashed border-gray-200">
               <p className="font-medium text-sm">Modul "{activeTab}" sedang dalam pengembangan.</p>
