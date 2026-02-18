@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Timer, Clock, MapPin, History, AlertCircle, Map as MapIcon, Camera, UserX, ShieldCheck, Info } from 'lucide-react';
 import Swal from 'sweetalert2';
@@ -114,6 +113,25 @@ const OvertimeMain: React.FC = () => {
        return Swal.fire('Diluar Radius', `Anda berada diluar radius penempatan untuk lembur.`, 'error');
     }
 
+    // Alasan Lembur Mandatory Prompt
+    const { value: otReason, isConfirmed } = await Swal.fire({
+      title: 'Konfirmasi Lembur',
+      input: 'textarea',
+      inputLabel: `Sebutkan alasan/kegiatan lembur (${isCheckOut ? 'Check-Out' : 'Check-In'}):`,
+      inputPlaceholder: 'Contoh: Menyelesaikan laporan bulanan...',
+      showCancelButton: true,
+      confirmButtonColor: '#d97706',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Kirim Presensi',
+      cancelButtonText: 'Batal',
+      inputValidator: (value) => {
+        if (!value) return 'Alasan lembur wajib diisi!';
+        return null;
+      }
+    });
+
+    if (!isConfirmed) return;
+
     try {
       setIsCapturing(true);
       const [address, photoId] = await Promise.all([
@@ -130,7 +148,8 @@ const OvertimeMain: React.FC = () => {
           in_latitude: coords.lat,
           in_longitude: coords.lng,
           in_photo_id: photoId,
-          in_address: address
+          in_address: address,
+          reason: otReason
         });
       } else {
         const start = new Date(todayOT.check_in!);
@@ -149,7 +168,8 @@ const OvertimeMain: React.FC = () => {
           out_photo_id: photoId,
           out_address: address,
           duration_minutes: diffMins,
-          work_duration: durationFormatted
+          work_duration: durationFormatted,
+          reason: otReason
         });
       }
 

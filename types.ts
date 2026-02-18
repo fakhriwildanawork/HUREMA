@@ -1,4 +1,3 @@
-
 export interface Location {
   id: string;
   name: string;
@@ -152,6 +151,7 @@ export interface Overtime {
   out_address: string | null;
   duration_minutes: number;
   work_duration: string | null;
+  reason: string | null;
   created_at?: string;
 }
 
@@ -285,6 +285,7 @@ export type AccountInput = Omit<Account, 'id' | 'created_at' | 'updated_at' | 's
 export type CareerLogInput = Omit<CareerLog, 'id'>;
 export type HealthLogInput = Omit<HealthLog, 'id'>;
 export type AccountContractInput = Omit<AccountContract, 'id' | 'created_at' | 'updated_at'>;
+export type AccountContractInputExtended = AccountContractInput;
 export type AccountCertificationInput = Omit<AccountCertification, 'id' | 'created_at' | 'updated_at'>;
 export type WarningLogInput = Omit<WarningLog, 'id' | 'created_at'>;
 export type TerminationLogInput = Omit<TerminationLog, 'id' | 'created_at'>;

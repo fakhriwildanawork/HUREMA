@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Timer, Clock, MapPin, ExternalLink, Calendar } from 'lucide-react';
+import { Timer, Clock, MapPin, ExternalLink, Calendar, MessageSquare } from 'lucide-react';
 import { Overtime } from '../../types';
 import { googleDriveService } from '../../services/googleDriveService';
 import Swal from 'sweetalert2';
@@ -58,12 +57,20 @@ const OvertimeHistory: React.FC<OvertimeHistoryProps> = ({ logs, isLoading }) =>
                   {log.out_address && <p className="text-[8px] text-gray-400 truncate flex items-center gap-1"><MapPin size={8} /> {log.out_address}</p>}
                 </div>
 
-                <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
-                  <p className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter mb-1">Durasi Lembur</p>
-                  <div className="flex items-center gap-1.5">
-                    <Clock size={14} className="text-amber-600" />
-                    <span className="text-sm font-bold text-gray-700">{log.work_duration || '-'}</span>
+                <div className="p-3 bg-gray-50 rounded-lg border border-gray-100 flex flex-col justify-between min-h-[60px]">
+                  <div>
+                    <p className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter mb-1">Durasi Lembur</p>
+                    <div className="flex items-center gap-1.5">
+                      <Clock size={14} className="text-amber-600" />
+                      <span className="text-sm font-bold text-gray-700">{log.work_duration || '-'}</span>
+                    </div>
                   </div>
+                  {log.reason && (
+                    <div className="mt-2 pt-2 border-t border-gray-200/50 flex items-start gap-1.5">
+                       <MessageSquare size={10} className="text-amber-500 shrink-0 mt-0.5" />
+                       <p className="text-[9px] text-gray-500 italic leading-tight line-clamp-2">"{log.reason}"</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
