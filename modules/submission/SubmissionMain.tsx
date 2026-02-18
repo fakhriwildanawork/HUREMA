@@ -18,6 +18,7 @@ const SubmissionMain: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
 
+
   const currentUser = authService.getCurrentUser();
 
   useEffect(() => {
