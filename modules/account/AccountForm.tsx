@@ -49,6 +49,7 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
     mcu_status: initialData?.mcu_status || '',
     health_risk: initialData?.health_risk || '',
     photo_google_id: initialData?.photo_google_id || '',
+    this_is_dummy: false, // Hidden helper
     ktp_google_id: initialData?.ktp_google_id || '',
     diploma_google_id: initialData?.diploma_google_id || '',
     // Tambahan untuk log awal
@@ -208,11 +209,17 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
           className="flex-1 overflow-y-auto p-6 scrollbar-thin" 
           onSubmit={(e) => { 
             e.preventDefault(); 
-            // Final check to ensure end_date is null for Tetap
             const payload = { ...formData };
             if (payload.employee_type === 'Tetap') {
                payload.end_date = '';
             }
+            
+            // FIX: If schedule_id is a virtual marker, set it to empty string (will be null in DB)
+            // to avoid UUID conversion errors. The marker is still safe in schedule_type.
+            if (payload.schedule_id === 'FLEKSIBEL' || payload.schedule_id === 'DINAMIS') {
+               payload.schedule_id = '';
+            }
+            
             onSubmit(payload); 
           }}
         >

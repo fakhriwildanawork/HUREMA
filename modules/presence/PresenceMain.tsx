@@ -69,8 +69,8 @@ const PresenceMain: React.FC = () => {
       setRecentLogs(history);
       setServerTime(sTime);
 
-      // Tarik daftar shift jika akun bertipe DINAMIS
-      if (acc && acc.schedule_id === 'DINAMIS' && acc.location_id) {
+      // Tarik daftar shift jika akun bertipe DINAMIS (Cek via schedule_type)
+      if (acc && acc.schedule_type === 'Shift Dinamis' && acc.location_id) {
         setIsFetchingShifts(true);
         const shifts = await scheduleService.getByLocation(acc.location_id);
         // MANDATORY: Hanya bertipe Shift Kerja (Type 2)
@@ -78,7 +78,7 @@ const PresenceMain: React.FC = () => {
         setIsFetchingShifts(false);
       }
 
-      // Cek apakah hari ini Libur Khusus (Type 3)
+      // Cek apakah hari ini Libur Khusus (Type 3) di lokasi user
       if (acc && acc.location_id) {
         const holiday = await presenceService.checkHolidayStatus(currentAccountId, acc.location_id, sTime);
         setActiveHoliday(holiday);
@@ -134,9 +134,9 @@ const PresenceMain: React.FC = () => {
     
     // Resolve Target Schedule (Statis vs Dinamis vs Fleksibel)
     let targetSchedule: Schedule | null = null;
-    if (account?.schedule_id === 'FLEKSIBEL') {
+    if (account?.schedule_type === 'Jadwal Fleksibel') {
       targetSchedule = { id: 'FLEKSIBEL', name: 'Jadwal Fleksibel' } as any;
-    } else if (account?.schedule_id === 'DINAMIS') {
+    } else if (account?.schedule_type === 'Shift Dinamis') {
       if (!selectedShift) return Swal.fire('Peringatan', 'Pilih shift terlebih dahulu.', 'warning');
       targetSchedule = selectedShift;
     } else {
@@ -146,8 +146,8 @@ const PresenceMain: React.FC = () => {
     const scheduleRule = targetSchedule?.rules?.find(r => r.day_of_week === todayDay);
     const isHolidayToday = !!activeHoliday || !!scheduleRule?.is_holiday;
 
-    // Blokir jika hari libur
-    if (isHolidayToday && account?.schedule_id !== 'FLEKSIBEL') {
+    // Blokir jika hari libur (kecuali Fleksibel)
+    if (isHolidayToday && account?.schedule_type !== 'Jadwal Fleksibel') {
       const holidayLabel = activeHoliday ? `khusus (${activeHoliday.name})` : 'terjadwal (Off Day)';
       return Swal.fire('Akses Ditolak', `Hari ini adalah hari libur ${holidayLabel}. Presensi dinonaktifkan.`, 'info');
     }
@@ -298,10 +298,10 @@ const PresenceMain: React.FC = () => {
   
   // Resolve Rule untuk UI Tampilan Jadwal
   let displaySchedule = account.schedule;
-  if (account.schedule_id === 'DINAMIS') displaySchedule = selectedShift || undefined;
+  if (account.schedule_type === 'Shift Dinamis') displaySchedule = selectedShift || undefined;
   
   const scheduleRule = displaySchedule?.rules?.find(r => r.day_of_week === todayDay);
-  const isHolidayToday = account.schedule_id !== 'FLEKSIBEL' && (!!activeHoliday || !!scheduleRule?.is_holiday);
+  const isHolidayToday = account.schedule_type !== 'Jadwal Fleksibel' && (!!activeHoliday || !!scheduleRule?.is_holiday);
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -358,14 +358,14 @@ const PresenceMain: React.FC = () => {
             ) : (!todayAttendance || !todayAttendance.check_out) ? (
               <div className="bg-white rounded-2xl border border-gray-100 p-8 flex flex-col items-center justify-center shadow-sm text-center">
                 <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 shadow-xl transition-all duration-500 ${isWithinRadius ? 'bg-emerald-50 text-[#006E62]' : 'bg-rose-50 text-rose-500'}`}>
-                   {account.schedule_id === 'DINAMIS' ? <RefreshCw size={40} className={isFetchingShifts ? 'animate-spin' : ''} /> : <Fingerprint size={40} />}
+                   {account.schedule_type === 'Shift Dinamis' ? <RefreshCw size={40} className={isFetchingShifts ? 'animate-spin' : ''} /> : <Fingerprint size={40} />}
                 </div>
                 <h3 className="text-xl font-bold text-gray-800">
                    {!!todayAttendance && !todayAttendance.check_out ? 'Waktunya Pulang?' : 'Siap Bekerja Hari Ini?'}
                 </h3>
                 
-                {/* LOGIKA KHUSUS SHIFT DINAMIS: PILEH JADWAL */}
-                {account.schedule_id === 'DINAMIS' && !todayAttendance && (
+                {/* LOGIKA KHUSUS SHIFT DINAMIS: PILEH JADWAL (Cek via schedule_type) */}
+                {account.schedule_type === 'Shift Dinamis' && !todayAttendance && (
                   <div className="mt-6 w-full max-w-sm space-y-3">
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-left mb-2">Pilih Shift Kerja Hari Ini:</p>
                     {isFetchingShifts ? (
@@ -398,17 +398,17 @@ const PresenceMain: React.FC = () => {
 
                 <p className="text-xs text-gray-400 mt-6 max-w-xs leading-tight">
                   {isWithinRadius 
-                    ? (account.schedule_id === 'DINAMIS' && !todayAttendance && !selectedShift 
+                    ? (account.schedule_type === 'Shift Dinamis' && !todayAttendance && !selectedShift 
                         ? 'Silahkan pilih salah satu shift di atas untuk mengaktifkan tombol verifikasi.'
                         : 'Klik tombol di bawah untuk verifikasi identitas AI dan mencatat lokasi Anda.')
                     : 'Akses presensi terkunci. Anda harus berada di area lokasi penempatan.'}
                 </p>
                 
                 <button 
-                  disabled={!isWithinRadius || isCapturing || (account.schedule_id === 'DINAMIS' && !todayAttendance && !selectedShift)}
+                  disabled={!isWithinRadius || isCapturing || (account.schedule_type === 'Shift Dinamis' && !todayAttendance && !selectedShift)}
                   onClick={() => setIsCameraActive(true)}
                   className={`mt-8 flex items-center gap-3 px-12 py-4 rounded-2xl font-bold uppercase text-xs tracking-widest shadow-lg transition-all ${
-                    isWithinRadius && !isCapturing && (account.schedule_id !== 'DINAMIS' || !!todayAttendance || !!selectedShift)
+                    isWithinRadius && !isCapturing && (account.schedule_type !== 'Shift Dinamis' || !!todayAttendance || !!selectedShift)
                     ? 'bg-[#006E62] text-white hover:bg-[#005a50] hover:scale-105 active:scale-95' 
                     : 'bg-gray-100 text-gray-300 cursor-not-allowed shadow-none'
                   }`}
@@ -439,7 +439,7 @@ const PresenceMain: React.FC = () => {
                     <h4 className="text-[11px] font-bold uppercase tracking-widest text-gray-500">Waktu Terverifikasi</h4>
                   </div>
                   <span className="text-[10px] font-bold text-[#00FFE4] bg-[#006E62]/5 px-2 py-0.5 rounded uppercase tracking-tighter">
-                    {displaySchedule?.name || (account.schedule_id === 'FLEKSIBEL' ? 'Fleksibel' : 'Reguler')}
+                    {displaySchedule?.name || (account.schedule_type === 'Jadwal Fleksibel' ? 'Fleksibel' : 'Reguler')}
                   </span>
                </div>
                <div className="text-center py-4 relative z-10">
@@ -460,10 +460,10 @@ const PresenceMain: React.FC = () => {
                   )}
                </div>
 
-               {account.schedule_id !== 'FLEKSIBEL' && (
+               {account.schedule_type !== 'Jadwal Fleksibel' && (
                  <div className="mt-8 p-4 bg-emerald-50/50 rounded-xl border border-emerald-100/50 space-y-3">
                     <div className="flex items-center gap-2 text-[10px] font-bold text-[#006E62] uppercase tracking-wider mb-2">
-                      <CalendarClock size={14} /> {account.schedule_id === 'DINAMIS' ? 'Shift Terpilih' : 'Jadwal Hari Ini'}
+                      <CalendarClock size={14} /> {account.schedule_type === 'Shift Dinamis' ? 'Shift Terpilih' : 'Jadwal Hari Ini'}
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                        <div>
