@@ -72,7 +72,8 @@ const PresenceMain: React.FC = () => {
       watchId.current = navigator.geolocation.watchPosition(
         (pos) => {
           setGpsAccuracy(pos.coords.accuracy);
-          if (pos.coords.accuracy < 500) {
+          // Mengizinkan koordinat masuk jika akurasi masih dalam batas toleransi logis
+          if (pos.coords.accuracy < 1000) {
             setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
           }
         },
@@ -95,18 +96,32 @@ const PresenceMain: React.FC = () => {
   }, [coords, account]);
 
   const handleAttendance = async (photoBlob: Blob) => {
-    if (!account || !coords || distance === null || !account.schedule) return;
+    // Memberikan feedback eksplisit daripada silent return
+    if (!account || !account.schedule) {
+      return Swal.fire('Gagal', 'Data akun atau jadwal tidak ditemukan.', 'error');
+    }
+
+    if (!coords || distance === null) {
+      return Swal.fire({
+        title: 'Lokasi Belum Siap',
+        text: 'Sinyal GPS sedang dioptimalkan. Mohon tunggu beberapa detik hingga indikator jarak muncul.',
+        icon: 'warning',
+        confirmButtonColor: '#006E62'
+      });
+    }
 
     const locationRadius = account.location?.radius || 100;
     if (distance > locationRadius) {
        setIsCameraActive(false);
        return Swal.fire({
-         title: 'Gagal',
+         title: 'Diluar Radius',
          text: `Anda berada diluar radius penempatan (${Math.round(distance)}m > ${locationRadius}m)`,
          icon: 'error',
          confirmButtonColor: '#006E62'
        });
     }
+
+    if (isCapturing) return;
 
     const isCheckOut = !!todayAttendance && !todayAttendance.check_out;
     const scheduleResult = presenceService.calculateStatus(serverTime, account.schedule, isCheckOut ? 'OUT' : 'IN');

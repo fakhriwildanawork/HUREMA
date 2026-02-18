@@ -94,7 +94,13 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, onClose, isP
   };
 
   const predictLoop = () => {
-    if (!isComponentMounted.current || !videoRef.current || !landmarkerRef.current) return;
+    // PAUSE loop jika sedang memproses capture untuk membebaskan resource hardware
+    if (!isComponentMounted.current || !videoRef.current || !landmarkerRef.current || isProcessing) {
+      if (isComponentMounted.current && !isProcessing) {
+        requestRef.current = requestAnimationFrame(predictLoop);
+      }
+      return;
+    }
 
     const video = videoRef.current;
     if (video.readyState >= 2 && video.currentTime !== lastVideoTimeRef.current) {
@@ -130,7 +136,7 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, onClose, isP
 
   const handleCapture = () => {
     const video = videoRef.current;
-    if (!video || video.readyState < 2) return;
+    if (!video || video.readyState < 2 || isProcessing) return;
 
     const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth;
@@ -168,12 +174,13 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, onClose, isP
           <button 
             onClick={onClose}
             disabled={isProcessing}
-            className="absolute top-5 right-5 z-50 p-2.5 bg-black/40 backdrop-blur-md rounded-full text-white/80 hover:text-white disabled:opacity-50 transition-all border border-white/10"
+            className="absolute top-5 right-5 z-[60] p-2.5 bg-black/40 backdrop-blur-md rounded-full text-white/80 hover:text-white disabled:opacity-50 transition-all border border-white/10"
           >
             <X size={20} />
           </button>
 
-          <div className="relative h-full w-full flex flex-col items-center justify-between p-6 pointer-events-none">
+          {/* Area Deteksi & UI */}
+          <div className="relative h-full w-full flex flex-col items-center justify-between p-6 pointer-events-none z-40">
             <div className="mt-8 bg-black/60 backdrop-blur-xl px-6 py-4 rounded-2xl border border-white/10 text-center animate-in fade-in zoom-in duration-500 w-fit">
               {step === 'RIGHT' && (
                 <div className="flex flex-col items-center gap-2">
@@ -207,7 +214,7 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, onClose, isP
               : 'border-white/20 bg-white/5'
             }`}></div>
 
-            <div className="w-full space-y-5 pointer-events-auto mb-6">
+            <div className="w-full space-y-5 mb-6">
               <div className="px-4">
                 <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
                   <div 
@@ -217,7 +224,7 @@ const PresenceCamera: React.FC<PresenceCameraProps> = ({ onCapture, onClose, isP
                 </div>
               </div>
 
-              <div className="flex justify-center gap-3">
+              <div className="flex justify-center gap-3 pointer-events-auto">
                 <button 
                   onClick={() => { 
                     setStep('RIGHT');
