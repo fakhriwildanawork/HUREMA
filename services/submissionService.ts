@@ -17,7 +17,7 @@ export const submissionService = {
       .from('account_submissions')
       .select(`
         *,
-        account:accounts(full_name, internal_nik)
+        account:accounts!account_id(full_name, internal_nik)
       `)
       .order('created_at', { ascending: false });
     
