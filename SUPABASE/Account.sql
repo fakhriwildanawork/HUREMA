@@ -1,4 +1,3 @@
-
 -- Create Accounts Table
 CREATE TABLE IF NOT EXISTS accounts (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -97,30 +96,56 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- FIX ERROR 42710: Drop trigger if exists before creating
+DROP TRIGGER IF EXISTS trg_update_account_search_all ON accounts;
 CREATE TRIGGER trg_update_account_search_all
 BEFORE INSERT OR UPDATE ON accounts
 FOR EACH ROW
 EXECUTE FUNCTION update_account_search_all();
 
--- RLS
+-- RLS & POLICIES (With Idempotency Fix)
 ALTER TABLE accounts ENABLE ROW LEVEL SECURITY;
+
+DO $$ 
+BEGIN
+    DROP POLICY IF EXISTS "Allow public read accounts" ON accounts;
+    DROP POLICY IF EXISTS "Allow public insert accounts" ON accounts;
+    DROP POLICY IF EXISTS "Allow public update accounts" ON accounts;
+    DROP POLICY IF EXISTS "Allow public delete accounts" ON accounts;
+END $$;
+
 CREATE POLICY "Allow public read accounts" ON accounts FOR SELECT TO public USING (true);
 CREATE POLICY "Allow public insert accounts" ON accounts FOR INSERT TO public WITH CHECK (true);
 CREATE POLICY "Allow public update accounts" ON accounts FOR UPDATE TO public USING (true);
 CREATE POLICY "Allow public delete accounts" ON accounts FOR DELETE TO public USING (true);
 
 ALTER TABLE account_career_logs ENABLE ROW LEVEL SECURITY;
+DO $$ 
+BEGIN
+    DROP POLICY IF EXISTS "Allow public read career logs" ON account_career_logs;
+    DROP POLICY IF EXISTS "Allow public insert career logs" ON account_career_logs;
+    DROP POLICY IF EXISTS "Allow public delete career logs" ON account_career_logs;
+END $$;
+
 CREATE POLICY "Allow public read career logs" ON account_career_logs FOR SELECT TO public USING (true);
 CREATE POLICY "Allow public insert career logs" ON account_career_logs FOR INSERT TO public WITH CHECK (true);
 CREATE POLICY "Allow public delete career logs" ON account_career_logs FOR DELETE TO public USING (true);
 
 ALTER TABLE account_health_logs ENABLE ROW LEVEL SECURITY;
+DO $$ 
+BEGIN
+    DROP POLICY IF EXISTS "Allow public read health logs" ON account_health_logs;
+    DROP POLICY IF EXISTS "Allow public insert health logs" ON account_health_logs;
+    DROP POLICY IF EXISTS "Allow public delete health logs" ON account_health_logs;
+END $$;
+
 CREATE POLICY "Allow public read health logs" ON account_health_logs FOR SELECT TO public USING (true);
 CREATE POLICY "Allow public insert health logs" ON account_health_logs FOR INSERT TO public WITH CHECK (true);
 CREATE POLICY "Allow public delete health logs" ON account_health_logs FOR DELETE TO public USING (true);
 
--- MEMASTIKAN FOREIGN KEY TERDAFTAR (Fix error PGRST200)
--- Kadang jika tabel dibuat tidak berurutan, relasi ini tidak terdeteksi otomatis oleh PostgREST cache.
+-- MEMASTIKAN FOREIGN KEY TERDAFTAR (Fix error PGRST200 & 23503)
+-- Set orphaned values to NULL before applying constraint
+UPDATE accounts SET schedule_id = NULL WHERE schedule_id IS NOT NULL AND schedule_id NOT IN (SELECT id FROM schedules);
 ALTER TABLE accounts 
 DROP CONSTRAINT IF EXISTS accounts_schedule_id_fkey,
 ADD CONSTRAINT accounts_schedule_id_fkey 

@@ -103,9 +103,14 @@ const PresenceMain: React.FC = () => {
   }, [coords, account]);
 
   const handleAttendance = async (photoBlob: Blob) => {
+    const todayDay = serverTime.getDay();
+    const scheduleRule = account?.schedule?.rules?.find(r => r.day_of_week === todayDay);
+    const isHolidayToday = !!activeHoliday || !!scheduleRule?.is_holiday;
+
     // Blokir jika hari libur
-    if (activeHoliday) {
-      return Swal.fire('Akses Ditolak', `Hari ini adalah hari libur khusus (${activeHoliday.name}). Presensi dinonaktifkan.`, 'info');
+    if (isHolidayToday) {
+      const holidayLabel = activeHoliday ? `khusus (${activeHoliday.name})` : 'terjadwal (Off Day)';
+      return Swal.fire('Akses Ditolak', `Hari ini adalah hari libur ${holidayLabel}. Presensi dinonaktifkan.`, 'info');
     }
 
     if (!account) {
@@ -252,6 +257,7 @@ const PresenceMain: React.FC = () => {
   const isWithinRadius = distance !== null && distance <= (account?.location?.radius || 100);
   const todayDay = serverTime.getDay();
   const scheduleRule = account.schedule?.rules?.find(r => r.day_of_week === todayDay);
+  const isHolidayToday = !!activeHoliday || !!scheduleRule?.is_holiday;
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -290,13 +296,17 @@ const PresenceMain: React.FC = () => {
                 onClose={() => setIsCameraActive(false)}
                 isProcessing={isCapturing}
               />
-            ) : activeHoliday ? (
+            ) : isHolidayToday ? (
               <div className="bg-white rounded-2xl border border-gray-100 p-12 flex flex-col items-center justify-center shadow-sm text-center">
                 <div className="w-24 h-24 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center mb-8 shadow-xl">
                    <Umbrella size={48} />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-800">Hari Libur Khusus</h3>
-                <p className="text-sm text-rose-600 font-bold mt-2 max-w-xs uppercase tracking-tight">"{activeHoliday.name}"</p>
+                <h3 className="text-2xl font-bold text-gray-800">
+                  {activeHoliday ? 'Hari Libur Khusus' : 'Hari Libur Terjadwal'}
+                </h3>
+                <p className="text-sm text-rose-600 font-bold mt-2 max-w-xs uppercase tracking-tight">
+                  {activeHoliday ? `"${activeHoliday.name}"` : '"Off Day / Hari Libur"'}
+                </p>
                 <div className="mt-8 p-4 bg-gray-50 rounded-xl border border-gray-100">
                   <p className="text-xs text-gray-500 leading-relaxed font-medium">Sesuai kebijakan manajemen, sistem presensi dinonaktifkan selama periode libur ini. Nikmati waktu istirahat Anda.</p>
                 </div>

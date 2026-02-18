@@ -60,6 +60,7 @@ CREATE POLICY "Allow public insert schedule_locations" ON schedule_locations FOR
 CREATE POLICY "Allow public delete schedule_locations" ON schedule_locations FOR DELETE TO public USING (true);
 
 -- Update Trigger for updated_at
+DROP TRIGGER IF EXISTS set_updated_at_schedules ON schedules;
 CREATE TRIGGER set_updated_at_schedules
 BEFORE UPDATE ON schedules
 FOR EACH ROW
