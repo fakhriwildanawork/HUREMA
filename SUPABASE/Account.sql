@@ -1,3 +1,4 @@
+
 -- Create Accounts Table
 CREATE TABLE IF NOT EXISTS accounts (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -117,3 +118,10 @@ ALTER TABLE account_health_logs ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow public read health logs" ON account_health_logs FOR SELECT TO public USING (true);
 CREATE POLICY "Allow public insert health logs" ON account_health_logs FOR INSERT TO public WITH CHECK (true);
 CREATE POLICY "Allow public delete health logs" ON account_health_logs FOR DELETE TO public USING (true);
+
+-- MEMASTIKAN FOREIGN KEY TERDAFTAR (Fix error PGRST200)
+-- Kadang jika tabel dibuat tidak berurutan, relasi ini tidak terdeteksi otomatis oleh PostgREST cache.
+ALTER TABLE accounts 
+DROP CONSTRAINT IF EXISTS accounts_schedule_id_fkey,
+ADD CONSTRAINT accounts_schedule_id_fkey 
+FOREIGN KEY (schedule_id) REFERENCES schedules(id) ON DELETE SET NULL;
