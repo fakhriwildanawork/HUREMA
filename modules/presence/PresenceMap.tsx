@@ -55,7 +55,7 @@ const PresenceMap: React.FC<PresenceMapProps> = ({ userLat, userLng, officeLat, 
   }, [userLat, userLng]);
 
   return (
-    <div id={containerId} className="w-full h-32 rounded-lg border border-gray-100 shadow-inner" />
+    <div id={containerId} className="w-full h-32 rounded-lg border border-gray-100 shadow-inner overflow-hidden" />
   );
 };
 

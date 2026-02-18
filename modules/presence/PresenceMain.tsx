@@ -97,8 +97,12 @@ const PresenceMain: React.FC = () => {
 
   const handleAttendance = async (photoBlob: Blob) => {
     // Memberikan feedback eksplisit daripada silent return
-    if (!account || !account.schedule) {
-      return Swal.fire('Gagal', 'Data akun atau jadwal tidak ditemukan.', 'error');
+    if (!account) {
+      return Swal.fire('Gagal', 'Data akun tidak ditemukan.', 'error');
+    }
+    
+    if (!account.schedule) {
+      return Swal.fire('Gagal', 'Jadwal kerja Anda belum diatur oleh Admin.', 'warning');
     }
 
     if (!coords || distance === null) {
@@ -317,9 +321,14 @@ const PresenceMain: React.FC = () => {
                <div className="absolute top-0 right-0 p-4 opacity-5">
                   <Clock size={120} />
                </div>
-               <div className="flex items-center gap-2 mb-6">
-                  <Clock size={16} className="text-[#006E62]" />
-                  <h4 className="text-[11px] font-bold uppercase tracking-widest text-gray-500">Waktu Terverifikasi</h4>
+               <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-2">
+                    <Clock size={16} className="text-[#006E62]" />
+                    <h4 className="text-[11px] font-bold uppercase tracking-widest text-gray-500">Waktu Terverifikasi</h4>
+                  </div>
+                  <span className="text-[10px] font-bold text-[#00FFE4] bg-[#006E62]/5 px-2 py-0.5 rounded uppercase tracking-tighter">
+                    {account.schedule?.name || 'Reguler'}
+                  </span>
                </div>
                <div className="text-center py-4 relative z-10">
                   <div className="text-5xl font-mono font-bold text-gray-800 tracking-tighter">
