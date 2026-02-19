@@ -301,6 +301,13 @@ export interface Submission {
   };
 }
 
+export interface AppSetting {
+  key: string;
+  value: any;
+  description?: string;
+  updated_at?: string;
+}
+
 export type LocationInput = Omit<Location, 'id' | 'created_at' | 'updated_at' | 'search_all'>;
 export type LocationAdminInput = Omit<LocationAdministration, 'id' | 'created_at'>;
 export type AccountInput = Omit<Account, 'id' | 'created_at' | 'updated_at' | 'search_all' | 'location'>;

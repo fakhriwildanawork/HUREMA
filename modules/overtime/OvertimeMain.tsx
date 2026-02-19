@@ -6,6 +6,8 @@ import { presenceService } from '../../services/presenceService';
 import { accountService } from '../../services/accountService';
 import { authService } from '../../services/authService';
 import { googleDriveService } from '../../services/googleDriveService';
+import { settingsService } from '../../services/settingsService';
+import { submissionService } from '../../services/submissionService';
 import { Account, Overtime } from '../../types';
 import PresenceCamera from '../presence/PresenceCamera';
 import PresenceMap from '../presence/PresenceMap';
@@ -134,9 +136,10 @@ const OvertimeMain: React.FC = () => {
 
     try {
       setIsCapturing(true);
-      const [address, photoId] = await Promise.all([
+      const [address, photoId, otPolicy] = await Promise.all([
         presenceService.getReverseGeocode(coords.lat, coords.lng),
-        googleDriveService.uploadFile(new File([photoBlob], `OT_${isCheckOut ? 'OUT' : 'IN'}_${Date.now()}.jpg`))
+        googleDriveService.uploadFile(new File([photoBlob], `OT_${isCheckOut ? 'OUT' : 'IN'}_${Date.now()}.jpg`)),
+        settingsService.getSetting('ot_approval_policy', 'manual')
       ]);
 
       const currentTimeStr = serverTime.toISOString();
@@ -161,7 +164,7 @@ const OvertimeMain: React.FC = () => {
         const s = Math.floor((diffMs % 60000) / 1000);
         const durationFormatted = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 
-        await overtimeService.checkOut(todayOT.id, {
+        const updatedOT = await overtimeService.checkOut(todayOT.id, {
           check_out: currentTimeStr,
           out_latitude: coords.lat,
           out_longitude: coords.lng,
@@ -171,10 +174,36 @@ const OvertimeMain: React.FC = () => {
           work_duration: durationFormatted,
           reason: otReason
         });
+
+        // WORKFLOW INTEGRATION: Masuk ke Pengajuan jika policy MANUAL
+        if (otPolicy === 'manual') {
+          await submissionService.create({
+            account_id: account.id,
+            type: 'Lembur',
+            description: `Lembur pada ${new Date(todayOT.check_in!).toLocaleDateString('id-ID')}. Kegiatan: ${otReason}`,
+            file_id: photoId,
+            submission_data: {
+              overtime_id: todayOT.id,
+              date: todayOT.check_in!.split('T')[0],
+              duration: durationFormatted,
+              minutes: diffMins,
+              check_in: todayOT.check_in,
+              check_out: currentTimeStr
+            }
+          });
+        }
       }
 
       setIsCameraActive(false); 
-      Swal.fire({ title: 'Berhasil!', text: `Presensi Lembur dicatat.`, icon: 'success', timer: 2000, showConfirmButton: false });
+      
+      let successMsg = `Presensi Lembur dicatat.`;
+      if (isCheckOut && otPolicy === 'manual') {
+        successMsg = `Presensi Lembur tersimpan. Pengajuan verifikasi telah dikirim ke Admin.`;
+      } else if (isCheckOut && otPolicy === 'auto') {
+        successMsg = `Presensi Lembur tersimpan dan disetujui otomatis oleh sistem.`;
+      }
+
+      Swal.fire({ title: 'Berhasil!', text: successMsg, icon: 'success', timer: 3000, showConfirmButton: false });
       await fetchInitialData();
     } catch (error) {
       Swal.fire('Gagal', 'Terjadi kesalahan sistem.', 'error');

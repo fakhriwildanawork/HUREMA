@@ -9,13 +9,14 @@ import DocumentMain from './modules/document/DocumentMain';
 import PresenceMain from './modules/presence/PresenceMain';
 import OvertimeMain from './modules/overtime/OvertimeMain';
 import SubmissionMain from './modules/submission/SubmissionMain';
+import MasterMain from './modules/settings/MasterMain';
 import Login from './modules/auth/Login';
 import { authService } from './services/authService';
 import { AuthUser } from './types';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'document' | 'settings' | 'presence' | 'overtime' | 'submission'>('presence');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'document' | 'settings' | 'presence' | 'overtime' | 'submission' | 'master_app'>('presence');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
@@ -85,6 +86,7 @@ const App: React.FC = () => {
               <Database size={20} />
               <span className="font-bold text-[10px] uppercase tracking-widest">Master</span>
             </div>
+            <NavItemMobile id="master_app" icon={Database} label="Master Aplikasi" indent />
             <NavItemMobile id="location" icon={MapPin} label="Data Lokasi" indent />
             <NavItemMobile id="schedule" icon={CalendarClock} label="Manajemen Jadwal" indent />
             <NavItemMobile id="account" icon={Users} label="Akun" indent />
@@ -119,6 +121,8 @@ const App: React.FC = () => {
             <OvertimeMain />
           ) : activeTab === 'submission' ? (
             <SubmissionMain />
+          ) : activeTab === 'master_app' ? (
+            <MasterMain />
           ) : (
             <div className="flex flex-col items-center justify-center h-64 text-gray-400 bg-gray-50 rounded-lg border border-dashed border-gray-200">
               <p className="font-medium text-sm">Modul "{activeTab}" sedang dalam pengembangan.</p>

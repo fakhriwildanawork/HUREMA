@@ -100,6 +100,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed,
           
           {(isMasterOpen || isCollapsed) && (
             <div className={`mt-1 overflow-hidden transition-all duration-300 ${isCollapsed ? '' : 'max-h-96'}`}>
+              <NavItem id="master_app" icon={Database} label="Master Aplikasi" indent />
               <NavItem id="location" icon={MapPin} label="Data Lokasi" indent />
               <NavItem id="schedule" icon={CalendarClock} label="Manajemen Jadwal" indent />
               <NavItem id="account" icon={Users} label="Akun" indent />
