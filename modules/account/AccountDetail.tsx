@@ -454,26 +454,29 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
             {careerLogs.length === 0 ? (
               <p className="text-[10px] text-gray-400 italic">Belum ada riwayat perubahan karir.</p>
             ) : (
-              careerLogs.map((log) => (
-                <div key={log.id} className="flex group justify-between items-start border-l-2 border-gray-100 pl-3 py-1 relative">
-                  <div className="absolute -left-[5px] top-2 w-2 h-2 rounded-full bg-[#006E62]"></div>
-                  <div className="flex-1 min-w-0 pr-4">
-                    <p className="text-[10px] font-bold text-[#006E62] leading-tight">{log.position} • {log.grade}</p>
-                    <p className="text-[9px] text-gray-400 font-medium">{log.location_name}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <p className="text-[8px] text-gray-300 font-bold uppercase">{formatDate(log.change_date)}</p>
-                      {log.file_sk_id && (
-                        <button onClick={() => setPreviewMedia({ url: googleDriveService.getFileUrl(log.file_sk_id!).replace('=s1600', '=s0'), title: 'SK Kenaikan/Mutasi', type: 'image' })} className="text-[#006E62] hover:underline flex items-center gap-0.5 text-[8px] font-bold"><Paperclip size={8} /> SK</button>
-                      )}
+              careerLogs.map((log) => {
+                if (!log) return null; // Safety guard
+                return (
+                  <div key={log.id} className="flex group justify-between items-start border-l-2 border-gray-100 pl-3 py-1 relative">
+                    <div className="absolute -left-[5px] top-2 w-2 h-2 rounded-full bg-[#006E62]"></div>
+                    <div className="flex-1 min-w-0 pr-4">
+                      <p className="text-[10px] font-bold text-[#006E62] leading-tight">{log.position} • {log.grade}</p>
+                      <p className="text-[9px] text-gray-400 font-medium">{log.location_name}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <p className="text-[8px] text-gray-300 font-bold uppercase">{formatDate(log.change_date)}</p>
+                        {log.file_sk_id && (
+                          <button onClick={() => setPreviewMedia({ url: googleDriveService.getFileUrl(log.file_sk_id!).replace('=s1600', '=s0'), title: 'SK Kenaikan/Mutasi', type: 'image' })} className="text-[#006E62] hover:underline flex items-center gap-0.5 text-[8px] font-bold"><Paperclip size={8} /> SK</button>
+                        )}
+                      </div>
+                      {log.notes && <p className="text-[9px] text-gray-400 italic mt-1 line-clamp-1">"{log.notes}"</p>}
                     </div>
-                    {log.notes && <p className="text-[9px] text-gray-400 italic mt-1 line-clamp-1">"{log.notes}"</p>}
+                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => setShowLogForm({ type: 'career', data: log, isEdit: true })} className="text-gray-300 hover:text-[#006E62]"><Edit2 size={12} /></button>
+                      <button onClick={() => handleDeleteLog(log.id, 'career')} className="text-gray-300 hover:text-red-500"><Trash2 size={12} /></button>
+                    </div>
                   </div>
-                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => setShowLogForm({ type: 'career', data: log, isEdit: true })} className="text-gray-300 hover:text-[#006E62]"><Edit2 size={12} /></button>
-                    <button onClick={() => handleDeleteLog(log.id, 'career')} className="text-gray-300 hover:text-red-500"><Trash2 size={12} /></button>
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </DetailSection>
