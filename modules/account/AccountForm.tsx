@@ -76,18 +76,7 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
   const gradeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    locationService.getAll().then(data => {
-       setLocations(data);
-       // FIX: Re-sync location_id jika direset oleh browser karena daftar options sempat kosong
-       if (initialData?.location_id) {
-          setFormData(prev => {
-             if (!prev.location_id || prev.location_id === '') {
-                return { ...prev, location_id: initialData.location_id };
-             }
-             return prev;
-          });
-       }
-    });
+    locationService.getAll().then(setLocations);
     accountService.getDistinctAttributes().then(setSuggestions);
 
     const handleClickOutside = (event: MouseEvent) => {
@@ -100,28 +89,23 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
 
   // Effect to handle dynamic dependent schedule dropdown
   useEffect(() => {
-    let isMounted = true;
     if (formData.location_id) {
        scheduleService.getByLocation(formData.location_id).then(data => {
-         if (!isMounted) return;
          const filtered = data.filter(s => s.type === 1 || s.type === 2);
          setSchedules(filtered);
          
-         // FIX: Sinkronisasi ulang schedule_id setelah daftar pilihan (options) tersedia.
-         // Ini mencegah browser/React mereset value ke kosong saat options masih [].
-         if (formData.location_id === initialData?.location_id && initialData?.schedule_id) {
-            setFormData(prev => {
-               if (prev.location_id === formData.location_id && !prev.schedule_id) {
-                  return { ...prev, schedule_id: initialData.schedule_id };
-               }
-               return prev;
-            });
+         // FIX: Hanya pasang schedule_id dari initialData jika saat ini memang masih kosong
+         // atau jika schedule_id yang ada saat ini tidak valid (tidak ada di daftar baru)
+         // namun jika lokasi sama dengan initialData, kita prioritaskan initialData.schedule_id
+         if (formData.location_id === initialData?.location_id) {
+            if (initialData?.schedule_id && filtered.some(s => s.id === initialData.schedule_id)) {
+               setFormData(prev => ({ ...prev, schedule_id: initialData.schedule_id }));
+            }
          }
        });
     } else {
        setSchedules([]);
     }
-    return () => { isMounted = false; };
   }, [formData.location_id]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {

@@ -65,8 +65,14 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
   useEffect(() => {
     if (type === 'career' && formData.location_id) {
        scheduleService.getByLocation(formData.location_id).then(data => {
-         // Filter: Hanya tampilkan Jadwal Tipe 1 (Fixed) dan Tipe 2 (Shift)
-         setSchedules(data.filter(s => s.type === 1 || s.type === 2));
+         const filtered = data.filter(s => s.type === 1 || s.type === 2);
+         setSchedules(filtered);
+
+         // FIX: Hanya pasang schedule_id dari initialData jika saat ini masih kosong
+         // Ini mencegah sistem menimpa pilihan manual yang baru saja Anda buat
+         if (!formData.schedule_id && initialData?.schedule_id && filtered.some(s => s.id === initialData.schedule_id)) {
+            setFormData(prev => ({ ...prev, schedule_id: initialData.schedule_id }));
+         }
        });
     } else {
        setSchedules([]);
@@ -78,12 +84,20 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
     
     if (name === 'location_id') {
       const selected = locations.find(l => l.id === value);
-      setFormData(prev => ({ 
-        ...prev, 
-        location_id: value, 
-        location_name: selected ? selected.name : '',
-        schedule_id: '' // Auto-reset schedule when location changes inside log
-      }));
+      setFormData(prev => {
+        const updated = { 
+          ...prev, 
+          location_id: value, 
+          location_name: selected ? selected.name : ''
+        };
+        
+        // UX: Hanya reset schedule jika lokasi diubah secara manual dan berbeda dari data awal
+        if (value !== initialData?.location_id) {
+           updated.schedule_id = '';
+        }
+        
+        return updated;
+      });
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
