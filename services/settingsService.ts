@@ -59,10 +59,7 @@ export const settingsService = {
       if (error) throw error;
       return true;
     } catch (error: any) {
-      // Jika tabel tidak ditemukan, beri tahu user dengan pesan yang lebih informatif
-      if (error.code === 'PGRST205') {
-        throw new Error("Tabel 'app_settings' belum dibuat di database Supabase.");
-      }
+      console.error("Error updating setting:", error);
       throw error;
     }
   }
