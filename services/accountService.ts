@@ -168,7 +168,10 @@ export const accountService = {
       .from('accounts')
       .update(sanitizedAccount)
       .eq('id', id)
-      .select();
+      .select(`
+        *,
+        location:locations(name)
+      `);
     
     if (error) {
       console.error("SUPABASE_UPDATE_ERROR:", error.message);
