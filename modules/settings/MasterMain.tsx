@@ -10,6 +10,7 @@ const MasterMain: React.FC = () => {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [dbError, setDbError] = useState(false);
 
   useEffect(() => {
     fetchSettings();
@@ -18,7 +19,11 @@ const MasterMain: React.FC = () => {
   const fetchSettings = async () => {
     try {
       setIsLoading(true);
+      setDbError(false);
       const data = await settingsService.getAll();
+      
+      // Jika data kosong dan ada error di konsol, kemungkinan tabel belum ada
+      // Kita cek manual lewat service yang sudah di-update
       const mapped = data.reduce((acc: any, curr) => {
         acc[curr.key] = curr.value;
         return acc;
@@ -27,6 +32,7 @@ const MasterMain: React.FC = () => {
       setSettings(prev => ({ ...prev, ...mapped }));
     } catch (error) {
       console.error(error);
+      setDbError(true);
     } finally {
       setIsLoading(false);
     }
@@ -63,6 +69,27 @@ const MasterMain: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
+      {dbError && (
+        <div className="bg-red-50 border border-red-100 p-4 rounded-2xl flex items-start gap-3">
+          <AlertCircle className="text-red-500 shrink-0 mt-0.5" size={18} />
+          <div>
+            <h4 className="text-xs font-bold text-red-700 uppercase tracking-tight">Tabel Database Belum Siap</h4>
+            <p className="text-[10px] text-red-600 leading-relaxed mt-1">
+              Aplikasi tidak dapat menemukan tabel <code className="bg-red-100 px-1 rounded">app_settings</code> di Supabase. 
+              Silakan jalankan perintah SQL berikut di SQL Editor Supabase Anda untuk mengaktifkan fitur ini:
+            </p>
+            <pre className="mt-2 p-2 bg-gray-900 text-gray-300 text-[9px] rounded-lg overflow-x-auto font-mono">
+{`CREATE TABLE public.app_settings (
+  key TEXT PRIMARY KEY,
+  value JSONB NOT NULL,
+  description TEXT,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);`}
+            </pre>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm flex items-center gap-4">
         <div className="w-12 h-12 bg-[#006E62]/10 rounded-xl flex items-center justify-center text-[#006E62]">
           <Database size={28} />

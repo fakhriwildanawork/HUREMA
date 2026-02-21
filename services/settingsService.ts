@@ -25,28 +25,45 @@ export const settingsService = {
    * Mendapatkan semua pengaturan
    */
   async getAll(): Promise<AppSetting[]> {
-    const { data, error } = await supabase
-      .from('app_settings')
-      .select('*');
-    
-    if (error) throw error;
-    return data as AppSetting[];
+    try {
+      const { data, error } = await supabase
+        .from('app_settings')
+        .select('*');
+      
+      if (error) {
+        // Jika tabel tidak ditemukan (PGRST205), kembalikan array kosong tanpa melempar error
+        if (error.code === 'PGRST205') return [];
+        throw error;
+      }
+      return data as AppSetting[];
+    } catch (error) {
+      console.error("Error fetching all settings:", error);
+      return [];
+    }
   },
 
   /**
    * Memperbarui atau membuat pengaturan baru
    */
   async updateSetting(key: string, value: any, description?: string) {
-    const { error } = await supabase
-      .from('app_settings')
-      .upsert({ 
-        key, 
-        value, 
-        description, 
-        updated_at: new Date().toISOString() 
-      });
-    
-    if (error) throw error;
-    return true;
+    try {
+      const { error } = await supabase
+        .from('app_settings')
+        .upsert({ 
+          key, 
+          value, 
+          description, 
+          updated_at: new Date().toISOString() 
+        });
+      
+      if (error) throw error;
+      return true;
+    } catch (error: any) {
+      // Jika tabel tidak ditemukan, beri tahu user dengan pesan yang lebih informatif
+      if (error.code === 'PGRST205') {
+        throw new Error("Tabel 'app_settings' belum dibuat di database Supabase.");
+      }
+      throw error;
+    }
   }
 };
