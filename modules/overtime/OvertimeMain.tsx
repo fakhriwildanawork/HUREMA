@@ -354,9 +354,9 @@ const OvertimeMain: React.FC = () => {
                     <MapPin size={16} className="text-amber-500" />
                     <h4 className="text-[11px] font-bold uppercase tracking-widest text-gray-500">Status Geotag</h4>
                   </div>
-                  <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-[9px] font-bold uppercase ${isWithinRadius ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
-                    <div className={`w-1.5 h-1.5 rounded-full ${isWithinRadius ? 'bg-emerald-500' : 'bg-rose-500'}`}></div>
-                    {isWithinRadius ? 'Area Kerja' : 'Diluar Area'}
+                  <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-[9px] font-bold uppercase ${!isLimited ? 'bg-blue-50 text-blue-600' : (isWithinRadius ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600')}`}>
+                    <div className={`w-1.5 h-1.5 rounded-full ${!isLimited ? 'bg-blue-500' : (isWithinRadius ? 'bg-emerald-500' : 'bg-rose-500')}`}></div>
+                    {!isLimited ? 'Bebas Lokasi' : (isWithinRadius ? 'Area Kerja' : 'Diluar Area')}
                   </div>
                </div>
                
