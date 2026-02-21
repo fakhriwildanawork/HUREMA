@@ -92,7 +92,13 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
     if (formData.location_id) {
        scheduleService.getByLocation(formData.location_id).then(data => {
          // Filter: Hanya tampilkan Jadwal Tipe 1 (Fixed) dan Tipe 2 (Shift)
-         setSchedules(data.filter(s => s.type === 1 || s.type === 2));
+         const filtered = data.filter(s => s.type === 1 || s.type === 2);
+         setSchedules(filtered);
+         
+         // FIX: Jika ini adalah mode edit dan schedule_id awal ada di daftar, pastikan tetap terpilih
+         if (initialData?.schedule_id && filtered.some(s => s.id === initialData.schedule_id)) {
+            setFormData(prev => ({ ...prev, schedule_id: initialData.schedule_id }));
+         }
        });
     } else {
        setSchedules([]);
@@ -106,8 +112,8 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
     setFormData(prev => {
        const updated = { ...prev, [name]: val };
        
-       // UX: Auto-reset schedule if location changes to prevent mismatch
-       if (name === 'location_id') {
+       // UX: Hanya reset schedule jika lokasi diubah secara manual dan berbeda dari data awal
+       if (name === 'location_id' && value !== initialData?.location_id) {
           updated.schedule_id = '';
        }
 

@@ -107,7 +107,10 @@ const OvertimeMain: React.FC = () => {
 
     // Geofencing Check
     const isCheckOut = !!todayOT && !todayOT.check_out;
-    const isLimited = isCheckOut ? account.is_presence_limited_ot_out : account.is_presence_limited_ot_in;
+    // FIX: Ensure strict boolean check
+    const isLimited = isCheckOut 
+      ? account.is_presence_limited_ot_out === true 
+      : account.is_presence_limited_ot_in === true;
     const locationRadius = account.location?.radius || 100;
 
     if (isLimited && distance > locationRadius) {
@@ -227,7 +230,9 @@ const OvertimeMain: React.FC = () => {
   if (!account) return <div className="p-10 text-center">Akun tidak valid.</div>;
 
   const isCheckOut = !!todayOT && !todayOT.check_out;
-  const isLimited = isCheckOut ? account.is_presence_limited_ot_out : account.is_presence_limited_ot_in;
+  const isLimited = isCheckOut 
+    ? account.is_presence_limited_ot_out === true 
+    : account.is_presence_limited_ot_in === true;
   const isWithinRadius = distance !== null && distance <= (account?.location?.radius || 100);
   const isBlockedByLocation = isLimited && !isWithinRadius;
 

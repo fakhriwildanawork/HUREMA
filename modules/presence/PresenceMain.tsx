@@ -171,7 +171,10 @@ const PresenceMain: React.FC = () => {
 
     const locationRadius = account.location?.radius || 100;
     const isCheckOut = !!todayAttendance && !todayAttendance.check_out;
-    const isLimited = isCheckOut ? account.is_presence_limited_checkout : account.is_presence_limited_checkin;
+    // FIX: Ensure strict boolean check to prevent string "false" or null issues
+    const isLimited = isCheckOut 
+      ? account.is_presence_limited_checkout === true 
+      : account.is_presence_limited_checkin === true;
 
     if (isLimited && distance > locationRadius) {
        setIsCameraActive(false);
@@ -296,7 +299,9 @@ const PresenceMain: React.FC = () => {
   }
 
   const isCheckOut = !!todayAttendance && !todayAttendance.check_out;
-  const isLimited = isCheckOut ? account.is_presence_limited_checkout : account.is_presence_limited_checkin;
+  const isLimited = isCheckOut 
+    ? account.is_presence_limited_checkout === true 
+    : account.is_presence_limited_checkin === true;
   const isWithinRadius = distance !== null && distance <= (account?.location?.radius || 100);
   const isBlockedByLocation = isLimited && !isWithinRadius;
   const todayDay = serverTime.getDay();
