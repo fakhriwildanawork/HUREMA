@@ -226,7 +226,10 @@ const OvertimeMain: React.FC = () => {
   if (isLoading) return <LoadingSpinner message="Menghubungkan Modul Lembur..." />;
   if (!account) return <div className="p-10 text-center">Akun tidak valid.</div>;
 
+  const isCheckOut = !!todayOT && !todayOT.check_out;
+  const isLimited = isCheckOut ? account.is_presence_limited_ot_out : account.is_presence_limited_ot_in;
   const isWithinRadius = distance !== null && distance <= (account?.location?.radius || 100);
+  const isBlockedByLocation = isLimited && !isWithinRadius;
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -275,17 +278,25 @@ const OvertimeMain: React.FC = () => {
               </div>
             ) : (!todayOT || !todayOT.check_out) ? (
               <div className="bg-white rounded-2xl border border-gray-100 p-12 flex flex-col items-center justify-center shadow-sm text-center">
-                <div className={`w-24 h-24 rounded-full flex items-center justify-center mb-8 shadow-xl transition-all duration-500 bg-amber-50 text-amber-600`}>
+                <div className={`w-24 h-24 rounded-full flex items-center justify-center mb-8 shadow-xl transition-all duration-500 ${!isBlockedByLocation ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-500'}`}>
                    <Timer size={48} />
                 </div>
                 <h3 className="text-2xl font-bold text-gray-800">
                    {!!todayOT && !todayOT.check_out ? 'Selesaikan Lembur?' : 'Mulai Lembur Sekarang?'}
                 </h3>
-                <p className="text-sm text-gray-400 mt-2 max-w-xs">Verifikasi identitas diperlukan untuk mencatat waktu tambahan kerja Anda hari ini.</p>
+                <p className="text-sm text-gray-400 mt-2 max-w-xs">
+                  {!isBlockedByLocation 
+                    ? 'Verifikasi identitas diperlukan untuk mencatat waktu tambahan kerja Anda hari ini.'
+                    : 'Akses presensi lembur terkunci. Anda harus berada di area lokasi penempatan.'}
+                </p>
                 <button 
-                  disabled={isCapturing}
+                  disabled={isBlockedByLocation || isCapturing}
                   onClick={() => setIsCameraActive(true)}
-                  className="mt-10 flex items-center gap-3 px-12 py-4 rounded-2xl font-bold uppercase text-xs tracking-widest shadow-lg transition-all bg-amber-600 text-white hover:bg-amber-700 hover:scale-105"
+                  className={`mt-10 flex items-center gap-3 px-12 py-4 rounded-2xl font-bold uppercase text-xs tracking-widest shadow-lg transition-all ${
+                    !isBlockedByLocation && !isCapturing 
+                    ? 'bg-amber-600 text-white hover:bg-amber-700 hover:scale-105' 
+                    : 'bg-gray-100 text-gray-300 cursor-not-allowed shadow-none'
+                  }`}
                 >
                   <Camera size={18} />
                   {isCapturing ? 'MEMPROSES...' : 'MULAI VERIFIKASI WAJAH'}
@@ -363,6 +374,12 @@ const OvertimeMain: React.FC = () => {
                           <span className="text-sm font-bold text-amber-600">Terbatas</span>
                        </div>
                     </div>
+                    {isBlockedByLocation && (
+                      <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl flex gap-3 items-start animate-pulse">
+                         <AlertCircle size={16} className="text-rose-500 shrink-0 mt-0.5" />
+                         <p className="text-[10px] text-rose-600 font-bold leading-tight uppercase tracking-tight">Presensi Lembur dikunci. Anda berada diluar zona yang diizinkan.</p>
+                      </div>
+                    )}
                  </div>
                ) : (
                  <div className="flex flex-col items-center justify-center py-14 text-gray-300">

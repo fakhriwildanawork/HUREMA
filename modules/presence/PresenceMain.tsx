@@ -170,11 +170,14 @@ const PresenceMain: React.FC = () => {
     }
 
     const locationRadius = account.location?.radius || 100;
-    if (distance > locationRadius) {
+    const isCheckOut = !!todayAttendance && !todayAttendance.check_out;
+    const isLimited = isCheckOut ? account.is_presence_limited_checkout : account.is_presence_limited_checkin;
+
+    if (isLimited && distance > locationRadius) {
        setIsCameraActive(false);
        return Swal.fire({
          title: 'Diluar Radius',
-         text: `Anda berada diluar radius penempatan (${Math.round(distance)}m > ${locationRadius}m)`,
+         text: `Anda berada diluar radius penempatan (${Math.round(distance)}m > ${locationRadius}m). Presensi dibatasi hanya di area lokasi.`,
          icon: 'error',
          confirmButtonColor: '#006E62'
        });
@@ -182,7 +185,6 @@ const PresenceMain: React.FC = () => {
 
     if (isCapturing) return;
 
-    const isCheckOut = !!todayAttendance && !todayAttendance.check_out;
     const scheduleResult = presenceService.calculateStatus(serverTime, targetSchedule, isCheckOut ? 'OUT' : 'IN');
     
     let reason = null;
@@ -293,7 +295,10 @@ const PresenceMain: React.FC = () => {
     );
   }
 
+  const isCheckOut = !!todayAttendance && !todayAttendance.check_out;
+  const isLimited = isCheckOut ? account.is_presence_limited_checkout : account.is_presence_limited_checkin;
   const isWithinRadius = distance !== null && distance <= (account?.location?.radius || 100);
+  const isBlockedByLocation = isLimited && !isWithinRadius;
   const todayDay = serverTime.getDay();
   
   // Resolve Rule untuk UI Tampilan Jadwal
@@ -357,7 +362,7 @@ const PresenceMain: React.FC = () => {
               </div>
             ) : (!todayAttendance || !todayAttendance.check_out) ? (
               <div className="bg-white rounded-2xl border border-gray-100 p-8 flex flex-col items-center justify-center shadow-sm text-center">
-                <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 shadow-xl transition-all duration-500 ${isWithinRadius ? 'bg-emerald-50 text-[#006E62]' : 'bg-rose-50 text-rose-500'}`}>
+                <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 shadow-xl transition-all duration-500 ${!isBlockedByLocation ? 'bg-emerald-50 text-[#006E62]' : 'bg-rose-50 text-rose-500'}`}>
                    {account.schedule_type === 'Shift Dinamis' ? <RefreshCw size={40} className={isFetchingShifts ? 'animate-spin' : ''} /> : <Fingerprint size={40} />}
                 </div>
                 <h3 className="text-xl font-bold text-gray-800">
@@ -397,7 +402,7 @@ const PresenceMain: React.FC = () => {
                 )}
 
                 <p className="text-xs text-gray-400 mt-6 max-w-xs leading-tight">
-                  {isWithinRadius 
+                  {!isBlockedByLocation 
                     ? (account.schedule_type === 'Shift Dinamis' && !todayAttendance && !selectedShift 
                         ? 'Silahkan pilih salah satu shift di atas untuk mengaktifkan tombol verifikasi.'
                         : 'Klik tombol di bawah untuk verifikasi identitas AI dan mencatat lokasi Anda.')
@@ -405,10 +410,10 @@ const PresenceMain: React.FC = () => {
                 </p>
                 
                 <button 
-                  disabled={!isWithinRadius || isCapturing || (account.schedule_type === 'Shift Dinamis' && !todayAttendance && !selectedShift)}
+                  disabled={isBlockedByLocation || isCapturing || (account.schedule_type === 'Shift Dinamis' && !todayAttendance && !selectedShift)}
                   onClick={() => setIsCameraActive(true)}
                   className={`mt-8 flex items-center gap-3 px-12 py-4 rounded-2xl font-bold uppercase text-xs tracking-widest shadow-lg transition-all ${
-                    isWithinRadius && !isCapturing && (account.schedule_type !== 'Shift Dinamis' || !!todayAttendance || !!selectedShift)
+                    !isBlockedByLocation && !isCapturing && (account.schedule_type !== 'Shift Dinamis' || !!todayAttendance || !!selectedShift)
                     ? 'bg-[#006E62] text-white hover:bg-[#005a50] hover:scale-105 active:scale-95' 
                     : 'bg-gray-100 text-gray-300 cursor-not-allowed shadow-none'
                   }`}
@@ -531,7 +536,7 @@ const PresenceMain: React.FC = () => {
                           <span className="text-sm font-bold text-gray-700">{account.location.radius}m</span>
                        </div>
                     </div>
-                    {!isWithinRadius && (
+                    {isBlockedByLocation && (
                       <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl flex gap-3 items-start animate-pulse">
                          <AlertCircle size={16} className="text-rose-500 shrink-0 mt-0.5" />
                          <p className="text-[10px] text-rose-600 font-bold leading-tight uppercase tracking-tight">Presensi dikunci. Anda berada diluar zona yang diizinkan.</p>
