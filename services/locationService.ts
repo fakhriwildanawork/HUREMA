@@ -27,10 +27,12 @@ export const locationService = {
   },
 
   async getById(id: string) {
+    if (!id || id.startsWith('temp-')) return null;
+    
     const { data, error } = await supabase
       .from('locations')
       .select('*')
-      .eq('id', id)
+      .eq('id', id.trim())
       .single();
     
     if (error) throw error;
@@ -53,7 +55,7 @@ export const locationService = {
     const { data, error } = await supabase
       .from('locations')
       .update(sanitizedLocation)
-      .eq('id', id)
+      .eq('id', id.trim())
       .select();
     
     if (error) throw error;
@@ -64,7 +66,7 @@ export const locationService = {
     const { error } = await supabase
       .from('locations')
       .delete()
-      .eq('id', id);
+      .eq('id', id.trim());
     
     if (error) throw error;
     return true;
@@ -72,10 +74,12 @@ export const locationService = {
 
   // Administrasi Services
   async getAdministrations(locationId: string) {
+    if (!locationId || locationId.startsWith('temp-')) return [];
+
     const { data, error } = await supabase
       .from('location_administrations')
       .select('*')
-      .eq('location_id', locationId)
+      .eq('location_id', locationId.trim())
       .order('admin_date', { ascending: false });
     
     if (error) throw error;
