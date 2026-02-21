@@ -200,9 +200,10 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div className="space-y-1">
-            <label className="text-[9px] font-bold text-gray-500 uppercase">Tanggal Perubahan</label>
+            <label htmlFor="change_date" className="text-[9px] font-bold text-gray-500 uppercase">Tanggal Perubahan</label>
             <div className="relative">
               <input 
+                id="change_date"
                 type="date"
                 required 
                 name="change_date" 
@@ -217,9 +218,10 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
             <>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1 relative" ref={posRef}>
-                  <label className="text-[9px] font-bold text-gray-500 uppercase">Jabatan</label>
+                  <label htmlFor="position" className="text-[9px] font-bold text-gray-500 uppercase">Jabatan</label>
                   <div className="relative">
                     <input 
+                      id="position"
                       required 
                       name="position" 
                       autoComplete="off"
@@ -255,9 +257,10 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
                   )}
                 </div>
                 <div className="space-y-1 relative" ref={gradeRef}>
-                  <label className="text-[9px] font-bold text-gray-500 uppercase">Golongan</label>
+                  <label htmlFor="grade" className="text-[9px] font-bold text-gray-500 uppercase">Golongan</label>
                   <div className="relative">
                     <input 
+                      id="grade"
                       name="grade" 
                       autoComplete="off"
                       value={formData.grade} 
@@ -293,9 +296,9 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="text-[9px] font-bold text-gray-500 uppercase">Lokasi Penempatan</label>
+                <label htmlFor="location_id" className="text-[9px] font-bold text-gray-500 uppercase">Lokasi Penempatan</label>
                 <div className="relative">
-                  <select required name="location_id" value={formData.location_id} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded outline-none focus:ring-1 focus:ring-[#006E62] appearance-none bg-white">
+                  <select id="location_id" required name="location_id" value={formData.location_id} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded outline-none focus:ring-1 focus:ring-[#006E62] appearance-none bg-white">
                     <option value="">-- Pilih Lokasi --</option>
                     {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
                   </select>
@@ -303,9 +306,10 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="text-[9px] font-bold text-gray-500 uppercase">Jadwal Kerja Baru</label>
+                <label htmlFor="schedule_id" className="text-[9px] font-bold text-gray-500 uppercase">Jadwal Kerja Baru</label>
                 <div className="relative">
                   <select 
+                    id="schedule_id"
                     required 
                     name="schedule_id" 
                     value={formData.schedule_id} 
@@ -324,9 +328,9 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="text-[9px] font-bold text-gray-500 uppercase">Dokumen SK (PDF/Gambar)</label>
+                <label htmlFor="file_sk_id" className="text-[9px] font-bold text-gray-500 uppercase">Dokumen SK (PDF/Gambar)</label>
                 <div className={`flex items-center gap-3 p-2 bg-gray-50 border border-dashed rounded cursor-pointer hover:bg-white transition-colors ${formData.file_sk_id ? 'border-[#006E62]' : 'border-gray-200'}`}>
-                  <label className="flex items-center gap-2 cursor-pointer w-full">
+                  <label htmlFor="file_sk_id" className="flex items-center gap-2 cursor-pointer w-full">
                     <div className="p-2 bg-white rounded border border-gray-100 shrink-0">
                       <Upload size={14} className={formData.file_sk_id ? 'text-[#006E62]' : 'text-gray-300'} />
                     </div>
@@ -336,7 +340,7 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
                       </p>
                       <p className="text-[8px] text-gray-400 truncate">{formData.file_sk_id || 'ID akan tersimpan di G-Drive'}</p>
                     </div>
-                    <input type="file" className="hidden" onChange={handleFileUpload} disabled={uploading} />
+                    <input id="file_sk_id" type="file" className="hidden" onChange={handleFileUpload} disabled={uploading} />
                   </label>
                 </div>
               </div>
@@ -344,17 +348,17 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
           ) : (
             <>
               <div className="space-y-1">
-                <label className="text-[9px] font-bold text-gray-500 uppercase">Status MCU</label>
-                <input required name="mcu_status" value={formData.mcu_status} onChange={handleChange} placeholder="cth: Fit, Fit with Note, Unfit" className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded outline-none focus:ring-1 focus:ring-[#006E62]" />
+                <label htmlFor="mcu_status" className="text-[9px] font-bold text-gray-500 uppercase">Status MCU</label>
+                <input id="mcu_status" required name="mcu_status" value={formData.mcu_status} onChange={handleChange} placeholder="cth: Fit, Fit with Note, Unfit" className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded outline-none focus:ring-1 focus:ring-[#006E62]" />
               </div>
               <div className="space-y-1">
-                <label className="text-[9px] font-bold text-gray-500 uppercase">Risiko Kesehatan</label>
-                <input name="health_risk" value={formData.health_risk} onChange={handleChange} placeholder="cth: Hipertensi, Rendah, Tinggi" className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded outline-none focus:ring-1 focus:ring-[#006E62]" />
+                <label htmlFor="health_risk" className="text-[9px] font-bold text-gray-500 uppercase">Risiko Kesehatan</label>
+                <input id="health_risk" name="health_risk" value={formData.health_risk} onChange={handleChange} placeholder="cth: Hipertensi, Rendah, Tinggi" className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded outline-none focus:ring-1 focus:ring-[#006E62]" />
               </div>
               <div className="space-y-1">
-                <label className="text-[9px] font-bold text-gray-500 uppercase">Hasil MCU (PDF/Gambar)</label>
+                <label htmlFor="file_mcu_id" className="text-[9px] font-bold text-gray-500 uppercase">Hasil MCU (PDF/Gambar)</label>
                 <div className={`flex items-center gap-3 p-2 bg-gray-50 border border-dashed rounded cursor-pointer hover:bg-white transition-colors ${formData.file_mcu_id ? 'border-[#006E62]' : 'border-gray-200'}`}>
-                  <label className="flex items-center gap-2 cursor-pointer w-full">
+                  <label htmlFor="file_mcu_id" className="flex items-center gap-2 cursor-pointer w-full">
                     <div className="p-2 bg-white rounded border border-gray-100 shrink-0">
                       <Upload size={14} className={formData.file_mcu_id ? 'text-[#006E62]' : 'text-gray-300'} />
                     </div>
@@ -364,7 +368,7 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
                       </p>
                       <p className="text-[8px] text-gray-400 truncate">{formData.file_mcu_id || 'File rahasia G-Drive'}</p>
                     </div>
-                    <input type="file" className="hidden" onChange={handleFileUpload} disabled={uploading} />
+                    <input id="file_mcu_id" type="file" className="hidden" onChange={handleFileUpload} disabled={uploading} />
                   </label>
                 </div>
               </div>
@@ -372,8 +376,8 @@ const LogForm: React.FC<LogFormProps> = ({ type, accountId, initialData, isEdit 
           )}
 
           <div className="space-y-1">
-            <label className="text-[9px] font-bold text-gray-500 uppercase">Catatan Tambahan</label>
-            <textarea name="notes" value={formData.notes} onChange={handleChange} rows={2} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded outline-none focus:ring-1 focus:ring-[#006E62] resize-none" />
+            <label htmlFor="notes" className="text-[9px] font-bold text-gray-500 uppercase">Catatan Tambahan</label>
+            <textarea id="notes" name="notes" value={formData.notes} onChange={handleChange} rows={2} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded outline-none focus:ring-1 focus:ring-[#006E62] resize-none" />
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
