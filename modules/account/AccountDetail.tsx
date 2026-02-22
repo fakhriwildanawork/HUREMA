@@ -3,16 +3,14 @@ import React, { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { X, Edit2, Trash2, User, Phone, Mail, Calendar, MapPin, Briefcase, Shield, Heart, GraduationCap, Download, ExternalLink, Clock, Activity, Plus, Paperclip, FileBadge, Award, ShieldAlert, LogOut } from 'lucide-react';
 import Swal from 'sweetalert2';
-import { Account, CareerLog, HealthLog, AccountContract, AccountCertification, WarningLog, TerminationLog, LeaveRequest } from '../../types';
+import { Account, CareerLog, HealthLog, AccountContract, AccountCertification, WarningLog, TerminationLog } from '../../types';
 import { accountService } from '../../services/accountService';
 import { contractService } from '../../services/contractService';
 import { certificationService } from '../../services/certificationService';
 import { disciplineService } from '../../services/disciplineService';
-import { leaveService } from '../../services/leaveService';
 import { googleDriveService } from '../../services/googleDriveService';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
 import LogForm from './LogForm';
-import LeaveForm from './LeaveForm';
 import CertificationFormModal from '../certification/CertificationFormModal';
 import ContractFormModal from '../contract/ContractFormModal';
 import WarningForm from '../discipline/WarningForm';
@@ -32,12 +30,10 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
   const [contracts, setContracts] = useState<AccountContract[]>([]);
   const [certs, setCerts] = useState<AccountCertification[]>([]);
   const [warnings, setWarnings] = useState<WarningLog[]>([]);
-  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [termination, setTermination] = useState<TerminationLog | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showLogForm, setShowLogForm] = useState<{ type: 'career' | 'health', data?: any, isEdit?: boolean } | null>(null);
-  const [showLeaveForm, setShowLeaveForm] = useState(false);
   const [showCertForm, setShowCertForm] = useState<{ show: boolean, data?: any }>({ show: false });
   const [showContractForm, setShowContractForm] = useState<{ show: boolean, data?: any }>({ show: false });
   const [showWarningForm, setShowWarningForm] = useState(false);
@@ -53,14 +49,13 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      const [acc, careers, healths, contractList, certList, warningList, leaves, term] = await Promise.all([
+      const [acc, careers, healths, contractList, certList, warningList, term] = await Promise.all([
         accountService.getById(id),
         accountService.getCareerLogs(id),
         accountService.getHealthLogs(id),
         contractService.getByAccountId(id),
         certificationService.getByAccountId(id),
         disciplineService.getWarningsByAccountId(id),
-        leaveService.getByAccountId(id),
         disciplineService.getTerminationByAccountId(id)
       ]);
       setAccount(acc as any);
@@ -69,7 +64,6 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
       setContracts(contractList);
       setCerts(certList);
       setWarnings(warningList);
-      setLeaveRequests(leaves);
       setTermination(term || null);
     } catch (error) {
       console.error(error);
@@ -115,44 +109,6 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
       Swal.fire('Gagal', 'Gagal menyimpan riwayat', 'error');
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  const handleLeaveSubmit = async (data: any) => {
-    setIsSaving(true);
-    try {
-      const created = await leaveService.create(data);
-      setLeaveRequests(prev => [created, ...prev]);
-      setShowLeaveForm(false);
-      
-      const isAuto = created.status === 'approved';
-      Swal.fire({ 
-        title: 'Berhasil!', 
-        text: isAuto ? 'Libur mandiri Anda langsung disetujui (Otomatis).' : 'Pengajuan libur telah dikirim dan menunggu verifikasi admin.', 
-        icon: 'success' 
-      });
-    } catch (error) {
-      Swal.fire('Gagal', 'Gagal mengirim pengajuan libur', 'error');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleDeleteLeave = async (leaveId: string) => {
-    const res = await Swal.fire({ 
-      title: 'Batalkan pengajuan libur?', 
-      icon: 'warning', 
-      showCancelButton: true, 
-      confirmButtonColor: '#006E62' 
-    });
-    if (res.isConfirmed) {
-      try {
-        setIsSaving(true);
-        await leaveService.delete(leaveId);
-        setLeaveRequests(prev => prev.filter(l => l.id !== leaveId));
-        Swal.fire('Dibatalkan', '', 'success');
-      } catch (e) { Swal.fire('Gagal', 'Gagal membatalkan pengajuan', 'error'); }
-      finally { setIsSaving(false); }
     }
   };
 
@@ -612,41 +568,6 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
           </div>
         </DetailSection>
 
-        {/* l. Riwayat Libur Mandiri */}
-        <DetailSection 
-          icon={Calendar} 
-          title="Riwayat Libur Mandiri" 
-          onAdd={(account.schedule_type === 'Fleksibel' || account.schedule_type === 'Shift Dinamis') ? () => setShowLeaveForm(true) : undefined} 
-          isScrollable
-        >
-          <div className="space-y-3">
-            {leaveRequests.length === 0 ? (
-              <p className="text-[10px] text-gray-400 italic">Belum ada riwayat libur mandiri.</p>
-            ) : (
-              leaveRequests.map(l => (
-                <div key={l.id} className="flex group justify-between items-start border-l-2 border-emerald-100 pl-3 py-1 relative">
-                  <div className="flex-1 min-w-0 pr-4">
-                    <div className="flex items-center gap-2">
-                      <p className="text-[10px] font-bold text-gray-700 leading-tight">{formatDate(l.start_date)} - {formatDate(l.end_date)}</p>
-                      <span className={`text-[8px] font-bold uppercase px-1 rounded ${
-                        l.status === 'approved' ? 'bg-emerald-50 text-[#006E62]' : 
-                        l.status === 'rejected' ? 'bg-red-50 text-red-600' : 
-                        'bg-orange-50 text-orange-600'
-                      }`}>
-                        {l.status === 'approved' ? 'ACC' : l.status === 'rejected' ? 'DITOLAK' : 'PENDING'}
-                      </span>
-                    </div>
-                    <p className="text-[10px] text-gray-500 mt-1 italic line-clamp-2">"{l.description}"</p>
-                  </div>
-                  {l.status === 'pending' && (
-                    <button onClick={() => handleDeleteLeave(l.id)} className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={12} /></button>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-        </DetailSection>
-
         {/* k. Status Exit / Pemberhentian */}
         <DetailSection icon={LogOut} title="Status Exit / Pemberhentian" onAdd={!termination && !isInactive ? () => setShowTerminationForm(true) : undefined}>
           {termination || isInactive ? (
@@ -721,10 +642,6 @@ const AccountDetail: React.FC<AccountDetailProps> = ({ id, onClose, onEdit, onDe
 
       {showLogForm && (
         <LogForm type={showLogForm.type} accountId={id} initialData={showLogForm.data} isEdit={showLogForm.isEdit} onClose={() => setShowLogForm(null)} onSubmit={handleLogSubmit} />
-      )}
-
-      {showLeaveForm && (
-        <LeaveForm accountId={id} onClose={() => setShowLeaveForm(false)} onSubmit={handleLeaveSubmit} />
       )}
 
       {showCertForm.show && (

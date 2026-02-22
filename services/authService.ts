@@ -8,7 +8,7 @@ export const authService = {
   async login(accessCode: string, passwordRaw: string): Promise<AuthUser> {
     const { data, error } = await supabase
       .from('accounts')
-      .select('id, full_name, internal_nik, access_code, photo_google_id')
+      .select('id, full_name, internal_nik, access_code, photo_google_id, schedule_type')
       .eq('access_code', accessCode)
       .eq('password', passwordRaw)
       .maybeSingle();
@@ -16,7 +16,14 @@ export const authService = {
     if (error) throw new Error(error.message);
     if (!data) throw new Error('Kode Akses atau Password salah.');
 
-    const user: AuthUser = data as AuthUser;
+    // Determine role based on access code or other logic
+    // For now, assume codes starting with 'SP' or 'ADM' are admins
+    const role = (data.access_code.startsWith('SP') || data.access_code.includes('ADM')) ? 'admin' : 'user';
+
+    const user: AuthUser = {
+      ...data,
+      role
+    } as AuthUser;
     localStorage.setItem(SESSION_KEY, JSON.stringify(user));
     return user;
   },

@@ -57,6 +57,8 @@ export interface AuthUser {
   full_name: string;
   internal_nik: string;
   access_code: string;
+  role: 'admin' | 'user';
+  schedule_type: string;
   photo_google_id?: string | null;
 }
 

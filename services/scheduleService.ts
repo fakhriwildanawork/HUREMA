@@ -43,7 +43,7 @@ export const scheduleService = {
       .eq('location_id', locationId);
     
     if (error) throw error;
-    return data.map(item => item.schedules) as Schedule[];
+    return (data as any[]).map(item => item.schedules) as unknown as Schedule[];
   },
 
   async create(input: ScheduleInput) {

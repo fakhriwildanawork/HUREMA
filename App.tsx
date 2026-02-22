@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, LayoutDashboard, Users, MapPin, CalendarClock, Files, Settings, Database, Fingerprint, Timer, ClipboardCheck } from 'lucide-react';
+import { X, LayoutDashboard, Users, MapPin, CalendarClock, Files, Settings, Database, Fingerprint, Timer, ClipboardCheck, Plane } from 'lucide-react';
 import Sidebar from './components/Layout/Sidebar';
 import Header from './components/Layout/Header';
 import LocationMain from './modules/location/LocationMain';
@@ -9,6 +9,7 @@ import DocumentMain from './modules/document/DocumentMain';
 import PresenceMain from './modules/presence/PresenceMain';
 import OvertimeMain from './modules/overtime/OvertimeMain';
 import SubmissionMain from './modules/submission/SubmissionMain';
+import LeaveMain from './modules/leave/LeaveMain';
 import MasterMain from './modules/settings/MasterMain';
 import Login from './modules/auth/Login';
 import { authService } from './services/authService';
@@ -16,7 +17,7 @@ import { AuthUser } from './types';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'document' | 'settings' | 'presence' | 'overtime' | 'submission' | 'master_app'>('presence');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'document' | 'settings' | 'presence' | 'overtime' | 'submission' | 'leave' | 'master_app'>('presence');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
@@ -94,6 +95,7 @@ const App: React.FC = () => {
             <div className="mt-4">
               <NavItemMobile id="presence" icon={Fingerprint} label="Presensi Reguler" />
               <NavItemMobile id="overtime" icon={Timer} label="Presensi Lembur" />
+              <NavItemMobile id="leave" icon={Plane} label="Libur Mandiri" />
               <NavItemMobile id="submission" icon={ClipboardCheck} label="Pengajuan" />
               <NavItemMobile id="document" icon={Files} label="Dokumen Digital" />
               <NavItemMobile id="settings" icon={Settings} label="Pengaturan" />
@@ -121,6 +123,8 @@ const App: React.FC = () => {
             <OvertimeMain />
           ) : activeTab === 'submission' ? (
             <SubmissionMain />
+          ) : activeTab === 'leave' ? (
+            <LeaveMain />
           ) : activeTab === 'master_app' ? (
             <MasterMain />
           ) : (
