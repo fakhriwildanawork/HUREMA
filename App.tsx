@@ -10,6 +10,7 @@ import PresenceMain from './modules/presence/PresenceMain';
 import OvertimeMain from './modules/overtime/OvertimeMain';
 import SubmissionMain from './modules/submission/SubmissionMain';
 import LeaveMain from './modules/leave/LeaveMain';
+import AnnualLeaveMain from './modules/leave/AnnualLeaveMain';
 import MasterMain from './modules/settings/MasterMain';
 import Login from './modules/auth/Login';
 import { authService } from './services/authService';
@@ -17,7 +18,7 @@ import { AuthUser } from './types';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'document' | 'settings' | 'presence' | 'overtime' | 'submission' | 'leave' | 'master_app'>('presence');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'document' | 'settings' | 'presence' | 'overtime' | 'submission' | 'leave' | 'annual_leave' | 'master_app'>('presence');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
@@ -125,6 +126,8 @@ const App: React.FC = () => {
             <SubmissionMain />
           ) : activeTab === 'leave' ? (
             <LeaveMain />
+          ) : activeTab === 'annual_leave' ? (
+            <AnnualLeaveMain />
           ) : activeTab === 'master_app' ? (
             <MasterMain />
           ) : (

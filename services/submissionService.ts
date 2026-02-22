@@ -92,15 +92,56 @@ export const submissionService = {
             .update({ status: 'approved', updated_at: new Date().toISOString() })
             .eq('id', leave_request_id);
         }
+      } else if (submission.type === 'Cuti Tahunan') {
+        const { annual_leave_id } = submission.submission_data;
+        if (annual_leave_id) {
+          // Sinkronisasi status ke tabel cuti tahunan
+          const { data: current } = await supabase.from('account_annual_leaves').select('negotiation_data').eq('id', annual_leave_id).single();
+          const newHistory = [...(current?.negotiation_data || []), {
+            role: 'admin',
+            start_date: submission.submission_data.start_date,
+            end_date: submission.submission_data.end_date,
+            reason: notes || 'Disetujui via Modul Pengajuan',
+            timestamp: new Date().toISOString()
+          }];
+          await supabase.from('account_annual_leaves')
+            .update({ 
+              status: 'approved', 
+              negotiation_data: newHistory,
+              updated_at: new Date().toISOString() 
+            })
+            .eq('id', annual_leave_id);
+        }
       }
       // Tambahkan logic otomatisasi lain di sini (misal: insert log lembur otomatis)
-    } else if (status === 'Ditolak' && submission.type === 'Libur Mandiri') {
-      const { leave_request_id } = submission.submission_data;
-      if (leave_request_id) {
-        // Sinkronisasi status ke tabel libur mandiri
-        await supabase.from('account_leave_requests')
-          .update({ status: 'rejected', updated_at: new Date().toISOString() })
-          .eq('id', leave_request_id);
+    } else if (status === 'Ditolak') {
+      if (submission.type === 'Libur Mandiri') {
+        const { leave_request_id } = submission.submission_data;
+        if (leave_request_id) {
+          // Sinkronisasi status ke tabel libur mandiri
+          await supabase.from('account_leave_requests')
+            .update({ status: 'rejected', updated_at: new Date().toISOString() })
+            .eq('id', leave_request_id);
+        }
+      } else if (submission.type === 'Cuti Tahunan') {
+        const { annual_leave_id } = submission.submission_data;
+        if (annual_leave_id) {
+          const { data: current } = await supabase.from('account_annual_leaves').select('negotiation_data').eq('id', annual_leave_id).single();
+          const newHistory = [...(current?.negotiation_data || []), {
+            role: 'admin',
+            start_date: submission.submission_data.start_date,
+            end_date: submission.submission_data.end_date,
+            reason: notes || 'Ditolak via Modul Pengajuan',
+            timestamp: new Date().toISOString()
+          }];
+          await supabase.from('account_annual_leaves')
+            .update({ 
+              status: 'rejected', 
+              negotiation_data: newHistory,
+              updated_at: new Date().toISOString() 
+            })
+            .eq('id', annual_leave_id);
+        }
       }
     }
 
