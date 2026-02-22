@@ -276,6 +276,7 @@ const LeaveMain: React.FC = () => {
       {showForm && user && (
         <LeaveForm 
           accountId={user.id} 
+          isAdmin={isAdmin}
           onClose={() => setShowForm(false)} 
           onSubmit={handleCreateLeave} 
         />

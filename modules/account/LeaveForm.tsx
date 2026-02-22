@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
-import { X, Save, Calendar } from 'lucide-react';
-import { LeaveRequestInput } from '../../types';
+import React, { useState, useEffect } from 'react';
+import { X, Save, User } from 'lucide-react';
+import { LeaveRequestInput, Account } from '../../types';
+import { accountService } from '../../services/accountService';
 
 interface LeaveFormProps {
   accountId: string;
+  isAdmin?: boolean;
   onClose: () => void;
   onSubmit: (data: LeaveRequestInput) => void;
 }
 
-const LeaveForm: React.FC<LeaveFormProps> = ({ accountId, onClose, onSubmit }) => {
+const LeaveForm: React.FC<LeaveFormProps> = ({ accountId, isAdmin = false, onClose, onSubmit }) => {
   const [formData, setFormData] = useState<LeaveRequestInput>({
     account_id: accountId,
     start_date: new Date().toISOString().split('T')[0],
@@ -16,7 +18,24 @@ const LeaveForm: React.FC<LeaveFormProps> = ({ accountId, onClose, onSubmit }) =
     description: ''
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [loadingAccounts, setLoadingAccounts] = useState(false);
+
+  useEffect(() => {
+    if (isAdmin) {
+      setLoadingAccounts(true);
+      accountService.getAll()
+        .then(data => {
+          // Filter only active accounts
+          const today = new Date().toISOString().split('T')[0];
+          const active = (data as Account[]).filter(acc => !acc.end_date || acc.end_date > today);
+          setAccounts(active);
+        })
+        .finally(() => setLoadingAccounts(false));
+    }
+  }, [isAdmin]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
@@ -40,6 +59,28 @@ const LeaveForm: React.FC<LeaveFormProps> = ({ accountId, onClose, onSubmit }) =
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          {isAdmin && (
+            <div className="space-y-1">
+              <label htmlFor="account_id" className="text-[9px] font-bold text-gray-500 uppercase">Pilih Karyawan</label>
+              <div className="relative">
+                <select 
+                  id="account_id"
+                  required 
+                  name="account_id" 
+                  value={formData.account_id} 
+                  onChange={handleChange} 
+                  className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded outline-none focus:ring-1 focus:ring-[#006E62] bg-white"
+                >
+                  <option value="">-- Pilih Karyawan --</option>
+                  {accounts.map(acc => (
+                    <option key={acc.id} value={acc.id}>{acc.full_name} ({acc.internal_nik})</option>
+                  ))}
+                </select>
+                {loadingAccounts && <div className="absolute right-8 top-1/2 -translate-y-1/2"><div className="w-3 h-3 border-2 border-[#006E62] border-t-transparent rounded-full animate-spin"></div></div>}
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <label htmlFor="start_date" className="text-[9px] font-bold text-gray-500 uppercase">Tanggal Awal</label>
