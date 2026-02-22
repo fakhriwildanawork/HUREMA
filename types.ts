@@ -268,6 +268,24 @@ export interface TerminationLogExtended extends TerminationLog {
   };
 }
 
+export interface LeaveRequest {
+  id: string;
+  account_id: string;
+  start_date: string;
+  end_date: string;
+  description: string;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface LeaveRequestExtended extends LeaveRequest {
+  account?: {
+    full_name: string;
+    internal_nik: string;
+  };
+}
+
 export interface DigitalDocument {
   id: string;
   name: string;
@@ -318,6 +336,7 @@ export type AccountContractInputExtended = AccountContractInput;
 export type AccountCertificationInput = Omit<AccountCertification, 'id' | 'created_at' | 'updated_at'>;
 export type WarningLogInput = Omit<WarningLog, 'id' | 'created_at'>;
 export type TerminationLogInput = Omit<TerminationLog, 'id' | 'created_at'>;
+export type LeaveRequestInput = Omit<LeaveRequest, 'id' | 'created_at' | 'updated_at' | 'status'>;
 export type DocumentInput = Omit<DigitalDocument, 'id' | 'created_at' | 'updated_at' | 'allowed_account_ids'> & {
   allowed_account_ids: string[];
 };

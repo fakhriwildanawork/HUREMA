@@ -6,7 +6,8 @@ import LoadingSpinner from '../../components/Common/LoadingSpinner';
 
 const MasterMain: React.FC = () => {
   const [settings, setSettings] = useState<Record<string, any>>({
-    ot_approval_policy: 'manual'
+    ot_approval_policy: 'manual',
+    leave_approval_policy: 'manual'
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -134,6 +135,62 @@ const MasterMain: React.FC = () => {
                <p className="text-[10px] text-gray-400 font-medium leading-relaxed italic">
                  Perubahan kebijakan akan berdampak langsung pada setiap presensi lembur baru. Data lama yang sudah ada di antrean tidak akan terpengaruh.
                </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Kebijakan Libur Mandiri */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-50 bg-gray-50/30 flex items-center gap-3">
+            <Settings size={18} className="text-emerald-500" />
+            <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider">Workflow Libur Mandiri</h3>
+          </div>
+          
+          <div className="p-6 space-y-6">
+            <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+              <div className="flex-1 space-y-1">
+                <h4 className="text-sm font-bold text-gray-800">Kebijakan Persetujuan Libur</h4>
+                <p className="text-xs text-gray-500 leading-relaxed">
+                  Tentukan apakah pengajuan libur mandiri (untuk jadwal Fleksibel/Dinamis) harus diverifikasi admin atau langsung disetujui sistem.
+                </p>
+              </div>
+              
+              <div className="flex bg-gray-100 p-1 rounded-xl w-fit shrink-0">
+                <button 
+                  onClick={() => handleUpdate('leave_approval_policy', 'manual')}
+                  className={`px-6 py-2.5 rounded-lg text-[10px] font-bold uppercase transition-all ${settings.leave_approval_policy === 'manual' ? 'bg-white text-[#006E62] shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
+                >
+                  Verifikasi Admin
+                </button>
+                <button 
+                  onClick={() => handleUpdate('leave_approval_policy', 'auto')}
+                  className={`px-6 py-2.5 rounded-lg text-[10px] font-bold uppercase transition-all ${settings.leave_approval_policy === 'auto' ? 'bg-[#006E62] text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
+                >
+                  Langsung ACC
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className={`p-4 rounded-xl border transition-all ${settings.leave_approval_policy === 'manual' ? 'bg-emerald-50 border-[#006E62]/30' : 'bg-gray-50 border-gray-100 opacity-60'}`}>
+                <div className="flex items-center gap-2 mb-2">
+                   <ShieldCheck size={16} className={settings.leave_approval_policy === 'manual' ? 'text-[#006E62]' : 'text-gray-400'} />
+                   <span className="text-[11px] font-bold uppercase tracking-tight text-gray-700">Mode Verifikasi</span>
+                </div>
+                <p className="text-[10px] text-gray-500 leading-relaxed italic">
+                  Pengajuan libur masuk dengan status <span className="text-orange-600 font-bold">PENDING</span>. Butuh persetujuan manual dari Admin.
+                </p>
+              </div>
+
+              <div className={`p-4 rounded-xl border transition-all ${settings.leave_approval_policy === 'auto' ? 'bg-amber-50 border-amber-300' : 'bg-gray-50 border-gray-100 opacity-60'}`}>
+                <div className="flex items-center gap-2 mb-2">
+                   <AlertCircle size={16} className={settings.leave_approval_policy === 'auto' ? 'text-amber-600' : 'text-gray-400'} />
+                   <span className="text-[11px] font-bold uppercase tracking-tight text-gray-700">Mode Otomatis</span>
+                </div>
+                <p className="text-[10px] text-gray-500 leading-relaxed italic">
+                  Pengajuan libur langsung berstatus <span className="text-[#006E62] font-bold">DISETUJUI</span>. Sistem akan otomatis memproses tanpa antrean.
+                </p>
+              </div>
             </div>
           </div>
         </div>
