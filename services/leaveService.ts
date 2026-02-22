@@ -3,8 +3,6 @@ import { LeaveRequest, LeaveRequestInput, LeaveRequestExtended, AnnualLeaveReque
 import { settingsService } from './settingsService';
 
 export const leaveService = {
-  // ... existing methods ...
-
   /**
    * Mendapatkan semua pengajuan cuti tahunan untuk satu akun
    */
