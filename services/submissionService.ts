@@ -84,8 +84,24 @@ export const submissionService = {
             }).eq('id', submission.account_id);
           }
         }
+      } else if (submission.type === 'Libur Mandiri') {
+        const { leave_request_id } = submission.submission_data;
+        if (leave_request_id) {
+          // Sinkronisasi status ke tabel libur mandiri
+          await supabase.from('account_leave_requests')
+            .update({ status: 'approved', updated_at: new Date().toISOString() })
+            .eq('id', leave_request_id);
+        }
       }
       // Tambahkan logic otomatisasi lain di sini (misal: insert log lembur otomatis)
+    } else if (status === 'Ditolak' && submission.type === 'Libur Mandiri') {
+      const { leave_request_id } = submission.submission_data;
+      if (leave_request_id) {
+        // Sinkronisasi status ke tabel libur mandiri
+        await supabase.from('account_leave_requests')
+          .update({ status: 'rejected', updated_at: new Date().toISOString() })
+          .eq('id', leave_request_id);
+      }
     }
 
     return data as Submission;

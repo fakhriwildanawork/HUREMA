@@ -38,6 +38,7 @@ export const leaveService = {
     const policy = await settingsService.getSetting('leave_approval_policy', 'manual');
     const status = policy === 'auto' ? 'approved' : 'pending';
 
+    // 1. Simpan ke tabel khusus libur mandiri
     const { data, error } = await supabase
       .from('account_leave_requests')
       .insert({
@@ -48,6 +49,21 @@ export const leaveService = {
       .single();
     
     if (error) throw error;
+
+    // 2. Sinkronisasi ke tabel submissions agar muncul di daftar verifikasi pusat
+    const submissionStatus = status === 'approved' ? 'Disetujui' : 'Pending';
+    await supabase.from('account_submissions').insert([{
+      account_id: input.account_id,
+      type: 'Libur Mandiri',
+      status: submissionStatus,
+      description: input.description,
+      submission_data: {
+        start_date: input.start_date,
+        end_date: input.end_date,
+        leave_request_id: data.id // Simpan ID referensi untuk sinkronisasi balik
+      }
+    }]);
+
     return data;
   },
 
