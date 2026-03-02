@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   MapPin, LayoutDashboard, Settings, Users, 
   CalendarClock, Files, ChevronDown, ChevronRight, 
-  Menu as MenuIcon, ChevronLeft, Database, Fingerprint, LogOut, Timer, ClipboardCheck, Plane, Calendar
+  Menu as MenuIcon, ChevronLeft, Database, Fingerprint, LogOut, Timer, ClipboardCheck, Plane, Calendar, ClipboardList
 } from 'lucide-react';
 import { authService } from '../../services/authService';
 import Swal from 'sweetalert2';
@@ -113,6 +113,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed,
           <NavItem id="overtime" icon={Timer} label="Presensi Lembur" />
           <NavItem id="leave" icon={Plane} label="Libur Mandiri" />
           <NavItem id="annual_leave" icon={Calendar} label="Cuti Tahunan" />
+          <NavItem id="permission" icon={ClipboardList} label="Izin" />
           <NavItem id="submission" icon={ClipboardCheck} label="Pengajuan" />
           <NavItem id="document" icon={Files} label="Dokumen Digital" />
           <NavItem id="settings" icon={Settings} label="Pengaturan" />

@@ -112,6 +112,26 @@ export const submissionService = {
             })
             .eq('id', annual_leave_id);
         }
+      } else if (submission.type === 'Izin') {
+        const { permission_request_id } = submission.submission_data;
+        if (permission_request_id) {
+          // Sinkronisasi status ke tabel izin
+          const { data: current } = await supabase.from('account_permission_requests').select('negotiation_data').eq('id', permission_request_id).single();
+          const newHistory = [...(current?.negotiation_data || []), {
+            role: 'admin',
+            start_date: submission.submission_data.start_date,
+            end_date: submission.submission_data.end_date,
+            reason: notes || 'Disetujui via Modul Pengajuan',
+            timestamp: new Date().toISOString()
+          }];
+          await supabase.from('account_permission_requests')
+            .update({ 
+              status: 'approved', 
+              negotiation_data: newHistory,
+              updated_at: new Date().toISOString() 
+            })
+            .eq('id', permission_request_id);
+        }
       }
       // Tambahkan logic otomatisasi lain di sini (misal: insert log lembur otomatis)
     } else if (status === 'Ditolak') {
@@ -141,6 +161,25 @@ export const submissionService = {
               updated_at: new Date().toISOString() 
             })
             .eq('id', annual_leave_id);
+        }
+      } else if (submission.type === 'Izin') {
+        const { permission_request_id } = submission.submission_data;
+        if (permission_request_id) {
+          const { data: current } = await supabase.from('account_permission_requests').select('negotiation_data').eq('id', permission_request_id).single();
+          const newHistory = [...(current?.negotiation_data || []), {
+            role: 'admin',
+            start_date: submission.submission_data.start_date,
+            end_date: submission.submission_data.end_date,
+            reason: notes || 'Ditolak via Modul Pengajuan',
+            timestamp: new Date().toISOString()
+          }];
+          await supabase.from('account_permission_requests')
+            .update({ 
+              status: 'rejected', 
+              negotiation_data: newHistory,
+              updated_at: new Date().toISOString() 
+            })
+            .eq('id', permission_request_id);
         }
       }
     }

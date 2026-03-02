@@ -312,6 +312,31 @@ export interface AnnualLeaveRequest {
   };
 }
 
+export interface PermissionRequest {
+  id: string;
+  account_id: string;
+  permission_type: string;
+  start_date: string;
+  end_date: string;
+  description: string;
+  status: 'pending' | 'approved' | 'rejected' | 'negotiating' | 'cancelled';
+  file_id?: string | null;
+  negotiation_data: {
+    role: 'admin' | 'user';
+    start_date: string;
+    end_date: string;
+    reason: string;
+    timestamp: string;
+  }[];
+  current_negotiator_role: 'admin' | 'user';
+  created_at?: string;
+  updated_at?: string;
+  account?: {
+    full_name: string;
+    internal_nik: string;
+  };
+}
+
 export interface DigitalDocument {
   id: string;
   name: string;
@@ -365,6 +390,15 @@ export type TerminationLogInput = Omit<TerminationLog, 'id' | 'created_at'>;
 export type LeaveRequestInput = Omit<LeaveRequest, 'id' | 'created_at' | 'updated_at' | 'status'>;
 export type AnnualLeaveRequestInput = {
   account_id: string;
+  start_date: string;
+  end_date: string;
+  description: string;
+  file_id?: string | null;
+};
+
+export type PermissionRequestInput = {
+  account_id: string;
+  permission_type: string;
   start_date: string;
   end_date: string;
   description: string;
