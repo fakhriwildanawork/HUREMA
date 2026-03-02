@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Plane, Plus, Search, Calendar, History, MessageSquare, CheckCircle2, XCircle, Clock, ArrowRight, FileText, User } from 'lucide-react';
+import { Plane, Plus, Search, Calendar, History, MessageSquare, CheckCircle2, XCircle, Clock, ArrowRight, FileText, User, Info } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { leaveService } from '../../services/leaveService';
 import { authService } from '../../services/authService';
-import { AnnualLeaveRequest, AuthUser } from '../../types';
+import { accountService } from '../../services/accountService';
+import { AnnualLeaveRequest, AuthUser, Account } from '../../types';
 import AnnualLeaveForm from './AnnualLeaveForm';
 import AnnualLeaveDetail from './AnnualLeaveDetail';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
@@ -17,6 +18,8 @@ const AnnualLeaveMain: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<AnnualLeaveRequest | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [account, setAccount] = useState<Account | null>(null);
+  const [usedDays, setUsedDays] = useState(0);
 
   const isAdmin = user?.role === 'admin';
 
@@ -30,10 +33,17 @@ const AnnualLeaveMain: React.FC = () => {
     if (!currentUser) return;
     try {
       setIsLoading(true);
-      const data = currentUser.role === 'admin' 
-        ? await leaveService.getAllAnnual() 
-        : await leaveService.getAnnualByAccountId(currentUser.id);
-      setRequests(data);
+      const [leaveData, accountData, used] = await Promise.all([
+        currentUser.role === 'admin' 
+          ? leaveService.getAllAnnual() 
+          : leaveService.getAnnualByAccountId(currentUser.id),
+        accountService.getById(currentUser.id),
+        leaveService.getUsedAnnualLeaveDays(currentUser.id, new Date().getFullYear())
+      ]);
+      
+      setRequests(leaveData);
+      setAccount(accountData);
+      setUsedDays(used);
     } catch (error) {
       console.error(error);
     } finally {
@@ -109,6 +119,27 @@ const AnnualLeaveMain: React.FC = () => {
         </div>
       </div>
 
+      {!isAdmin && account && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Jatah Dasar</p>
+            <p className="text-xl font-bold text-gray-800">{account.leave_quota} <span className="text-xs font-medium text-gray-400">Hari</span></p>
+          </div>
+          <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Carry-over</p>
+            <p className="text-xl font-bold text-emerald-600">+{account.carry_over_quota} <span className="text-xs font-medium text-gray-400">Hari</span></p>
+          </div>
+          <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Jatah</p>
+            <p className="text-xl font-bold text-[#006E62]">{account.leave_quota + account.carry_over_quota} <span className="text-xs font-medium text-gray-400">Hari</span></p>
+          </div>
+          <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Sisa Jatah</p>
+            <p className="text-xl font-bold text-orange-600">{(account.leave_quota + account.carry_over_quota) - usedDays} <span className="text-xs font-medium text-gray-400">Hari</span></p>
+          </div>
+        </div>
+      )}
+
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3].map(i => <CardSkeleton key={i} />)}
@@ -168,9 +199,11 @@ const AnnualLeaveMain: React.FC = () => {
         </div>
       )}
 
-      {showForm && user && (
+      {showForm && user && account && (
         <AnnualLeaveForm 
           accountId={user.id} 
+          leaveQuota={account.leave_quota + account.carry_over_quota}
+          usedDays={usedDays}
           onClose={() => setShowForm(false)} 
           onSubmit={handleCreate} 
         />

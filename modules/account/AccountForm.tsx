@@ -39,6 +39,9 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
     end_date: initialData?.end_date || '',
     schedule_type: initialData?.schedule_type || 'Office Hour',
     leave_quota: initialData?.leave_quota || 12,
+    is_leave_accumulated: initialData?.is_leave_accumulated ?? false,
+    max_carry_over_days: initialData?.max_carry_over_days || 0,
+    carry_over_quota: initialData?.carry_over_quota || 0,
     maternity_leave_quota: initialData?.maternity_leave_quota || 0,
     is_presence_limited_checkin: initialData?.is_presence_limited_checkin ?? true,
     is_presence_limited_checkout: initialData?.is_presence_limited_checkout ?? true,
@@ -604,6 +607,29 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
                       />
                       {formData.gender === 'Laki-laki' && <p className="text-[8px] text-gray-400 italic">Hanya untuk perempuan</p>}
                     </div>
+                 </div>
+
+                 <div className="p-3 bg-emerald-50/50 border border-emerald-100 rounded-lg space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="is_leave_accumulated">Aktifkan Akumulasi Cuti (Carry-over)</Label>
+                      <div className="relative inline-flex items-center cursor-pointer">
+                        <input id="is_leave_accumulated" type="checkbox" name="is_leave_accumulated" checked={formData.is_leave_accumulated} onChange={handleChange} className="sr-only peer" />
+                        <div className="w-7 h-4 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-[#006E62]"></div>
+                      </div>
+                    </div>
+                    
+                    {formData.is_leave_accumulated && (
+                      <div className="grid grid-cols-2 gap-2 animate-in slide-in-from-top-1 duration-200">
+                        <div className="space-y-1">
+                          <Label htmlFor="max_carry_over_days">Maksimal Carry-over (Hari)</Label>
+                          <input id="max_carry_over_days" type="number" name="max_carry_over_days" value={formData.max_carry_over_days} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none bg-white" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor="carry_over_quota">Jatah Carry-over Saat Ini (Hari)</Label>
+                          <input id="carry_over_quota" type="number" name="carry_over_quota" value={formData.carry_over_quota} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none bg-white" />
+                        </div>
+                      </div>
+                    )}
                  </div>
 
                  <div className="space-y-2 pt-2">

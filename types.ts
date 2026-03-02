@@ -101,6 +101,9 @@ export interface Account {
   // Pengaturan Kerja & Presensi
   schedule_type: string;
   leave_quota: number;
+  is_leave_accumulated: boolean;
+  max_carry_over_days: number;
+  carry_over_quota: number;
   maternity_leave_quota: number;
   is_presence_limited_checkin: boolean;
   is_presence_limited_checkout: boolean;

@@ -195,6 +195,37 @@ export const leaveService = {
   },
 
   /**
+   * Menghitung total hari cuti tahunan yang sudah disetujui untuk satu akun di tahun tertentu
+   */
+  async getUsedAnnualLeaveDays(accountId: string, year: number): Promise<number> {
+    const startDate = `${year}-01-01`;
+    const endDate = `${year}-12-31`;
+
+    const { data, error } = await supabase
+      .from('account_annual_leaves')
+      .select('start_date, end_date')
+      .eq('account_id', accountId)
+      .eq('status', 'approved')
+      .gte('start_date', startDate)
+      .lte('start_date', endDate);
+
+    if (error) {
+      console.error('Error fetching used annual leave days:', error);
+      throw error;
+    }
+
+    if (!data) return 0;
+
+    return data.reduce((total, leave) => {
+      const start = new Date(leave.start_date);
+      const end = new Date(leave.end_date);
+      const diffTime = Math.abs(end.getTime() - start.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      return total + diffDays;
+    }, 0);
+  },
+
+  /**
    * Mendapatkan semua pengajuan libur untuk satu akun
    */
   async getByAccountId(accountId: string): Promise<LeaveRequest[]> {

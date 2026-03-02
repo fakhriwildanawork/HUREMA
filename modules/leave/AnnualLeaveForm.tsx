@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { X, Save, Calendar, FileText, Upload, Info } from 'lucide-react';
+import { X, Save, Calendar, FileText, Upload, Info, XCircle } from 'lucide-react';
 import { AnnualLeaveRequestInput } from '../../types';
 import { googleDriveService } from '../../services/googleDriveService';
 
 interface AnnualLeaveFormProps {
   accountId: string;
+  leaveQuota: number;
+  usedDays: number;
   onClose: () => void;
   onSubmit: (data: AnnualLeaveRequestInput) => void;
 }
 
-const AnnualLeaveForm: React.FC<AnnualLeaveFormProps> = ({ accountId, onClose, onSubmit }) => {
+const AnnualLeaveForm: React.FC<AnnualLeaveFormProps> = ({ accountId, leaveQuota, usedDays, onClose, onSubmit }) => {
   const [formData, setFormData] = useState<AnnualLeaveRequestInput>({
     account_id: accountId,
     start_date: new Date().toISOString().split('T')[0],
@@ -19,6 +21,18 @@ const AnnualLeaveForm: React.FC<AnnualLeaveFormProps> = ({ accountId, onClose, o
   });
 
   const [uploading, setUploading] = useState(false);
+
+  const calculateDuration = (start: string, end: string) => {
+    const s = new Date(start);
+    const e = new Date(end);
+    if (isNaN(s.getTime()) || isNaN(e.getTime())) return 0;
+    const diffTime = Math.abs(e.getTime() - s.getTime());
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+  };
+
+  const duration = calculateDuration(formData.start_date, formData.end_date);
+  const remainingQuota = leaveQuota - usedDays;
+  const isOverQuota = duration > remainingQuota;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -63,6 +77,26 @@ const AnnualLeaveForm: React.FC<AnnualLeaveFormProps> = ({ accountId, onClose, o
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          <div className="p-4 bg-[#006E62]/5 border border-[#006E62]/10 rounded-2xl flex items-center justify-between">
+            <div>
+              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Sisa Jatah Cuti</p>
+              <p className="text-lg font-bold text-[#006E62]">{remainingQuota} <span className="text-xs font-medium text-gray-400">Hari</span></p>
+            </div>
+            <div className="text-right">
+              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Durasi Pengajuan</p>
+              <p className={`text-lg font-bold ${isOverQuota ? 'text-rose-600' : 'text-gray-800'}`}>{duration} <span className="text-xs font-medium text-gray-400">Hari</span></p>
+            </div>
+          </div>
+
+          {isOverQuota && (
+            <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl flex gap-3 items-center animate-in slide-in-from-top-2 duration-300">
+              <XCircle size={18} className="text-rose-500 shrink-0" />
+              <p className="text-[10px] text-rose-700 font-bold uppercase leading-tight">
+                Durasi pengajuan melebihi sisa jatah cuti Anda!
+              </p>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Tanggal Awal</label>
@@ -132,7 +166,7 @@ const AnnualLeaveForm: React.FC<AnnualLeaveFormProps> = ({ accountId, onClose, o
             </button>
             <button 
               type="submit"
-              disabled={uploading}
+              disabled={uploading || isOverQuota || duration <= 0}
               className="flex-2 py-3 bg-[#006E62] text-white rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-[#005a50] shadow-lg shadow-[#006E62]/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <Save size={16} />
