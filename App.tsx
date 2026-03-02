@@ -1,18 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { X, LayoutDashboard, Users, MapPin, CalendarClock, Files, Settings, Database, Fingerprint, Timer, ClipboardCheck, Plane } from 'lucide-react';
 import Sidebar from './components/Layout/Sidebar';
 import Header from './components/Layout/Header';
-import LocationMain from './modules/location/LocationMain';
-import AccountMain from './modules/account/AccountMain';
-import ScheduleMain from './modules/schedule/ScheduleMain';
-import DocumentMain from './modules/document/DocumentMain';
-import PresenceMain from './modules/presence/PresenceMain';
-import OvertimeMain from './modules/overtime/OvertimeMain';
-import SubmissionMain from './modules/submission/SubmissionMain';
-import LeaveMain from './modules/leave/LeaveMain';
-import AnnualLeaveMain from './modules/leave/AnnualLeaveMain';
-import MasterMain from './modules/settings/MasterMain';
-import Login from './modules/auth/Login';
+
+// Lazy load modules for performance optimization
+const LocationMain = lazy(() => import('./modules/location/LocationMain'));
+const AccountMain = lazy(() => import('./modules/account/AccountMain'));
+const ScheduleMain = lazy(() => import('./modules/schedule/ScheduleMain'));
+const DocumentMain = lazy(() => import('./modules/document/DocumentMain'));
+const PresenceMain = lazy(() => import('./modules/presence/PresenceMain'));
+const OvertimeMain = lazy(() => import('./modules/overtime/OvertimeMain'));
+const SubmissionMain = lazy(() => import('./modules/submission/SubmissionMain'));
+const LeaveMain = lazy(() => import('./modules/leave/LeaveMain'));
+const AnnualLeaveMain = lazy(() => import('./modules/leave/AnnualLeaveMain'));
+const MasterMain = lazy(() => import('./modules/settings/MasterMain'));
+const Login = lazy(() => import('./modules/auth/Login'));
+
 import { authService } from './services/authService';
 import { AuthUser } from './types';
 
@@ -40,7 +43,15 @@ const App: React.FC = () => {
   }
 
   if (!user) {
-    return <Login onLoginSuccess={(u) => setUser(u)} />;
+    return (
+      <Suspense fallback={
+        <div className="min-h-screen flex items-center justify-center bg-white">
+          <div className="w-12 h-12 border-4 border-[#006E62] border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      }>
+        <Login onLoginSuccess={(u) => setUser(u)} />
+      </Suspense>
+    );
   }
 
   const NavItemMobile = ({ id, icon: Icon, label, indent = false }: { id: any, icon: any, label: string, indent?: boolean }) => (
@@ -110,31 +121,38 @@ const App: React.FC = () => {
         <Header activeTab={activeTab} onMenuClick={() => setIsMobileMenuOpen(true)} user={user} />
 
         <div className="p-4 md:p-8 max-w-6xl mx-auto w-full">
-          {activeTab === 'location' ? (
-            <LocationMain />
-          ) : activeTab === 'account' ? (
-            <AccountMain />
-          ) : activeTab === 'schedule' ? (
-            <ScheduleMain />
-          ) : activeTab === 'document' ? (
-            <DocumentMain />
-          ) : activeTab === 'presence' ? (
-            <PresenceMain />
-          ) : activeTab === 'overtime' ? (
-            <OvertimeMain />
-          ) : activeTab === 'submission' ? (
-            <SubmissionMain />
-          ) : activeTab === 'leave' ? (
-            <LeaveMain />
-          ) : activeTab === 'annual_leave' ? (
-            <AnnualLeaveMain />
-          ) : activeTab === 'master_app' ? (
-            <MasterMain />
-          ) : (
-            <div className="flex flex-col items-center justify-center h-64 text-gray-400 bg-gray-50 rounded-lg border border-dashed border-gray-200">
-              <p className="font-medium text-sm">Modul "{activeTab}" sedang dalam pengembangan.</p>
+          <Suspense fallback={
+            <div className="flex flex-col items-center justify-center h-64">
+              <div className="w-10 h-10 border-4 border-[#006E62] border-t-transparent rounded-full animate-spin"></div>
+              <p className="mt-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Memuat Modul...</p>
             </div>
-          )}
+          }>
+            {activeTab === 'location' ? (
+              <LocationMain />
+            ) : activeTab === 'account' ? (
+              <AccountMain />
+            ) : activeTab === 'schedule' ? (
+              <ScheduleMain />
+            ) : activeTab === 'document' ? (
+              <DocumentMain />
+            ) : activeTab === 'presence' ? (
+              <PresenceMain />
+            ) : activeTab === 'overtime' ? (
+              <OvertimeMain />
+            ) : activeTab === 'submission' ? (
+              <SubmissionMain />
+            ) : activeTab === 'leave' ? (
+              <LeaveMain />
+            ) : activeTab === 'annual_leave' ? (
+              <AnnualLeaveMain />
+            ) : activeTab === 'master_app' ? (
+              <MasterMain />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-64 text-gray-400 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                <p className="font-medium text-sm">Modul "{activeTab}" sedang dalam pengembangan.</p>
+              </div>
+            )}
+          </Suspense>
         </div>
       </main>
     </div>
