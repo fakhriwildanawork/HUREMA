@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   MapPin, LayoutDashboard, Settings, Users, 
   CalendarClock, Files, ChevronDown, ChevronRight, 
-  Menu as MenuIcon, ChevronLeft, Database, Fingerprint, LogOut, Timer, ClipboardCheck, Plane, Calendar, ClipboardList
+  Menu as MenuIcon, ChevronLeft, Database, Fingerprint, LogOut, Timer, ClipboardCheck, Plane, Calendar, ClipboardList, Heart
 } from 'lucide-react';
 import { authService } from '../../services/authService';
 import Swal from 'sweetalert2';
@@ -16,6 +16,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed, setIsCollapsed }) => {
   const [isMasterOpen, setIsMasterOpen] = useState(true);
+  const user = authService.getCurrentUser();
 
   const handleLogout = async () => {
     const result = await Swal.fire({
@@ -114,6 +115,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed,
           <NavItem id="leave" icon={Plane} label="Libur Mandiri" />
           <NavItem id="annual_leave" icon={Calendar} label="Cuti Tahunan" />
           <NavItem id="permission" icon={ClipboardList} label="Izin" />
+          {(user?.role === 'admin' || user?.gender === 'Perempuan') && (
+            <NavItem id="maternity_leave" icon={Heart} label="Cuti Melahirkan" />
+          )}
           <NavItem id="submission" icon={ClipboardCheck} label="Pengajuan" />
           <NavItem id="document" icon={Files} label="Dokumen Digital" />
           <NavItem id="settings" icon={Settings} label="Pengaturan" />

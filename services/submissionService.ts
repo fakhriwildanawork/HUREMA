@@ -132,6 +132,26 @@ export const submissionService = {
             })
             .eq('id', permission_request_id);
         }
+      } else if (submission.type === 'Cuti Melahirkan') {
+        const { maternity_leave_id } = submission.submission_data;
+        if (maternity_leave_id) {
+          // Sinkronisasi status ke tabel cuti melahirkan
+          const { data: current } = await supabase.from('account_maternity_leaves').select('negotiation_data').eq('id', maternity_leave_id).single();
+          const newHistory = [...(current?.negotiation_data || []), {
+            role: 'admin',
+            start_date: submission.submission_data.start_date,
+            end_date: submission.submission_data.end_date,
+            reason: notes || 'Disetujui via Modul Pengajuan',
+            timestamp: new Date().toISOString()
+          }];
+          await supabase.from('account_maternity_leaves')
+            .update({ 
+              status: 'approved', 
+              negotiation_data: newHistory,
+              updated_at: new Date().toISOString() 
+            })
+            .eq('id', maternity_leave_id);
+        }
       }
       // Tambahkan logic otomatisasi lain di sini (misal: insert log lembur otomatis)
     } else if (status === 'Ditolak') {
@@ -180,6 +200,25 @@ export const submissionService = {
               updated_at: new Date().toISOString() 
             })
             .eq('id', permission_request_id);
+        }
+      } else if (submission.type === 'Cuti Melahirkan') {
+        const { maternity_leave_id } = submission.submission_data;
+        if (maternity_leave_id) {
+          const { data: current } = await supabase.from('account_maternity_leaves').select('negotiation_data').eq('id', maternity_leave_id).single();
+          const newHistory = [...(current?.negotiation_data || []), {
+            role: 'admin',
+            start_date: submission.submission_data.start_date,
+            end_date: submission.submission_data.end_date,
+            reason: notes || 'Ditolak via Modul Pengajuan',
+            timestamp: new Date().toISOString()
+          }];
+          await supabase.from('account_maternity_leaves')
+            .update({ 
+              status: 'rejected', 
+              negotiation_data: newHistory,
+              updated_at: new Date().toISOString() 
+            })
+            .eq('id', maternity_leave_id);
         }
       }
     }

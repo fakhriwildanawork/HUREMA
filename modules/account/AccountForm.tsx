@@ -39,6 +39,7 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
     end_date: initialData?.end_date || '',
     schedule_type: initialData?.schedule_type || 'Office Hour',
     leave_quota: initialData?.leave_quota || 12,
+    maternity_leave_quota: initialData?.maternity_leave_quota || 0,
     is_presence_limited_checkin: initialData?.is_presence_limited_checkin ?? true,
     is_presence_limited_checkout: initialData?.is_presence_limited_checkout ?? true,
     is_presence_limited_ot_in: initialData?.is_presence_limited_ot_in ?? true,
@@ -584,6 +585,27 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
                       <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
                     </div>
                  </div>
+
+                 <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label htmlFor="leave_quota">Jatah Cuti Tahunan (Hari)</Label>
+                      <input id="leave_quota" type="number" name="leave_quota" value={formData.leave_quota} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="maternity_leave_quota">Jatah Cuti Melahirkan (Hari)</Label>
+                      <input 
+                        id="maternity_leave_quota" 
+                        type="number" 
+                        name="maternity_leave_quota" 
+                        value={formData.maternity_leave_quota} 
+                        onChange={handleChange} 
+                        disabled={formData.gender === 'Laki-laki'}
+                        className={`w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none ${formData.gender === 'Laki-laki' ? 'bg-gray-100 cursor-not-allowed opacity-60' : ''}`} 
+                      />
+                      {formData.gender === 'Laki-laki' && <p className="text-[8px] text-gray-400 italic">Hanya untuk perempuan</p>}
+                    </div>
+                 </div>
+
                  <div className="space-y-2 pt-2">
                     <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter mb-2">Batasan Radius Presensi</p>
                     <div className="space-y-1.5">

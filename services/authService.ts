@@ -8,7 +8,7 @@ export const authService = {
   async login(accessCode: string, passwordRaw: string): Promise<AuthUser> {
     const { data, error } = await supabase
       .from('accounts')
-      .select('id, full_name, internal_nik, access_code, photo_google_id, schedule_type')
+      .select('id, full_name, internal_nik, access_code, photo_google_id, schedule_type, gender')
       .eq('access_code', accessCode)
       .eq('password', passwordRaw)
       .maybeSingle();

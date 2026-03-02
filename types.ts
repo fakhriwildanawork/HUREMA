@@ -58,6 +58,7 @@ export interface AuthUser {
   internal_nik: string;
   access_code: string;
   role: 'admin' | 'user';
+  gender: 'Laki-laki' | 'Perempuan';
   schedule_type: string;
   photo_google_id?: string | null;
 }
@@ -100,6 +101,7 @@ export interface Account {
   // Pengaturan Kerja & Presensi
   schedule_type: string;
   leave_quota: number;
+  maternity_leave_quota: number;
   is_presence_limited_checkin: boolean;
   is_presence_limited_checkout: boolean;
   is_presence_limited_ot_in: boolean;
@@ -312,6 +314,30 @@ export interface AnnualLeaveRequest {
   };
 }
 
+export interface MaternityLeaveRequest {
+  id: string;
+  account_id: string;
+  start_date: string;
+  end_date: string;
+  description: string;
+  status: 'pending' | 'approved' | 'rejected' | 'negotiating' | 'cancelled';
+  file_id?: string | null;
+  negotiation_data: {
+    role: 'admin' | 'user';
+    start_date: string;
+    end_date: string;
+    reason: string;
+    timestamp: string;
+  }[];
+  current_negotiator_role: 'admin' | 'user';
+  created_at?: string;
+  updated_at?: string;
+  account?: {
+    full_name: string;
+    internal_nik: string;
+  };
+}
+
 export interface PermissionRequest {
   id: string;
   account_id: string;
@@ -399,6 +425,14 @@ export type AnnualLeaveRequestInput = {
 export type PermissionRequestInput = {
   account_id: string;
   permission_type: string;
+  start_date: string;
+  end_date: string;
+  description: string;
+  file_id?: string | null;
+};
+
+export type MaternityLeaveRequestInput = {
+  account_id: string;
   start_date: string;
   end_date: string;
   description: string;
