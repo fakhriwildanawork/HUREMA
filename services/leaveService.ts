@@ -40,6 +40,15 @@ export const leaveService = {
    * Membuat pengajuan cuti tahunan baru
    */
   async createAnnual(input: AnnualLeaveRequestInput): Promise<AnnualLeaveRequest> {
+    // Validasi sesi sebelum kirim
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      console.error('No active session found during createAnnual');
+      throw new Error('Sesi Anda telah berakhir. Silakan login kembali.');
+    }
+
+    console.log('Creating annual leave with payload:', input);
+
     const { data, error } = await supabase
       .from('account_annual_leaves')
       .insert({
@@ -57,20 +66,28 @@ export const leaveService = {
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error in createAnnual:', error);
+      throw error;
+    }
 
     // Sinkronisasi ke tabel submissions agar muncul di daftar verifikasi pusat
-    await supabase.from('account_submissions').insert([{
-      account_id: input.account_id,
-      type: 'Cuti Tahunan',
-      status: 'Pending',
-      description: input.description,
-      submission_data: {
-        start_date: input.start_date,
-        end_date: input.end_date,
-        annual_leave_id: data.id
-      }
-    }]);
+    try {
+      await supabase.from('account_submissions').insert([{
+        account_id: input.account_id,
+        type: 'Cuti Tahunan',
+        status: 'Pending',
+        description: input.description,
+        submission_data: {
+          start_date: input.start_date,
+          end_date: input.end_date,
+          annual_leave_id: data.id
+        }
+      }]);
+    } catch (subError) {
+      console.warn('Failed to sync to submissions table:', subError);
+      // We don't throw here to avoid blocking the main leave creation
+    }
 
     return data;
   },
@@ -88,11 +105,22 @@ export const leaveService = {
     reason: string,
     status: 'negotiating' | 'approved' | 'rejected' | 'cancelled'
   ): Promise<void> {
-    const { data: current } = await supabase
+    // Validasi sesi
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      throw new Error('Sesi Anda telah berakhir. Silakan login kembali.');
+    }
+
+    const { data: current, error: fetchError } = await supabase
       .from('account_annual_leaves')
       .select('negotiation_data, account_id')
       .eq('id', id)
       .single();
+
+    if (fetchError) {
+      console.error('Error fetching current negotiation data:', fetchError);
+      throw fetchError;
+    }
 
     const newHistory = [
       ...(current?.negotiation_data || []),
@@ -117,32 +145,39 @@ export const leaveService = {
       })
       .eq('id', id);
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error updating annual leave negotiation:', error);
+      throw error;
+    }
 
     // Update status di tabel submissions pusat
-    const submissionStatus = status === 'approved' ? 'Disetujui' : status === 'rejected' ? 'Ditolak' : status === 'cancelled' ? 'Dibatalkan' : 'Pending';
-    
-    // Cari submission yang berkaitan
-    const { data: sub } = await supabase
-      .from('account_submissions')
-      .select('id')
-      .eq('account_id', current.account_id)
-      .eq('type', 'Cuti Tahunan')
-      .contains('submission_data', { annual_leave_id: id })
-      .maybeSingle();
+    try {
+      const submissionStatus = status === 'approved' ? 'Disetujui' : status === 'rejected' ? 'Ditolak' : status === 'cancelled' ? 'Dibatalkan' : 'Pending';
+      
+      // Cari submission yang berkaitan
+      const { data: sub } = await supabase
+        .from('account_submissions')
+        .select('id')
+        .eq('account_id', current.account_id)
+        .eq('type', 'Cuti Tahunan')
+        .contains('submission_data', { annual_leave_id: id })
+        .maybeSingle();
 
-    if (sub) {
-      await supabase.from('account_submissions')
-        .update({ 
-          status: submissionStatus,
-          description: reason,
-          submission_data: {
-            start_date: startDate,
-            end_date: endDate,
-            annual_leave_id: id
-          }
-        })
-        .eq('id', sub.id);
+      if (sub) {
+        await supabase.from('account_submissions')
+          .update({ 
+            status: submissionStatus,
+            description: reason,
+            submission_data: {
+              start_date: startDate,
+              end_date: endDate,
+              annual_leave_id: id
+            }
+          })
+          .eq('id', sub.id);
+      }
+    } catch (subError) {
+      console.warn('Failed to update central submission status:', subError);
     }
   },
 
