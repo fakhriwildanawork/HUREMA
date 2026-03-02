@@ -13,33 +13,18 @@ CREATE TABLE account_annual_leaves (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
--- 2. Mengaktifkan Row Level Security (RLS)
-ALTER TABLE account_annual_leaves ENABLE ROW LEVEL SECURITY;
+-- 2. Menonaktifkan RLS (Karena sistem menggunakan login kustom/localStorage)
+ALTER TABLE account_annual_leaves DISABLE ROW LEVEL SECURITY;
 
 -- 3. Memberikan izin akses (GRANT) eksplisit agar API bisa mengakses tabel
--- Ini krusial untuk memperbaiki error 401 Unauthorized
+-- Memberikan akses ke role anon karena sistem login kustom tidak membuat sesi Supabase Auth
 GRANT ALL ON TABLE account_annual_leaves TO authenticated;
+GRANT ALL ON TABLE account_annual_leaves TO anon;
 GRANT ALL ON TABLE account_annual_leaves TO service_role;
 
--- 4. Membuat Policy Akses
--- User bisa melihat datanya sendiri, Admin bisa melihat semua data
-CREATE POLICY "View annual leaves" ON account_annual_leaves 
-FOR SELECT TO authenticated 
-USING (auth.uid() = account_id OR (SELECT role FROM accounts WHERE id = auth.uid()) = 'admin');
-
--- User bisa membuat pengajuan untuk dirinya sendiri
-CREATE POLICY "Insert annual leaves" ON account_annual_leaves 
-FOR INSERT TO authenticated 
-WITH CHECK (auth.uid() = account_id);
-
--- User & Admin bisa update (untuk negosiasi/persetujuan)
-CREATE POLICY "Update annual leaves" ON account_annual_leaves 
-FOR UPDATE TO authenticated 
-USING (auth.uid() = account_id OR (SELECT role FROM accounts WHERE id = auth.uid()) = 'admin');
-
--- 5. Opsional: Menambahkan index untuk performa pencarian
+-- 4. Opsional: Menambahkan index untuk performa pencarian
 CREATE INDEX idx_annual_leaves_account_id ON account_annual_leaves(account_id);
 CREATE INDEX idx_annual_leaves_status ON account_annual_leaves(status);
 
--- 6. PAKSA Supabase memuat ulang skema API (Sangat Penting)
+-- 5. PAKSA Supabase memuat ulang skema API (Sangat Penting)
 NOTIFY pgrst, 'reload schema';

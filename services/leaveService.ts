@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
 import { LeaveRequest, LeaveRequestInput, LeaveRequestExtended, AnnualLeaveRequest, AnnualLeaveRequestInput } from '../types';
 import { settingsService } from './settingsService';
+import { authService } from './authService';
 
 export const leaveService = {
   /**
@@ -40,10 +41,10 @@ export const leaveService = {
    * Membuat pengajuan cuti tahunan baru
    */
   async createAnnual(input: AnnualLeaveRequestInput): Promise<AnnualLeaveRequest> {
-    // Validasi sesi sebelum kirim
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      console.error('No active session found during createAnnual');
+    // Validasi sesi kustom sebelum kirim
+    const currentUser = authService.getCurrentUser();
+    if (!currentUser) {
+      console.error('No active custom session found during createAnnual');
       throw new Error('Sesi Anda telah berakhir. Silakan login kembali.');
     }
 
@@ -105,9 +106,9 @@ export const leaveService = {
     reason: string,
     status: 'negotiating' | 'approved' | 'rejected' | 'cancelled'
   ): Promise<void> {
-    // Validasi sesi
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
+    // Validasi sesi kustom
+    const currentUser = authService.getCurrentUser();
+    if (!currentUser) {
       throw new Error('Sesi Anda telah berakhir. Silakan login kembali.');
     }
 
