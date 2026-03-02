@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
-import { X, LayoutDashboard, Users, MapPin, CalendarClock, Files, Settings, Database, Fingerprint, Timer, ClipboardCheck, Plane, Calendar, ClipboardList, Heart } from 'lucide-react';
+import { X, LayoutDashboard, Users, MapPin, CalendarClock, Files, Settings, Database, Fingerprint, Timer, ClipboardCheck, Plane, Calendar, ClipboardList, Heart, Target } from 'lucide-react';
 import Sidebar from './components/Layout/Sidebar';
 import Header from './components/Layout/Header';
 
@@ -15,6 +15,7 @@ const LeaveMain = lazy(() => import('./modules/leave/LeaveMain'));
 const AnnualLeaveMain = lazy(() => import('./modules/leave/AnnualLeaveMain'));
 const PermissionMain = lazy(() => import('./modules/permission/PermissionMain'));
 const MaternityLeaveMain = lazy(() => import('./modules/maternity/MaternityLeaveMain'));
+const KPIMain = lazy(() => import('./modules/performance/kpi/KPIMain'));
 const MasterMain = lazy(() => import('./modules/settings/MasterMain'));
 const Login = lazy(() => import('./modules/auth/Login'));
 
@@ -23,7 +24,7 @@ import { AuthUser } from './types';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'document' | 'settings' | 'presence' | 'overtime' | 'submission' | 'leave' | 'annual_leave' | 'permission' | 'maternity_leave' | 'master_app'>('presence');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'document' | 'settings' | 'presence' | 'overtime' | 'submission' | 'leave' | 'annual_leave' | 'permission' | 'maternity_leave' | 'master_app' | 'kpi'>('presence');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
@@ -109,6 +110,7 @@ const App: React.FC = () => {
             <div className="mt-4">
               <NavItemMobile id="presence" icon={Fingerprint} label="Presensi Reguler" />
               <NavItemMobile id="overtime" icon={Timer} label="Presensi Lembur" />
+              <NavItemMobile id="kpi" icon={Target} label="KPI Performance" />
               <NavItemMobile id="leave" icon={Plane} label="Libur Mandiri" />
               <NavItemMobile id="annual_leave" icon={Calendar} label="Cuti Tahunan" />
               <NavItemMobile id="permission" icon={ClipboardList} label="Izin" />
@@ -156,6 +158,8 @@ const App: React.FC = () => {
               <PermissionMain />
             ) : activeTab === 'maternity_leave' ? (
               <MaternityLeaveMain />
+            ) : activeTab === 'kpi' ? (
+              <KPIMain />
             ) : activeTab === 'master_app' ? (
               <MasterMain />
             ) : (

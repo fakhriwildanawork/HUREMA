@@ -1,6 +1,6 @@
 {
   "name": "HUREMA",
-  "description": "Sistem Manajemen Sumber Daya dengan integrasi Supabase dan Google Drive untuk penyimpanan data lokasi dan dokumen.",
+  "description": "Sistem Manajemen Sumber Daya Terpadu dengan fitur Presensi, Cuti, Izin, dan Manajemen Performa (KPI) berbasis Supabase dan Google Drive.",
   "requestFramePermissions": [
     "camera",
     "geolocation"

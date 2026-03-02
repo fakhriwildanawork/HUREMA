@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   MapPin, LayoutDashboard, Settings, Users, 
   CalendarClock, Files, ChevronDown, ChevronRight, 
-  Menu as MenuIcon, ChevronLeft, Database, Fingerprint, LogOut, Timer, ClipboardCheck, Plane, Calendar, ClipboardList, Heart
+  Menu as MenuIcon, ChevronLeft, Database, Fingerprint, LogOut, Timer, ClipboardCheck, Plane, Calendar, ClipboardList, Heart, Target, BarChart3
 } from 'lucide-react';
 import { authService } from '../../services/authService';
 import Swal from 'sweetalert2';
@@ -16,6 +16,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed, setIsCollapsed }) => {
   const [isMasterOpen, setIsMasterOpen] = useState(true);
+  const [isPerformanceOpen, setIsPerformanceOpen] = useState(false);
   const user = authService.getCurrentUser();
 
   const handleLogout = async () => {
@@ -105,6 +106,29 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed,
               <NavItem id="location" icon={MapPin} label="Data Lokasi" indent />
               <NavItem id="schedule" icon={CalendarClock} label="Manajemen Jadwal" indent />
               <NavItem id="account" icon={Users} label="Akun" indent />
+            </div>
+          )}
+        </div>
+
+        {/* Performance Menu Group */}
+        <div className="mt-4">
+          <button 
+            onClick={() => setIsPerformanceOpen(!isPerformanceOpen)}
+            className={`flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-200 w-full mb-1 text-gray-600 hover:bg-gray-100`}
+            title={isCollapsed ? 'Performance' : ''}
+          >
+            <BarChart3 size={20} className="shrink-0 text-gray-400" />
+            {!isCollapsed && (
+              <div className="flex items-center justify-between flex-1 overflow-hidden">
+                <span className="font-medium text-sm truncate">Performance</span>
+                {isPerformanceOpen ? <ChevronDown size={16} className="text-gray-300" /> : <ChevronRight size={16} className="text-gray-300" />}
+              </div>
+            )}
+          </button>
+          
+          {(isPerformanceOpen || isCollapsed) && (
+            <div className={`mt-1 overflow-hidden transition-all duration-300 ${isCollapsed ? '' : 'max-h-96'}`}>
+              <NavItem id="kpi" icon={Target} label="Key Performance Indicator" indent />
             </div>
           )}
         </div>

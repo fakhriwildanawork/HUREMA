@@ -459,3 +459,35 @@ export interface GoogleDriveFile {
 
 export type AttendanceInput = Omit<Attendance, 'id' | 'created_at'>;
 export type OvertimeInput = Omit<Overtime, 'id' | 'created_at'>;
+
+export interface KPI {
+  id: string;
+  account_id: string;
+  title: string;
+  description: string;
+  weight: number;
+  start_date: string;
+  deadline: string;
+  status: 'Active' | 'Pause' | 'Unverified' | 'Verified' | 'Unreported';
+  report_data?: {
+    description: string;
+    file_ids: string[];
+    links: string[];
+    self_assessment: number;
+    reported_at: string;
+  } | null;
+  verification_data?: {
+    score: number;
+    notes: string;
+    verified_at: string;
+    verifier_id: string;
+  } | null;
+  created_at?: string;
+  updated_at?: string;
+  account?: {
+    full_name: string;
+    internal_nik: string;
+  };
+}
+
+export type KPIInput = Omit<KPI, 'id' | 'created_at' | 'updated_at' | 'status' | 'report_data' | 'verification_data' | 'account'>;
