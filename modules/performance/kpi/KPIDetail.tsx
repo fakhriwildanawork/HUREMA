@@ -122,7 +122,10 @@ const KPIDetail: React.FC<KPIDetailProps> = ({ onClose, kpi }) => {
           {(isVerified || isUnverified) && kpi.report_data && (
             <div className="space-y-4 pt-4 border-t border-gray-50">
               <div className="flex items-center justify-between">
-                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Laporan Capaian Pegawai</p>
+                <div>
+                  <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Laporan Capaian Pegawai</p>
+                  <p className="text-[10px] font-bold text-[#006E62] uppercase mt-0.5">{kpi.account?.full_name}</p>
+                </div>
                 <span className="text-[10px] font-bold text-gray-400">{new Date(kpi.report_data.reported_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
               </div>
               

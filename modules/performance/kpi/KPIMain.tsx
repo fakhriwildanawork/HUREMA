@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Target, Plus, Search, Calendar, History, MessageSquare, CheckCircle2, XCircle, Clock, ArrowRight, FileText, User, AlertTriangle, Info, BarChart3, Trash2, Eye } from 'lucide-react';
+import { Target, Plus, Search, Calendar, History, MessageSquare, CheckCircle2, XCircle, Clock, ArrowRight, FileText, User, AlertTriangle, Info, BarChart3, Trash2, Eye, Edit3 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { kpiService } from '../../../services/kpiService';
 import { authService } from '../../../services/authService';
@@ -59,18 +59,30 @@ const KPIMain: React.FC = () => {
   const handleCreate = async (input: any) => {
     try {
       setIsSaving(true);
-      await kpiService.create(input);
+      if (selectedKPI) {
+        await kpiService.update(selectedKPI.id, input);
+        Swal.fire({
+          title: 'Berhasil!',
+          text: 'KPI telah diperbarui.',
+          icon: 'success',
+          timer: 1500,
+          showConfirmButton: false
+        });
+      } else {
+        await kpiService.create(input);
+        Swal.fire({
+          title: 'Berhasil!',
+          text: 'KPI baru telah dibuat.',
+          icon: 'success',
+          timer: 1500,
+          showConfirmButton: false
+        });
+      }
       await fetchKPIs(user);
       setShowForm(false);
-      Swal.fire({
-        title: 'Berhasil!',
-        text: 'KPI baru telah dibuat.',
-        icon: 'success',
-        timer: 1500,
-        showConfirmButton: false
-      });
+      setSelectedKPI(null);
     } catch (error) {
-      Swal.fire('Gagal', 'Terjadi kesalahan saat membuat KPI.', 'error');
+      Swal.fire('Gagal', 'Terjadi kesalahan saat menyimpan KPI.', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -279,6 +291,7 @@ const KPIMain: React.FC = () => {
                     isAdmin={isAdmin} 
                     onReport={() => { setSelectedKPI(kpi); setShowReportForm(true); }}
                     onVerify={() => { setSelectedKPI(kpi); setShowVerifyForm(true); }}
+                    onEdit={() => { setSelectedKPI(kpi); setShowForm(true); }}
                     onView={() => { setSelectedKPI(kpi); setShowDetail(true); }}
                     onDelete={() => handleDelete(kpi.id)}
                     getStatusBadge={getStatusBadge}
@@ -310,6 +323,7 @@ const KPIMain: React.FC = () => {
                     isAdmin={isAdmin} 
                     onReport={() => { setSelectedKPI(kpi); setShowReportForm(true); }}
                     onVerify={() => { setSelectedKPI(kpi); setShowVerifyForm(true); }}
+                    onEdit={() => { setSelectedKPI(kpi); setShowForm(true); }}
                     onView={() => { setSelectedKPI(kpi); setShowDetail(true); }}
                     onDelete={() => handleDelete(kpi.id)}
                     getStatusBadge={getStatusBadge}
@@ -323,8 +337,9 @@ const KPIMain: React.FC = () => {
 
       {showForm && (
         <KPIForm 
-          onClose={() => setShowForm(false)} 
+          onClose={() => { setShowForm(false); setSelectedKPI(null); }} 
           onSubmit={handleCreate} 
+          initialData={selectedKPI}
         />
       )}
 
@@ -359,12 +374,13 @@ interface KPICardProps {
   isAdmin: boolean;
   onReport: () => void;
   onVerify: () => void;
+  onEdit: () => void;
   onView: () => void;
   onDelete: () => void;
   getStatusBadge: (status: string, deadline: string) => React.ReactNode;
 }
 
-const KPICard: React.FC<KPICardProps> = ({ kpi, isAdmin, onReport, onVerify, onView, onDelete, getStatusBadge }) => {
+const KPICard: React.FC<KPICardProps> = ({ kpi, isAdmin, onReport, onVerify, onEdit, onView, onDelete, getStatusBadge }) => {
   const isVerified = kpi.status === 'Verified';
   const isUnverified = kpi.status === 'Unverified';
   const isOverdue = kpi.status === 'Unreported';
@@ -383,13 +399,24 @@ const KPICard: React.FC<KPICardProps> = ({ kpi, isAdmin, onReport, onVerify, onV
         </div>
         <div className="flex flex-col items-end gap-2">
           {getStatusBadge(kpi.status, kpi.deadline)}
-          <button 
-            onClick={onView}
-            className="p-1.5 text-gray-400 hover:text-[#006E62] hover:bg-emerald-50 rounded-lg transition-all"
-            title="Lihat Detail"
-          >
-            <Eye size={14} />
-          </button>
+          <div className="flex items-center gap-1">
+            {isAdmin && !isVerified && !isUnverified && (
+              <button 
+                onClick={onEdit}
+                className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                title="Edit KPI"
+              >
+                <Edit3 size={14} />
+              </button>
+            )}
+            <button 
+              onClick={onView}
+              className="p-1.5 text-gray-400 hover:text-[#006E62] hover:bg-emerald-50 rounded-lg transition-all"
+              title="Lihat Detail"
+            >
+              <Eye size={14} />
+            </button>
+          </div>
         </div>
       </div>
 
