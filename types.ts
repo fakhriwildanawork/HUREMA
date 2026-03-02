@@ -469,6 +469,7 @@ export interface KPI {
   start_date: string;
   deadline: string;
   status: 'Active' | 'Pause' | 'Unverified' | 'Verified' | 'Unreported';
+  supporting_links: string[];
   report_data?: {
     description: string;
     file_ids: string[];

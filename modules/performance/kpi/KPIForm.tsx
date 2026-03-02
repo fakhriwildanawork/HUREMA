@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Target, Calendar, User, Info } from 'lucide-react';
+import { X, Save, Target, Calendar, User, Info, Plus, Trash2, Link as LinkIcon } from 'lucide-react';
 import { KPIInput, Account } from '../../../types';
 import { accountService } from '../../../services/accountService';
 
@@ -16,11 +16,13 @@ const KPIForm: React.FC<KPIFormProps> = ({ onClose, onSubmit, initialData }) => 
     description: initialData?.description || '',
     weight: initialData?.weight || 1,
     start_date: initialData?.start_date || new Date().toISOString().split('T')[0],
-    deadline: initialData?.deadline || new Date().toISOString().split('T')[0]
+    deadline: initialData?.deadline || new Date().toISOString().split('T')[0],
+    supporting_links: initialData?.supporting_links || []
   });
 
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [newLink, setNewLink] = useState('');
 
   useEffect(() => {
     accountService.getAll().then(data => {
@@ -32,6 +34,17 @@ const KPIForm: React.FC<KPIFormProps> = ({ onClose, onSubmit, initialData }) => 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: name === 'weight' ? parseInt(value) : value }));
+  };
+
+  const addLink = () => {
+    if (newLink && !formData.supporting_links.includes(newLink)) {
+      setFormData(prev => ({ ...prev, supporting_links: [...prev.supporting_links, newLink] }));
+      setNewLink('');
+    }
+  };
+
+  const removeLink = (link: string) => {
+    setFormData(prev => ({ ...prev, supporting_links: prev.supporting_links.filter(l => l !== link) }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -58,7 +71,7 @@ const KPIForm: React.FC<KPIFormProps> = ({ onClose, onSubmit, initialData }) => 
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto scrollbar-thin">
           <div className="space-y-1.5">
             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Pilih Pegawai</label>
             <div className="relative">
@@ -102,6 +115,41 @@ const KPIForm: React.FC<KPIFormProps> = ({ onClose, onSubmit, initialData }) => 
               placeholder="Jelaskan detail KPI dan target yang harus dicapai..."
               className="w-full px-3 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#006E62]/20 focus:border-[#006E62] text-xs font-medium resize-none"
             />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Link Pendukung/Referensi (Multiple)</label>
+            <div className="flex gap-2">
+              <input 
+                type="url" 
+                value={newLink}
+                onChange={(e) => setNewLink(e.target.value)}
+                placeholder="https://..."
+                className="flex-1 px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#006E62]/20 focus:border-[#006E62] text-xs"
+              />
+              <button 
+                type="button" 
+                onClick={addLink}
+                className="px-3 py-2 bg-[#006E62] text-white rounded-xl hover:bg-[#005a50] transition-all"
+              >
+                <Plus size={16} />
+              </button>
+            </div>
+            {formData.supporting_links.length > 0 && (
+              <div className="space-y-1 mt-2">
+                {formData.supporting_links.map(link => (
+                  <div key={link} className="flex items-center justify-between px-3 py-1.5 bg-gray-50 border border-gray-100 rounded-lg">
+                    <div className="flex items-center gap-2 overflow-hidden">
+                      <LinkIcon size={12} className="text-gray-400 shrink-0" />
+                      <span className="text-[10px] text-gray-600 truncate">{link}</span>
+                    </div>
+                    <button type="button" onClick={() => removeLink(link)} className="text-rose-500 hover:text-rose-700">
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
