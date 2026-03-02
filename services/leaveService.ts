@@ -13,7 +13,10 @@ export const leaveService = {
       .eq('account_id', accountId)
       .order('created_at', { ascending: false });
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching annual leaves:', error);
+      throw error;
+    }
     return data || [];
   },
 
@@ -26,7 +29,10 @@ export const leaveService = {
       .select('*, account:accounts(full_name, internal_nik)')
       .order('created_at', { ascending: false });
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching all annual leaves:', error);
+      throw error;
+    }
     return data || [];
   },
 
