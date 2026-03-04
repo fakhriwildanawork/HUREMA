@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   MapPin, LayoutDashboard, Settings, Users, 
   CalendarClock, Files, ChevronDown, ChevronRight, 
-  Menu as MenuIcon, ChevronLeft, Database, Fingerprint, LogOut, Timer, ClipboardCheck, Plane, Calendar, ClipboardList, Heart, Target, BarChart3
+  Menu as MenuIcon, ChevronLeft, Database, Fingerprint, LogOut, Timer, ClipboardCheck, Plane, Calendar, ClipboardList, Heart, Target, BarChart3, CheckSquare
 } from 'lucide-react';
 import { authService } from '../../services/authService';
 import Swal from 'sweetalert2';
@@ -129,6 +129,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed,
           {(isPerformanceOpen || isCollapsed) && (
             <div className={`mt-1 overflow-hidden transition-all duration-300 ${isCollapsed ? '' : 'max-h-96'}`}>
               <NavItem id="kpi" icon={Target} label="Key Performance Indicator" indent />
+              <NavItem id="key_activity" icon={CheckSquare} label="Key Activities" indent />
             </div>
           )}
         </div>

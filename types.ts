@@ -492,3 +492,63 @@ export interface KPI {
 }
 
 export type KPIInput = Omit<KPI, 'id' | 'created_at' | 'updated_at' | 'status' | 'report_data' | 'verification_data' | 'account'>;
+
+export interface KeyActivity {
+  id: string;
+  title: string;
+  description: string;
+  weight: number;
+  start_date: string;
+  end_date: string;
+  status: 'Active' | 'Pause' | 'Completed';
+  recurrence_type: 'Once' | 'Daily' | 'Weekly' | 'Monthly' | 'EndOfMonth';
+  recurrence_rule: {
+    days_of_week?: number[];
+    dates_of_month?: number[];
+  } | null;
+  supporting_links: string[];
+  created_at?: string;
+  updated_at?: string;
+  assignments?: KeyActivityAssignment[];
+}
+
+export interface KeyActivityAssignment {
+  id: string;
+  activity_id: string;
+  account_id: string;
+  account?: {
+    full_name: string;
+    internal_nik: string;
+  };
+}
+
+export interface KeyActivityReport {
+  id: string;
+  activity_id: string;
+  account_id: string;
+  due_date: string;
+  reported_at: string;
+  description: string;
+  file_ids: string[];
+  links: string[];
+  status: 'Unverified' | 'Verified';
+  verification_data?: {
+    score: number;
+    notes: string;
+    verified_at: string;
+    verifier_id: string;
+  } | null;
+  created_at?: string;
+  updated_at?: string;
+  account?: {
+    full_name: string;
+    internal_nik: string;
+  };
+  activity?: KeyActivity;
+}
+
+export type KeyActivityInput = Omit<KeyActivity, 'id' | 'created_at' | 'updated_at' | 'status' | 'assignments'> & {
+  assigned_account_ids: string[];
+};
+
+export type KeyActivityReportInput = Omit<KeyActivityReport, 'id' | 'created_at' | 'updated_at' | 'status' | 'verification_data' | 'account' | 'activity' | 'reported_at'>;
