@@ -7,6 +7,7 @@ import { KeyActivity, KeyActivityReport, AuthUser } from '../../../types';
 import KeyActivityForm from './KeyActivityForm';
 import KeyActivityReportForm from './KeyActivityReportForm';
 import KeyActivityDetail from './KeyActivityDetail';
+import KeyActivityVerifyForm from './KeyActivityVerifyForm';
 import LoadingSpinner from '../../../components/Common/LoadingSpinner';
 import { CardSkeleton } from '../../../components/Common/Skeleton';
 
@@ -20,9 +21,11 @@ const KeyActivityMain: React.FC = () => {
   const [selectedActivity, setSelectedActivity] = useState<KeyActivity | null>(null);
   const [selectedDueDate, setSelectedDueDate] = useState<string | null>(null);
   const [showReportForm, setShowReportForm] = useState(false);
+  const [showVerifyForm, setShowVerifyForm] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<KeyActivityReport | null>(null);
   const [showDetail, setShowDetail] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [activeTab, setActiveTab] = useState<'today' | 'backlog' | 'history' | 'all'>('today');
+  const [activeTab, setActiveTab] = useState<'today' | 'backlog' | 'history' | 'all' | 'verify'>('today');
 
   const isAdmin = user?.role === 'admin';
 
@@ -41,7 +44,7 @@ const KeyActivityMain: React.FC = () => {
       setIsLoading(true);
       const [activitiesData, reportsData] = await Promise.all([
         currentUser.role === 'admin' ? keyActivityService.getAll() : keyActivityService.getByAccountId(currentUser.id),
-        currentUser.role === 'admin' ? [] : keyActivityService.getReportsByAccount(currentUser.id)
+        currentUser.role === 'admin' ? keyActivityService.getAllReports() : keyActivityService.getReportsByAccount(currentUser.id)
       ]);
       setActivities(activitiesData);
       setReports(reportsData);
@@ -89,6 +92,28 @@ const KeyActivityMain: React.FC = () => {
       Swal.fire('Terkirim!', 'Laporan aktivitas telah dikirim.', 'success');
     } catch (error) {
       Swal.fire('Gagal', 'Terjadi kesalahan saat mengirim laporan.', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleVerify = async (verificationData: any) => {
+    if (!selectedReport || !user) return;
+    try {
+      setIsSaving(true);
+      await keyActivityService.verifyReport(selectedReport.id, user.id, verificationData.score, verificationData.notes);
+      await fetchData(user);
+      setShowVerifyForm(false);
+      setSelectedReport(null);
+      Swal.fire({
+        title: 'Terverifikasi!',
+        text: 'Laporan aktivitas telah berhasil diverifikasi.',
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false
+      });
+    } catch (error) {
+      Swal.fire('Gagal', 'Terjadi kesalahan saat verifikasi.', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -173,8 +198,11 @@ const KeyActivityMain: React.FC = () => {
 
   const filteredReports = reports.filter(r => 
     r.activity?.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    r.description.toLowerCase().includes(searchTerm.toLowerCase())
+    r.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    r.account?.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const unverifiedReports = filteredReports.filter(r => r.status === 'Unverified');
 
   return (
     <div className="space-y-6">
@@ -275,12 +303,26 @@ const KeyActivityMain: React.FC = () => {
           </>
         )}
         {isAdmin && (
-          <button 
-            onClick={() => setActiveTab('all')}
-            className={`px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition-all border-b-2 ${activeTab === 'all' ? 'border-[#006E62] text-[#006E62]' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
-          >
-            Semua Aktivitas
-          </button>
+          <>
+            <button 
+              onClick={() => setActiveTab('all')}
+              className={`px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition-all border-b-2 ${activeTab === 'all' ? 'border-[#006E62] text-[#006E62]' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+            >
+              Semua Aktivitas
+            </button>
+            <button 
+              onClick={() => setActiveTab('verify')}
+              className={`px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition-all border-b-2 ${activeTab === 'verify' ? 'border-blue-500 text-blue-500' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+            >
+              Verifikasi Laporan ({unverifiedReports.length})
+            </button>
+            <button 
+              onClick={() => setActiveTab('history')}
+              className={`px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition-all border-b-2 ${activeTab === 'history' ? 'border-[#006E62] text-[#006E62]' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+            >
+              Riwayat Masuk
+            </button>
+          </>
         )}
       </div>
 
@@ -346,7 +388,10 @@ const KeyActivityMain: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {activeTab === 'history' && filteredReports.map(report => (
-                <ReportCard key={report.id} report={report} />
+                <ReportCard key={report.id} report={report} isAdmin={isAdmin} onVerify={() => { setSelectedReport(report); setShowVerifyForm(true); }} />
+              ))}
+              {activeTab === 'verify' && unverifiedReports.map(report => (
+                <ReportCard key={report.id} report={report} isAdmin={isAdmin} onVerify={() => { setSelectedReport(report); setShowVerifyForm(true); }} />
               ))}
               {activeTab === 'all' && filteredActivities.map(activity => (
                 <ActivityCard 
@@ -386,10 +431,20 @@ const KeyActivityMain: React.FC = () => {
         />
       )}
 
+      {showVerifyForm && selectedReport && (
+        <KeyActivityVerifyForm 
+          report={selectedReport}
+          onClose={() => { setShowVerifyForm(false); setSelectedReport(null); }}
+          onSubmit={handleVerify}
+        />
+      )}
+
       {showDetail && selectedActivity && (
         <KeyActivityDetail 
           activity={selectedActivity}
           reports={reports.filter(r => r.activity_id === selectedActivity.id)}
+          isAdmin={isAdmin}
+          onVerify={(report) => { setSelectedReport(report); setShowVerifyForm(true); }}
           onClose={() => { setShowDetail(false); setSelectedActivity(null); }}
         />
       )}
@@ -438,23 +493,48 @@ const TaskCard: React.FC<{ activity: KeyActivity, dueDate: string, isBacklog?: b
   </div>
 );
 
-const ReportCard: React.FC<{ report: KeyActivityReport }> = ({ report }) => (
+const ReportCard: React.FC<{ report: KeyActivityReport, isAdmin?: boolean, onVerify?: () => void }> = ({ report, isAdmin, onVerify }) => (
   <div className="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm hover:shadow-md transition-all border-l-4 border-l-transparent hover:border-l-[#006E62] group flex flex-col h-full">
     <div className="flex justify-between items-start mb-4">
-      <h4 className="text-sm font-bold text-gray-800 leading-tight group-hover:text-[#006E62] transition-colors">{report.activity?.title}</h4>
+      <div className="flex flex-col">
+        {isAdmin && (
+          <div className="flex items-center gap-1.5 mb-1">
+            <User size={10} className="text-gray-400" />
+            <span className="text-[10px] font-bold text-[#006E62] uppercase">{report.account?.full_name}</span>
+          </div>
+        )}
+        <h4 className="text-sm font-bold text-gray-800 leading-tight group-hover:text-[#006E62] transition-colors">{report.activity?.title}</h4>
+      </div>
       <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${report.status === 'Verified' ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'}`}>
         {report.status}
       </span>
     </div>
     <p className="text-[11px] text-gray-500 italic line-clamp-2 mb-4 flex-1">"{report.description}"</p>
+    
+    {report.status === 'Verified' && report.verification_data && (
+      <div className="mb-4 p-2 bg-emerald-50 rounded-xl flex items-center justify-between">
+        <span className="text-[9px] font-bold text-emerald-600 uppercase">Skor: {report.verification_data.score}%</span>
+        <CheckCircle2 size={12} className="text-emerald-600" />
+      </div>
+    )}
+
     <div className="pt-4 border-t border-gray-50 flex items-center justify-between mt-auto">
       <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase">
         <Calendar size={12} />
         <span>Due: {new Date(report.due_date + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</span>
       </div>
-      <div className="text-[9px] text-gray-400 font-medium">
-        Dilapor: {new Date(report.reported_at).toLocaleDateString('id-ID')}
-      </div>
+      {isAdmin && report.status === 'Unverified' ? (
+        <button 
+          onClick={onVerify}
+          className="px-3 py-1.5 bg-[#006E62] text-white rounded-lg text-[9px] font-bold uppercase hover:bg-[#005a50] transition-all flex items-center gap-1.5"
+        >
+          <CheckCircle2 size={12} /> Verifikasi
+        </button>
+      ) : (
+        <div className="text-[9px] text-gray-400 font-medium">
+          Dilapor: {new Date(report.reported_at).toLocaleDateString('id-ID')}
+        </div>
+      )}
     </div>
   </div>
 );

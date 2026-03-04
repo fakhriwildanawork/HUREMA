@@ -105,6 +105,16 @@ export const keyActivityService = {
     return data || [];
   },
 
+  async getAllReports(): Promise<KeyActivityReport[]> {
+    const { data, error } = await supabase
+      .from('key_activity_reports')
+      .select('*, activity:key_activities(*), account:accounts(full_name, internal_nik)')
+      .order('reported_at', { ascending: false });
+    
+    if (error) throw error;
+    return data || [];
+  },
+
   async submitReport(input: KeyActivityReportInput): Promise<void> {
     const { error } = await supabase
       .from('key_activity_reports')

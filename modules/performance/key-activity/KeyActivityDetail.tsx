@@ -6,9 +6,11 @@ interface KeyActivityDetailProps {
   onClose: () => void;
   activity: KeyActivity;
   reports: KeyActivityReport[];
+  isAdmin?: boolean;
+  onVerify?: (report: KeyActivityReport) => void;
 }
 
-const KeyActivityDetail: React.FC<KeyActivityDetailProps> = ({ onClose, activity, reports }) => {
+const KeyActivityDetail: React.FC<KeyActivityDetailProps> = ({ onClose, activity, reports, isAdmin, onVerify }) => {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden animate-in zoom-in duration-200 flex flex-col max-h-[90vh]">
@@ -158,13 +160,29 @@ const KeyActivityDetail: React.FC<KeyActivityDetailProps> = ({ onClose, activity
                     )}
 
                     <div className="pt-3 border-t border-gray-50 flex items-center justify-between text-[9px] text-gray-400 font-medium">
-                      <span>Dilaporkan pada: {new Date(report.reported_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-                      {report.status === 'Verified' && report.verification_data && (
+                      <div className="flex flex-col gap-1">
+                        {isAdmin && report.account && (
+                          <div className="flex items-center gap-1 text-[#006E62] font-bold uppercase">
+                            <User size={10} />
+                            <span>{report.account.full_name}</span>
+                          </div>
+                        )}
+                        <span>Dilaporkan pada: {new Date(report.reported_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                      
+                      {report.status === 'Verified' && report.verification_data ? (
                         <div className="flex items-center gap-1 text-emerald-600 font-bold uppercase">
                           <CheckCircle2 size={10} />
                           <span>Skor: {report.verification_data.score}%</span>
                         </div>
-                      )}
+                      ) : isAdmin && onVerify ? (
+                        <button 
+                          onClick={() => onVerify(report)}
+                          className="px-3 py-1.5 bg-[#006E62] text-white rounded-lg text-[9px] font-bold uppercase hover:bg-[#005a50] transition-all flex items-center gap-1.5"
+                        >
+                          <CheckCircle2 size={10} /> Verifikasi
+                        </button>
+                      ) : null}
                     </div>
                   </div>
                 ))}
