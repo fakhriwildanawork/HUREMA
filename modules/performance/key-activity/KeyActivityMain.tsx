@@ -6,6 +6,7 @@ import { authService } from '../../../services/authService';
 import { KeyActivity, KeyActivityReport, AuthUser } from '../../../types';
 import KeyActivityForm from './KeyActivityForm';
 import KeyActivityReportForm from './KeyActivityReportForm';
+import KeyActivityDetail from './KeyActivityDetail';
 import LoadingSpinner from '../../../components/Common/LoadingSpinner';
 import { CardSkeleton } from '../../../components/Common/Skeleton';
 
@@ -19,6 +20,7 @@ const KeyActivityMain: React.FC = () => {
   const [selectedActivity, setSelectedActivity] = useState<KeyActivity | null>(null);
   const [selectedDueDate, setSelectedDueDate] = useState<string | null>(null);
   const [showReportForm, setShowReportForm] = useState(false);
+  const [showDetail, setShowDetail] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [activeTab, setActiveTab] = useState<'today' | 'backlog' | 'history' | 'all'>('today');
 
@@ -144,6 +146,18 @@ const KeyActivityMain: React.FC = () => {
 
   const { backlog, todayTasks } = getTasks();
 
+  const calculatePerformanceScore = () => {
+    const verifiedReports = reports.filter(r => r.status === 'Verified');
+    if (verifiedReports.length === 0) return 0;
+    
+    const totalWeightedScore = verifiedReports.reduce((sum, r) => sum + (r.verification_data?.score || 0) * (r.activity?.weight || 1), 0);
+    const totalWeight = verifiedReports.reduce((sum, r) => sum + (r.activity?.weight || 1), 0);
+    
+    return Math.round(totalWeightedScore / totalWeight);
+  };
+
+  const performanceScore = calculatePerformanceScore();
+
   const filteredActivities = activities.filter(a => 
     a.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
     a.description.toLowerCase().includes(searchTerm.toLowerCase())
@@ -195,6 +209,47 @@ const KeyActivityMain: React.FC = () => {
         </div>
       </div>
 
+      {!isAdmin && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-[#006E62]">
+              <BarChart3 size={24} />
+            </div>
+            <div>
+              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Performance Score</p>
+              <p className="text-2xl font-bold text-[#006E62]">{performanceScore}%</p>
+            </div>
+          </div>
+          <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600">
+              <AlertTriangle size={24} />
+            </div>
+            <div>
+              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Backlog Tasks</p>
+              <p className="text-2xl font-bold text-rose-600">{backlog.length}</p>
+            </div>
+          </div>
+          <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600">
+              <Clock size={24} />
+            </div>
+            <div>
+              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Today Tasks</p>
+              <p className="text-2xl font-bold text-amber-600">{todayTasks.length}</p>
+            </div>
+          </div>
+          <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+              <History size={24} />
+            </div>
+            <div>
+              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Total Activities</p>
+              <p className="text-2xl font-bold text-blue-600">{activities.length}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="flex items-center gap-2 border-b border-gray-100 pb-px">
         {!isAdmin && (
@@ -234,35 +289,83 @@ const KeyActivityMain: React.FC = () => {
           {[1, 2, 3].map(i => <CardSkeleton key={i} />)}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {activeTab === 'today' && filteredTodayTasks.map(task => (
-            <TaskCard 
-              key={`${task.activity.id}-${task.dueDate}`}
-              activity={task.activity}
-              dueDate={task.dueDate}
-              onReport={() => { setSelectedActivity(task.activity); setSelectedDueDate(task.dueDate); setShowReportForm(true); }}
-            />
-          ))}
-          {activeTab === 'backlog' && filteredBacklog.map(task => (
-            <TaskCard 
-              key={`${task.activity.id}-${task.dueDate}`}
-              activity={task.activity}
-              dueDate={task.dueDate}
-              isBacklog
-              onReport={() => { setSelectedActivity(task.activity); setSelectedDueDate(task.dueDate); setShowReportForm(true); }}
-            />
-          ))}
-          {activeTab === 'history' && filteredReports.map(report => (
-            <ReportCard key={report.id} report={report} />
-          ))}
-          {activeTab === 'all' && filteredActivities.map(activity => (
-            <ActivityCard 
-              key={activity.id} 
-              activity={activity} 
-              onEdit={() => { setSelectedActivity(activity); setShowForm(true); }}
-              onDelete={() => handleDelete(activity.id)}
-            />
-          ))}
+        <div className="space-y-8">
+          {/* Section: Urgent Attention (User) */}
+          {!isAdmin && (todayTasks.length > 0 || backlog.length > 0) && (activeTab === 'today' || activeTab === 'backlog') && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <AlertTriangle size={16} className="text-rose-500" />
+                <h3 className="text-xs font-bold text-gray-800 uppercase tracking-widest">Butuh Perhatian Segera</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {activeTab === 'today' && filteredTodayTasks.map(task => (
+                  <TaskCard 
+                    key={`${task.activity.id}-${task.dueDate}`}
+                    activity={task.activity}
+                    dueDate={task.dueDate}
+                    onReport={() => { setSelectedActivity(task.activity); setSelectedDueDate(task.dueDate); setShowReportForm(true); }}
+                    onView={() => { setSelectedActivity(task.activity); setShowDetail(true); }}
+                  />
+                ))}
+                {activeTab === 'backlog' && filteredBacklog.map(task => (
+                  <TaskCard 
+                    key={`${task.activity.id}-${task.dueDate}`}
+                    activity={task.activity}
+                    dueDate={task.dueDate}
+                    isBacklog
+                    onReport={() => { setSelectedActivity(task.activity); setSelectedDueDate(task.dueDate); setShowReportForm(true); }}
+                    onView={() => { setSelectedActivity(task.activity); setShowDetail(true); }}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Section: Main Content */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Target size={16} className="text-[#006E62]" />
+              <h3 className="text-xs font-bold text-gray-800 uppercase tracking-widest">
+                {isAdmin ? 'Semua Daftar Key Activity Pegawai' : 'Daftar Aktivitas & Riwayat'}
+              </h3>
+            </div>
+            
+            {activeTab === 'history' && filteredReports.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-20 text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                <History size={48} strokeWidth={1} className="mb-4 opacity-20" />
+                <p className="text-sm font-bold uppercase tracking-widest">Belum ada riwayat laporan</p>
+              </div>
+            )}
+
+            {activeTab === 'all' && filteredActivities.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-20 text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                <Target size={48} strokeWidth={1} className="mb-4 opacity-20" />
+                <p className="text-sm font-bold uppercase tracking-widest">Belum ada data aktivitas</p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {activeTab === 'history' && filteredReports.map(report => (
+                <ReportCard key={report.id} report={report} />
+              ))}
+              {activeTab === 'all' && filteredActivities.map(activity => (
+                <ActivityCard 
+                  key={activity.id} 
+                  activity={activity} 
+                  onEdit={() => { setSelectedActivity(activity); setShowForm(true); }}
+                  onView={() => { setSelectedActivity(activity); setShowDetail(true); }}
+                  onDelete={() => handleDelete(activity.id)}
+                />
+              ))}
+              {/* Fallback for empty Today/Backlog if not shown in urgent section */}
+              {activeTab === 'today' && todayTasks.length === 0 && (
+                <div className="col-span-full flex flex-col items-center justify-center py-20 text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                  <CheckCircle2 size={48} strokeWidth={1} className="mb-4 opacity-20" />
+                  <p className="text-sm font-bold uppercase tracking-widest">Semua tugas hari ini sudah selesai!</p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
@@ -282,12 +385,20 @@ const KeyActivityMain: React.FC = () => {
           onSubmit={handleReport}
         />
       )}
+
+      {showDetail && selectedActivity && (
+        <KeyActivityDetail 
+          activity={selectedActivity}
+          reports={reports.filter(r => r.activity_id === selectedActivity.id)}
+          onClose={() => { setShowDetail(false); setSelectedActivity(null); }}
+        />
+      )}
     </div>
   );
 };
 
-const TaskCard: React.FC<{ activity: KeyActivity, dueDate: string, isBacklog?: boolean, onReport: () => void }> = ({ activity, dueDate, isBacklog, onReport }) => (
-  <div className={`bg-white border p-5 rounded-2xl shadow-sm hover:shadow-md transition-all border-l-4 ${isBacklog ? 'border-l-rose-500' : 'border-l-[#006E62]'} flex flex-col h-full`}>
+const TaskCard: React.FC<{ activity: KeyActivity, dueDate: string, isBacklog?: boolean, onReport: () => void, onView: () => void }> = ({ activity, dueDate, isBacklog, onReport, onView }) => (
+  <div className={`bg-white border p-5 rounded-2xl shadow-sm hover:shadow-md transition-all border-l-4 ${isBacklog ? 'border-l-rose-500 hover:border-l-rose-600' : 'border-l-[#006E62] hover:border-l-[#005a50]'} flex flex-col h-full group`}>
     <div className="flex justify-between items-start mb-4">
       <div className="flex flex-col">
         <div className="flex items-center gap-1.5 mb-1">
@@ -296,11 +407,20 @@ const TaskCard: React.FC<{ activity: KeyActivity, dueDate: string, isBacklog?: b
             {isBacklog ? 'Terlewat' : 'Hari Ini'}
           </span>
         </div>
-        <h4 className="text-sm font-bold text-gray-800 leading-tight">{activity.title}</h4>
+        <h4 className="text-sm font-bold text-gray-800 leading-tight group-hover:text-[#006E62] transition-colors">{activity.title}</h4>
       </div>
-      <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${isBacklog ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>
-        {activity.recurrence_type}
-      </span>
+      <div className="flex flex-col items-end gap-2">
+        <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${isBacklog ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>
+          {activity.recurrence_type}
+        </span>
+        <button 
+          onClick={onView}
+          className="p-1.5 text-gray-400 hover:text-[#006E62] hover:bg-emerald-50 rounded-lg transition-all"
+          title="Lihat Detail"
+        >
+          <Eye size={14} />
+        </button>
+      </div>
     </div>
     <p className="text-[11px] text-gray-500 line-clamp-2 mb-4 flex-1">"{activity.description}"</p>
     <div className="pt-4 border-t border-gray-50 flex items-center justify-between mt-auto">
@@ -319,14 +439,14 @@ const TaskCard: React.FC<{ activity: KeyActivity, dueDate: string, isBacklog?: b
 );
 
 const ReportCard: React.FC<{ report: KeyActivityReport }> = ({ report }) => (
-  <div className="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm flex flex-col h-full">
+  <div className="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm hover:shadow-md transition-all border-l-4 border-l-transparent hover:border-l-[#006E62] group flex flex-col h-full">
     <div className="flex justify-between items-start mb-4">
-      <h4 className="text-sm font-bold text-gray-800 leading-tight">{report.activity?.title}</h4>
+      <h4 className="text-sm font-bold text-gray-800 leading-tight group-hover:text-[#006E62] transition-colors">{report.activity?.title}</h4>
       <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${report.status === 'Verified' ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'}`}>
         {report.status}
       </span>
     </div>
-    <p className="text-[11px] text-gray-500 italic line-clamp-2 mb-4">"{report.description}"</p>
+    <p className="text-[11px] text-gray-500 italic line-clamp-2 mb-4 flex-1">"{report.description}"</p>
     <div className="pt-4 border-t border-gray-50 flex items-center justify-between mt-auto">
       <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase">
         <Calendar size={12} />
@@ -339,13 +459,14 @@ const ReportCard: React.FC<{ report: KeyActivityReport }> = ({ report }) => (
   </div>
 );
 
-const ActivityCard: React.FC<{ activity: KeyActivity, onEdit: () => void, onDelete: () => void }> = ({ activity, onEdit, onDelete }) => (
-  <div className="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col h-full group">
+const ActivityCard: React.FC<{ activity: KeyActivity, onEdit: () => void, onView: () => void, onDelete: () => void }> = ({ activity, onEdit, onView, onDelete }) => (
+  <div className="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm hover:shadow-md transition-all border-l-4 border-l-transparent hover:border-l-[#006E62] group flex flex-col h-full">
     <div className="flex justify-between items-start mb-4">
       <h4 className="text-sm font-bold text-gray-800 leading-tight group-hover:text-[#006E62] transition-colors">{activity.title}</h4>
       <div className="flex items-center gap-1">
-        <button onClick={onEdit} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"><Edit3 size={14} /></button>
-        <button onClick={onDelete} className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"><Trash2 size={14} /></button>
+        <button onClick={onEdit} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Edit"><Edit3 size={14} /></button>
+        <button onClick={onView} className="p-1.5 text-gray-400 hover:text-[#006E62] hover:bg-emerald-50 rounded-lg transition-all" title="Lihat Detail"><Eye size={14} /></button>
+        <button onClick={onDelete} className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all" title="Hapus"><Trash2 size={14} /></button>
       </div>
     </div>
     <p className="text-[11px] text-gray-500 line-clamp-2 mb-4 flex-1">"{activity.description}"</p>
