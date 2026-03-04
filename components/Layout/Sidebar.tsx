@@ -130,6 +130,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed,
             <div className={`mt-1 overflow-hidden transition-all duration-300 ${isCollapsed ? '' : 'max-h-96'}`}>
               <NavItem id="kpi" icon={Target} label="Key Performance Indicator" indent />
               <NavItem id="key_activity" icon={CheckSquare} label="Key Activities" indent />
+              <NavItem id="sales_report" icon={MapPin} label="Sales Report" indent />
             </div>
           )}
         </div>

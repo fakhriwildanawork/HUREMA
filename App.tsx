@@ -17,6 +17,7 @@ const PermissionMain = lazy(() => import('./modules/permission/PermissionMain'))
 const MaternityLeaveMain = lazy(() => import('./modules/maternity/MaternityLeaveMain'));
 const KPIMain = lazy(() => import('./modules/performance/kpi/KPIMain'));
 const KeyActivityMain = lazy(() => import('./modules/performance/key-activity/KeyActivityMain'));
+const SalesReportMain = lazy(() => import('./modules/performance/sales-report/SalesReportMain'));
 const MasterMain = lazy(() => import('./modules/settings/MasterMain'));
 const Login = lazy(() => import('./modules/auth/Login'));
 
@@ -25,7 +26,7 @@ import { AuthUser } from './types';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'document' | 'settings' | 'presence' | 'overtime' | 'submission' | 'leave' | 'annual_leave' | 'permission' | 'maternity_leave' | 'master_app' | 'kpi' | 'key_activity'>('presence');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'document' | 'settings' | 'presence' | 'overtime' | 'submission' | 'leave' | 'annual_leave' | 'permission' | 'maternity_leave' | 'master_app' | 'kpi' | 'key_activity' | 'sales_report'>('presence');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
@@ -113,6 +114,7 @@ const App: React.FC = () => {
               <NavItemMobile id="overtime" icon={Timer} label="Presensi Lembur" />
               <NavItemMobile id="kpi" icon={Target} label="KPI Performance" />
               <NavItemMobile id="key_activity" icon={CheckSquare} label="Key Activities" />
+              <NavItemMobile id="sales_report" icon={MapPin} label="Sales Report" />
               <NavItemMobile id="leave" icon={Plane} label="Libur Mandiri" />
               <NavItemMobile id="annual_leave" icon={Calendar} label="Cuti Tahunan" />
               <NavItemMobile id="permission" icon={ClipboardList} label="Izin" />
@@ -164,6 +166,8 @@ const App: React.FC = () => {
               <KPIMain />
             ) : activeTab === 'key_activity' ? (
               <KeyActivityMain />
+            ) : activeTab === 'sales_report' ? (
+              <SalesReportMain />
             ) : activeTab === 'master_app' ? (
               <MasterMain />
             ) : (

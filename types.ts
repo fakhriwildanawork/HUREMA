@@ -547,6 +547,27 @@ export interface KeyActivityReport {
   activity?: KeyActivity;
 }
 
+export interface SalesReport {
+  id: string;
+  account_id: string;
+  customer_name: string;
+  activity_type: 'Cold Call' | 'Site Survey' | 'Product Demo' | 'Offering' | 'Negotiation' | 'Closing' | 'Maintenance';
+  description: string;
+  latitude: number;
+  longitude: number;
+  address?: string;
+  photo_urls: string[];
+  reported_at: string;
+  created_at?: string;
+  updated_at?: string;
+  account?: {
+    full_name: string;
+    internal_nik: string;
+  };
+}
+
+export type SalesReportInput = Omit<SalesReport, 'id' | 'created_at' | 'updated_at' | 'account' | 'reported_at'>;
+
 export type KeyActivityInput = Omit<KeyActivity, 'id' | 'created_at' | 'updated_at' | 'status' | 'assignments'> & {
   assigned_account_ids: string[];
 };
