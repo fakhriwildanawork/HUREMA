@@ -44,3 +44,52 @@ CREATE TABLE IF NOT EXISTS key_activity_reports (
 CREATE INDEX IF NOT EXISTS idx_key_activity_reports_due_date ON key_activity_reports(due_date);
 CREATE INDEX IF NOT EXISTS idx_key_activity_reports_account_id ON key_activity_reports(account_id);
 CREATE INDEX IF NOT EXISTS idx_key_activity_assignments_account_id ON key_activity_assignments(account_id);
+
+-- Enable RLS
+ALTER TABLE key_activities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE key_activity_assignments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE key_activity_reports ENABLE ROW LEVEL SECURITY;
+
+-- Policies for key_activities
+CREATE POLICY "Enable read access for all authenticated users" ON key_activities
+    FOR SELECT USING (auth.role() = 'authenticated');
+
+CREATE POLICY "Enable insert for admins only" ON key_activities
+    FOR INSERT WITH CHECK (
+        EXISTS (SELECT 1 FROM accounts WHERE id = auth.uid() AND role = 'admin')
+    );
+
+CREATE POLICY "Enable update for admins only" ON key_activities
+    FOR UPDATE USING (
+        EXISTS (SELECT 1 FROM accounts WHERE id = auth.uid() AND role = 'admin')
+    );
+
+CREATE POLICY "Enable delete for admins only" ON key_activities
+    FOR DELETE USING (
+        EXISTS (SELECT 1 FROM accounts WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- Policies for key_activity_assignments
+CREATE POLICY "Enable read for authenticated users" ON key_activity_assignments
+    FOR SELECT USING (auth.role() = 'authenticated');
+
+CREATE POLICY "Enable all for admins" ON key_activity_assignments
+    FOR ALL USING (
+        EXISTS (SELECT 1 FROM accounts WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- Policies for key_activity_reports
+CREATE POLICY "Enable read for owner and admins" ON key_activity_reports
+    FOR SELECT USING (
+        account_id = auth.uid() OR 
+        EXISTS (SELECT 1 FROM accounts WHERE id = auth.uid() AND role = 'admin')
+    );
+
+CREATE POLICY "Enable insert for owner" ON key_activity_reports
+    FOR INSERT WITH CHECK (account_id = auth.uid());
+
+CREATE POLICY "Enable update for owner and admins" ON key_activity_reports
+    FOR UPDATE USING (
+        account_id = auth.uid() OR 
+        EXISTS (SELECT 1 FROM accounts WHERE id = auth.uid() AND role = 'admin')
+    );

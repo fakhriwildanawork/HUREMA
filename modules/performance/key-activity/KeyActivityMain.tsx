@@ -27,6 +27,9 @@ const KeyActivityMain: React.FC = () => {
   useEffect(() => {
     const currentUser = authService.getCurrentUser();
     setUser(currentUser);
+    if (currentUser?.role === 'admin') {
+      setActiveTab('all');
+    }
     fetchData(currentUser);
   }, []);
 
@@ -141,6 +144,24 @@ const KeyActivityMain: React.FC = () => {
 
   const { backlog, todayTasks } = getTasks();
 
+  const filteredActivities = activities.filter(a => 
+    a.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    a.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredTodayTasks = todayTasks.filter(t => 
+    t.activity.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredBacklog = backlog.filter(b => 
+    b.activity.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredReports = reports.filter(r => 
+    r.activity?.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    r.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="space-y-6">
       {isSaving && <LoadingSpinner message="Memproses Data..." />}
@@ -214,7 +235,7 @@ const KeyActivityMain: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {activeTab === 'today' && todayTasks.map(task => (
+          {activeTab === 'today' && filteredTodayTasks.map(task => (
             <TaskCard 
               key={`${task.activity.id}-${task.dueDate}`}
               activity={task.activity}
@@ -222,7 +243,7 @@ const KeyActivityMain: React.FC = () => {
               onReport={() => { setSelectedActivity(task.activity); setSelectedDueDate(task.dueDate); setShowReportForm(true); }}
             />
           ))}
-          {activeTab === 'backlog' && backlog.map(task => (
+          {activeTab === 'backlog' && filteredBacklog.map(task => (
             <TaskCard 
               key={`${task.activity.id}-${task.dueDate}`}
               activity={task.activity}
@@ -231,10 +252,10 @@ const KeyActivityMain: React.FC = () => {
               onReport={() => { setSelectedActivity(task.activity); setSelectedDueDate(task.dueDate); setShowReportForm(true); }}
             />
           ))}
-          {activeTab === 'history' && reports.map(report => (
+          {activeTab === 'history' && filteredReports.map(report => (
             <ReportCard key={report.id} report={report} />
           ))}
-          {activeTab === 'all' && activities.map(activity => (
+          {activeTab === 'all' && filteredActivities.map(activity => (
             <ActivityCard 
               key={activity.id} 
               activity={activity} 
