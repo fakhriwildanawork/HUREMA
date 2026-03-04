@@ -557,6 +557,7 @@ export interface SalesReport {
   longitude: number;
   address?: string;
   photo_urls: string[];
+  file_ids: string[];
   reported_at: string;
   created_at?: string;
   updated_at?: string;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, MapPin, Calendar, User, Info, Camera, Link as LinkIcon, ExternalLink, Navigation } from 'lucide-react';
+import { X, MapPin, Calendar, User, Info, Camera, Link as LinkIcon, ExternalLink, Navigation, FileText } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -144,12 +144,49 @@ const SalesReportDetail: React.FC<SalesReportDetailProps> = ({ report, onClose }
                 </MapContainer>
               </div>
 
-              <div className="p-3 bg-blue-50 rounded-xl flex items-start gap-3">
-                <Info size={16} className="text-blue-500 shrink-0 mt-0.5" />
-                <p className="text-[9px] text-blue-700 leading-relaxed font-medium">
-                  Titik koordinat diambil secara otomatis menggunakan GPS perangkat sales saat laporan dikirimkan.
-                </p>
+              <div className="p-3 bg-blue-50 rounded-xl space-y-3">
+                <div className="flex items-start gap-3">
+                  <Info size={16} className="text-blue-500 shrink-0 mt-0.5" />
+                  <p className="text-[9px] text-blue-700 leading-relaxed font-medium">
+                    Titik koordinat diambil secara otomatis menggunakan GPS perangkat sales saat laporan dikirimkan.
+                  </p>
+                </div>
+                {report.address && (
+                  <div className="pt-2 border-t border-blue-100 flex items-start gap-2">
+                    <MapPin size={14} className="text-blue-500 shrink-0 mt-0.5" />
+                    <p className="text-[10px] text-blue-800 font-bold leading-tight">{report.address}</p>
+                  </div>
+                )}
               </div>
+
+              {/* Attached Files */}
+              {report.file_ids && report.file_ids.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest px-1">Dokumen Terlampir ({report.file_ids.length})</p>
+                  <div className="space-y-2">
+                    {report.file_ids.map((id, idx) => (
+                      <a 
+                        key={idx}
+                        href={`https://drive.google.com/file/d/${id}/view`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-xl hover:bg-emerald-50 hover:border-emerald-200 transition-all group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-[#006E62] shadow-sm">
+                            <FileText size={16} />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-bold text-gray-700">Lampiran Dokumen {idx + 1}</p>
+                            <p className="text-[8px] text-gray-400 font-medium uppercase tracking-tighter">Google Drive File</p>
+                          </div>
+                        </div>
+                        <ExternalLink size={14} className="text-gray-300 group-hover:text-[#006E62]" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

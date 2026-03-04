@@ -1,4 +1,6 @@
 -- Create sales_reports table
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 CREATE TABLE IF NOT EXISTS public.sales_reports (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     account_id UUID NOT NULL REFERENCES public.accounts(id) ON DELETE CASCADE,
@@ -9,6 +11,7 @@ CREATE TABLE IF NOT EXISTS public.sales_reports (
     longitude DOUBLE PRECISION NOT NULL,
     address TEXT,
     photo_urls TEXT[] DEFAULT '{}',
+    file_ids TEXT[] DEFAULT '{}',
     reported_at TIMESTAMPTZ DEFAULT NOW(),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
