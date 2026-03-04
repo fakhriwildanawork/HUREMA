@@ -15,8 +15,8 @@ const KPIForm: React.FC<KPIFormProps> = ({ onClose, onSubmit, initialData }) => 
     title: initialData?.title || '',
     description: initialData?.description || '',
     weight: initialData?.weight || 1,
-    start_date: initialData?.start_date || new Date().toISOString().split('T')[0],
-    deadline: initialData?.deadline || new Date().toISOString().split('T')[0],
+    start_date: initialData?.start_date || new Date().toLocaleDateString('en-CA'),
+    deadline: initialData?.deadline || new Date().toLocaleDateString('en-CA'),
     supporting_links: initialData?.supporting_links || []
   });
 
@@ -49,7 +49,7 @@ const KPIForm: React.FC<KPIFormProps> = ({ onClose, onSubmit, initialData }) => 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (new Date(formData.start_date) > new Date(formData.deadline)) {
+    if (new Date(formData.start_date + 'T00:00:00') > new Date(formData.deadline + 'T00:00:00')) {
       alert('Tanggal mulai tidak boleh lebih besar dari deadline.');
       return;
     }

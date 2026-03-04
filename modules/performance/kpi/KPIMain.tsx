@@ -40,7 +40,7 @@ const KPIMain: React.FC = () => {
         : await kpiService.getByAccountId(currentUser.id);
       
       // Auto-update status to Unreported if deadline passed and still Active
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date().toLocaleDateString('en-CA');
       const updatedData = data.map(k => {
         if (k.status === 'Active' && k.deadline < today) {
           return { ...k, status: 'Unreported' as const };
@@ -163,8 +163,8 @@ const KPIMain: React.FC = () => {
     return searchStr.includes(searchTerm.toLowerCase());
   });
 
-  const today = new Date().toISOString().split('T')[0];
-  const threeDaysLater = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const today = new Date().toLocaleDateString('en-CA');
+  const threeDaysLater = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
 
   const upcomingKPIs = filteredKPIs.filter(k => k.start_date > today && k.status === 'Active');
   const warningKPIs = filteredKPIs.filter(k => k.deadline <= threeDaysLater && k.deadline > today && k.status === 'Active');
@@ -426,7 +426,7 @@ const KPICard: React.FC<KPICardProps> = ({ kpi, isAdmin, onReport, onVerify, onE
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase">
             <Calendar size={12} />
-            <span>{new Date(kpi.deadline).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+            <span>{new Date(kpi.deadline + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
           </div>
           <div className="flex items-center gap-1 text-[10px] font-bold text-[#006E62] uppercase">
             <Target size={12} />

@@ -74,14 +74,14 @@ const KPIDetail: React.FC<KPIDetailProps> = ({ onClose, kpi }) => {
                   <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Mulai</p>
                   <div className="flex items-center gap-1.5 text-[10px] font-bold text-gray-600">
                     <Calendar size={12} />
-                    <span>{new Date(kpi.start_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                    <span>{new Date(kpi.start_date + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                   </div>
                 </div>
                 <div className="flex-1 p-2 bg-gray-50 rounded-xl border border-gray-100">
                   <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Deadline</p>
                   <div className="flex items-center gap-1.5 text-[10px] font-bold text-rose-600">
                     <Clock size={12} />
-                    <span>{new Date(kpi.deadline).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                    <span>{new Date(kpi.deadline + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                   </div>
                 </div>
               </div>
