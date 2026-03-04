@@ -59,7 +59,7 @@ const KeyActivityReportForm: React.FC<KeyActivityReportFormProps> = ({ activityT
             <div className="flex items-center gap-2">
               <Calendar size={14} className="text-rose-500" />
               <p className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">
-                Untuk Tanggal: {new Date(dueDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                Untuk Tanggal: {new Date(dueDate + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
               </p>
             </div>
           </div>

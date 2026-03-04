@@ -116,7 +116,7 @@ const KeyActivityMain: React.FC = () => {
     }
   };
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in local time
 
   // Logic to calculate backlog and today's tasks for current user
   const getTasks = () => {
@@ -306,7 +306,7 @@ const TaskCard: React.FC<{ activity: KeyActivity, dueDate: string, isBacklog?: b
     <div className="pt-4 border-t border-gray-50 flex items-center justify-between mt-auto">
       <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase">
         <Calendar size={12} />
-        <span>{new Date(dueDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</span>
+        <span>{new Date(dueDate + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</span>
       </div>
       <button 
         onClick={onReport}
@@ -330,7 +330,7 @@ const ReportCard: React.FC<{ report: KeyActivityReport }> = ({ report }) => (
     <div className="pt-4 border-t border-gray-50 flex items-center justify-between mt-auto">
       <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase">
         <Calendar size={12} />
-        <span>Due: {new Date(report.due_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</span>
+        <span>Due: {new Date(report.due_date + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</span>
       </div>
       <div className="text-[9px] text-gray-400 font-medium">
         Dilapor: {new Date(report.reported_at).toLocaleDateString('id-ID')}

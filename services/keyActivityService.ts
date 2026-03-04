@@ -133,9 +133,9 @@ export const keyActivityService = {
   // Helper to generate expected due dates for an activity up to a certain date
   generateDueDates(activity: KeyActivity, untilDate: string): string[] {
     const dates: string[] = [];
-    const start = new Date(activity.start_date);
-    const end = new Date(activity.end_date);
-    const until = new Date(untilDate);
+    const start = new Date(activity.start_date + 'T00:00:00');
+    const end = new Date(activity.end_date + 'T00:00:00');
+    const until = new Date(untilDate + 'T00:00:00');
     const limit = until < end ? until : end;
 
     let current = new Date(start);
