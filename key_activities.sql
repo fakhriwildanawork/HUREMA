@@ -56,17 +56,17 @@ CREATE POLICY "Enable read access for all authenticated users" ON key_activities
 
 CREATE POLICY "Enable insert for admins only" ON key_activities
     FOR INSERT WITH CHECK (
-        EXISTS (SELECT 1 FROM accounts WHERE id = auth.uid() AND role = 'admin')
+        EXISTS (SELECT 1 FROM accounts WHERE id = auth.uid() AND (access_code LIKE 'SP%' OR access_code LIKE '%ADM%'))
     );
 
 CREATE POLICY "Enable update for admins only" ON key_activities
     FOR UPDATE USING (
-        EXISTS (SELECT 1 FROM accounts WHERE id = auth.uid() AND role = 'admin')
+        EXISTS (SELECT 1 FROM accounts WHERE id = auth.uid() AND (access_code LIKE 'SP%' OR access_code LIKE '%ADM%'))
     );
 
 CREATE POLICY "Enable delete for admins only" ON key_activities
     FOR DELETE USING (
-        EXISTS (SELECT 1 FROM accounts WHERE id = auth.uid() AND role = 'admin')
+        EXISTS (SELECT 1 FROM accounts WHERE id = auth.uid() AND (access_code LIKE 'SP%' OR access_code LIKE '%ADM%'))
     );
 
 -- Policies for key_activity_assignments
@@ -75,14 +75,14 @@ CREATE POLICY "Enable read for authenticated users" ON key_activity_assignments
 
 CREATE POLICY "Enable all for admins" ON key_activity_assignments
     FOR ALL USING (
-        EXISTS (SELECT 1 FROM accounts WHERE id = auth.uid() AND role = 'admin')
+        EXISTS (SELECT 1 FROM accounts WHERE id = auth.uid() AND (access_code LIKE 'SP%' OR access_code LIKE '%ADM%'))
     );
 
 -- Policies for key_activity_reports
 CREATE POLICY "Enable read for owner and admins" ON key_activity_reports
     FOR SELECT USING (
         account_id = auth.uid() OR 
-        EXISTS (SELECT 1 FROM accounts WHERE id = auth.uid() AND role = 'admin')
+        EXISTS (SELECT 1 FROM accounts WHERE id = auth.uid() AND (access_code LIKE 'SP%' OR access_code LIKE '%ADM%'))
     );
 
 CREATE POLICY "Enable insert for owner" ON key_activity_reports
@@ -91,5 +91,5 @@ CREATE POLICY "Enable insert for owner" ON key_activity_reports
 CREATE POLICY "Enable update for owner and admins" ON key_activity_reports
     FOR UPDATE USING (
         account_id = auth.uid() OR 
-        EXISTS (SELECT 1 FROM accounts WHERE id = auth.uid() AND role = 'admin')
+        EXISTS (SELECT 1 FROM accounts WHERE id = auth.uid() AND (access_code LIKE 'SP%' OR access_code LIKE '%ADM%'))
     );

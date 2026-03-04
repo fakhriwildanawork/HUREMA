@@ -144,7 +144,7 @@ export const keyActivityService = {
     limit.setHours(0, 0, 0, 0);
 
     while (current <= limit) {
-      const dateStr = current.toISOString().split('T')[0];
+      const dateStr = current.toLocaleDateString('en-CA');
       
       let shouldInclude = false;
       switch (activity.recurrence_type) {
