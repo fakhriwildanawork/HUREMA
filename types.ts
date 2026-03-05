@@ -618,3 +618,40 @@ export interface Whistleblowing {
 }
 
 export type WhistleblowingInput = Omit<Whistleblowing, 'id' | 'created_at' | 'updated_at' | 'status' | 'account' | 'reported_accounts'>;
+
+export interface Meeting {
+  id: string;
+  title: string;
+  description: string;
+  scheduled_at: string;
+  started_at?: string;
+  ended_at?: string;
+  location_type: 'Online' | 'Offline';
+  location_detail: string; // URL for online, address for offline
+  latitude?: number;
+  longitude?: number;
+  participant_ids: string[];
+  notulen_ids: string[];
+  minutes_content?: string;
+  attachments: string[]; // Array of file IDs
+  links: string[]; // Array of URLs
+  status: 'Scheduled' | 'In Progress' | 'Completed' | 'Cancelled';
+  created_by: string;
+  created_at: string;
+  updated_at?: string;
+  creator?: {
+    full_name: string;
+  };
+  participants?: {
+    id: string;
+    full_name: string;
+    internal_nik: string;
+  }[];
+  notulens?: {
+    id: string;
+    full_name: string;
+    internal_nik: string;
+  }[];
+}
+
+export type MeetingInput = Omit<Meeting, 'id' | 'created_at' | 'updated_at' | 'creator' | 'participants' | 'notulens'>;
