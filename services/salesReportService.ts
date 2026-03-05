@@ -26,10 +26,7 @@ export const salesReportService = {
   async submitReport(input: SalesReportInput): Promise<void> {
     const { error } = await supabase
       .from('sales_reports')
-      .insert([{ 
-        ...input, 
-        reported_at: new Date().toISOString() 
-      }]);
+      .insert([input]);
     
     if (error) throw error;
   },
