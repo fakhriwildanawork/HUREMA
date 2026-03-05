@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { X, Send, Paperclip, Link as LinkIcon, Shield, ShieldOff, Trash2, Plus } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { X, Send, Paperclip, Link as LinkIcon, Shield, ShieldOff, Trash2, Plus, Loader2, Upload } from 'lucide-react';
+import { googleDriveService } from '../../services/googleDriveService';
 
 interface FeedbackFormProps {
   onClose: () => void;
@@ -12,7 +13,9 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ onClose, onSubmit }) => {
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [description, setDescription] = useState('');
   const [links, setLinks] = useState<string[]>(['']);
-  const [attachments, setAttachments] = useState<string[]>(['']);
+  const [attachments, setAttachments] = useState<string[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleAddLink = () => setLinks([...links, '']);
   const handleRemoveLink = (index: number) => setLinks(links.filter((_, i) => i !== index));
@@ -22,13 +25,25 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ onClose, onSubmit }) => {
     setLinks(newLinks);
   };
 
-  const handleAddAttachment = () => setAttachments([...attachments, '']);
-  const handleRemoveAttachment = (index: number) => setAttachments(attachments.filter((_, i) => i !== index));
-  const handleAttachmentChange = (index: number, value: string) => {
-    const newAttachments = [...attachments];
-    newAttachments[index] = value;
-    setAttachments(newAttachments);
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    try {
+      setIsUploading(true);
+      for (let i = 0; i < files.length; i++) {
+        const fileId = await googleDriveService.uploadFile(files[i]);
+        setAttachments(prev => [...prev, fileId]);
+      }
+    } catch (error) {
+      alert('Gagal mengunggah file.');
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
+
+  const handleRemoveAttachment = (index: number) => setAttachments(attachments.filter((_, i) => i !== index));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,29 +140,45 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ onClose, onSubmit }) => {
 
           <div className="space-y-4">
             <div className="flex items-center justify-between px-1">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Lampiran File (Google Drive ID)</label>
-              <button type="button" onClick={handleAddAttachment} className="text-[10px] font-bold text-[#006E62] uppercase flex items-center gap-1 hover:underline">
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Lampiran File</label>
+              <button 
+                type="button" 
+                onClick={() => fileInputRef.current?.click()} 
+                disabled={isUploading}
+                className="text-[10px] font-bold text-[#006E62] uppercase flex items-center gap-1 hover:underline disabled:opacity-50"
+              >
                 <Plus size={12} /> Tambah File
               </button>
+              <input 
+                ref={fileInputRef}
+                type="file"
+                multiple
+                onChange={handleFileUpload}
+                className="hidden"
+              />
             </div>
+
+            {isUploading && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 text-[#006E62] rounded-xl animate-pulse">
+                <Loader2 size={14} className="animate-spin" />
+                <span className="text-[10px] font-bold uppercase tracking-widest">Mengunggah File...</span>
+              </div>
+            )}
+
             <div className="space-y-2">
-              {attachments.map((att, idx) => (
-                <div key={idx} className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Paperclip className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" size={14} />
-                    <input 
-                      type="text"
-                      value={att}
-                      onChange={(e) => handleAttachmentChange(idx, e.target.value)}
-                      placeholder="Masukkan ID File Google Drive..."
-                      className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006E62]/20 text-xs font-medium"
-                    />
+              {attachments.map((fileId, idx) => (
+                <div key={idx} className="flex items-center justify-between px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl group">
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    <Paperclip size={12} className="text-gray-400 shrink-0" />
+                    <span className="text-[10px] text-gray-600 truncate">File ID: {fileId}</span>
                   </div>
-                  {attachments.length > 1 && (
-                    <button type="button" onClick={() => handleRemoveAttachment(idx)} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors">
-                      <Trash2 size={16} />
-                    </button>
-                  )}
+                  <button 
+                    type="button" 
+                    onClick={() => handleRemoveAttachment(idx)} 
+                    className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                  >
+                    <Trash2 size={14} />
+                  </button>
                 </div>
               ))}
             </div>
@@ -194,7 +225,8 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ onClose, onSubmit }) => {
           </button>
           <button 
             onClick={handleSubmit}
-            className="flex-2 py-3 bg-[#006E62] text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-[#005a50] transition-all shadow-lg shadow-[#006E62]/20 flex items-center justify-center gap-2"
+            disabled={isUploading}
+            className="flex-2 py-3 bg-[#006E62] text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-[#005a50] transition-all shadow-lg shadow-[#006E62]/20 flex items-center justify-center gap-2 disabled:opacity-50"
           >
             <Send size={16} />
             Kirim Sekarang
