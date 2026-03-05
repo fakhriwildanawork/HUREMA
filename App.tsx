@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
-import { X, LayoutDashboard, Users, MapPin, CalendarClock, Files, Settings, Database, Fingerprint, Timer, ClipboardCheck, Plane, Calendar, ClipboardList, Heart, Target, CheckSquare } from 'lucide-react';
+import { X, LayoutDashboard, Users, MapPin, CalendarClock, Files, Settings, Database, Fingerprint, Timer, ClipboardCheck, Plane, Calendar, ClipboardList, Heart, Target, CheckSquare, AlertTriangle } from 'lucide-react';
 import Sidebar from './components/Layout/Sidebar';
 import Header from './components/Layout/Header';
 
@@ -19,6 +19,7 @@ const KPIMain = lazy(() => import('./modules/performance/kpi/KPIMain'));
 const KeyActivityMain = lazy(() => import('./modules/performance/key-activity/KeyActivityMain'));
 const SalesReportMain = lazy(() => import('./modules/performance/sales-report/SalesReportMain'));
 const FeedbackMain = lazy(() => import('./modules/feedback/FeedbackMain'));
+const LaporMain = lazy(() => import('./modules/lapor/LaporMain'));
 const MasterMain = lazy(() => import('./modules/settings/MasterMain'));
 const Login = lazy(() => import('./modules/auth/Login'));
 
@@ -27,7 +28,7 @@ import { AuthUser } from './types';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'document' | 'settings' | 'presence' | 'overtime' | 'submission' | 'leave' | 'annual_leave' | 'permission' | 'maternity_leave' | 'master_app' | 'kpi' | 'key_activity' | 'sales_report' | 'feedback'>('presence');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'document' | 'settings' | 'presence' | 'overtime' | 'submission' | 'leave' | 'annual_leave' | 'permission' | 'maternity_leave' | 'master_app' | 'kpi' | 'key_activity' | 'sales_report' | 'feedback' | 'lapor'>('presence');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
@@ -117,6 +118,7 @@ const App: React.FC = () => {
               <NavItemMobile id="key_activity" icon={CheckSquare} label="Key Activities" />
               <NavItemMobile id="sales_report" icon={MapPin} label="Sales Report" />
               <NavItemMobile id="feedback" icon={ClipboardList} label="Feedback Pegawai" />
+              <NavItemMobile id="lapor" icon={AlertTriangle} label="Lapor Pelanggaran" />
               <NavItemMobile id="leave" icon={Plane} label="Libur Mandiri" />
               <NavItemMobile id="annual_leave" icon={Calendar} label="Cuti Tahunan" />
               <NavItemMobile id="permission" icon={ClipboardList} label="Izin" />
@@ -172,6 +174,8 @@ const App: React.FC = () => {
               <SalesReportMain />
             ) : activeTab === 'feedback' ? (
               <FeedbackMain />
+            ) : activeTab === 'lapor' ? (
+              <LaporMain />
             ) : activeTab === 'master_app' ? (
               <MasterMain />
             ) : (

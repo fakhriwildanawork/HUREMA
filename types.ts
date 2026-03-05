@@ -594,3 +594,27 @@ export interface Feedback {
 }
 
 export type FeedbackInput = Omit<Feedback, 'id' | 'created_at' | 'updated_at' | 'status' | 'account'>;
+
+export interface Whistleblowing {
+  id: string;
+  account_id: string;
+  category: 'Pencurian' | 'Perusakan' | 'Bullying' | 'Fraud' | 'Pelanggaran SOP' | 'Lainnya' | string;
+  description: string;
+  reported_account_ids: string[]; // Array of account IDs being reported
+  attachments: string[]; // Array of file IDs
+  links: string[]; // Array of URLs
+  status: 'Unread' | 'Read';
+  created_at: string;
+  updated_at?: string;
+  account?: {
+    full_name: string;
+    internal_nik: string;
+  };
+  reported_accounts?: {
+    id: string;
+    full_name: string;
+    internal_nik: string;
+  }[];
+}
+
+export type WhistleblowingInput = Omit<Whistleblowing, 'id' | 'created_at' | 'updated_at' | 'status' | 'account' | 'reported_accounts'>;
