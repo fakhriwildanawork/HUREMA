@@ -1,11 +1,10 @@
 -- Create sales_reports table
-SET search_path TO public;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 DROP TABLE IF EXISTS public.sales_reports CASCADE;
 
 CREATE TABLE public.sales_reports (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     account_id UUID NOT NULL REFERENCES public.accounts(id) ON DELETE CASCADE,
     customer_name TEXT NOT NULL,
     activity_type TEXT NOT NULL,

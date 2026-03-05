@@ -6,6 +6,7 @@ import { authService } from '../../../services/authService';
 import { SalesReport, AuthUser } from '../../../types';
 import SalesReportForm from './SalesReportForm';
 import SalesReportDetail from './SalesReportDetail';
+import SalesRouteMap from './SalesRouteMap';
 import LoadingSpinner from '../../../components/Common/LoadingSpinner';
 import { CardSkeleton } from '../../../components/Common/Skeleton';
 
@@ -17,6 +18,8 @@ const SalesReportMain: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [selectedReport, setSelectedReport] = useState<SalesReport | null>(null);
   const [showDetail, setShowDetail] = useState(false);
+  const [showRouteMap, setShowRouteMap] = useState(false);
+  const [routeMapReports, setRouteMapReports] = useState<SalesReport[]>([]);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [activeTab, setActiveTab] = useState<'today' | 'history' | 'all'>('today');
 
@@ -104,6 +107,28 @@ const SalesReportMain: React.FC = () => {
 
   const todayReports = filteredReports.filter(r => r.reported_at.startsWith(today));
   const historyReports = filteredReports.filter(r => !r.reported_at.startsWith(today));
+
+  // Grouping logic for Admin: Date -> Employee -> Reports
+  const adminGroupedReports = filteredReports.reduce((acc, report) => {
+    const dateKey = new Date(report.reported_at).toLocaleDateString('en-CA');
+    const accountId = report.account_id;
+    
+    if (!acc[dateKey]) {
+      acc[dateKey] = {};
+    }
+    
+    if (!acc[dateKey][accountId]) {
+      acc[dateKey][accountId] = {
+        accountName: report.account?.full_name || 'Unknown',
+        reports: []
+      };
+    }
+    
+    acc[dateKey][accountId].reports.push(report);
+    return acc;
+  }, {} as Record<string, Record<string, { accountName: string, reports: SalesReport[] }>>);
+
+  const sortedDates = Object.keys(adminGroupedReports).sort((a, b) => b.localeCompare(a));
 
   return (
     <div className="space-y-6">
@@ -213,16 +238,80 @@ const SalesReportMain: React.FC = () => {
             {activeTab === 'history' && historyReports.map(report => (
               <VisitCard key={report.id} report={report} onView={() => { setSelectedReport(report); setShowDetail(true); }} />
             ))}
-            {activeTab === 'all' && filteredReports.map(report => (
+            {activeTab === 'all' && !isAdmin && filteredReports.map(report => (
               <VisitCard 
                 key={report.id} 
                 report={report} 
-                isAdmin 
                 onView={() => { setSelectedReport(report); setShowDetail(true); }}
                 onDelete={() => handleDelete(report.id)}
               />
             ))}
           </div>
+
+          {activeTab === 'all' && isAdmin && (
+            <div className="space-y-8">
+              {sortedDates.map(dateKey => (
+                <div key={dateKey} className="space-y-4">
+                  <div className="flex items-center gap-3 px-4 py-2 bg-gray-50 rounded-xl border border-gray-100">
+                    <Calendar size={16} className="text-[#006E62]" />
+                    <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider">
+                      {new Date(dateKey).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </h3>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {Object.entries(adminGroupedReports[dateKey] || {}).map(([accountId, data]) => (
+                      <div key={accountId} className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+                        <div className="p-4 bg-emerald-50/50 border-b border-gray-100 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-[#006E62] text-white flex items-center justify-center text-xs font-bold">
+                              {(data as any).accountName.charAt(0)}
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-gray-800 leading-tight">{(data as any).accountName}</p>
+                              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{(data as any).reports.length} Kunjungan</p>
+                            </div>
+                          </div>
+                          <button 
+                            onClick={() => {
+                              setRouteMapReports((data as any).reports);
+                              setShowRouteMap(true);
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#006E62] text-white rounded-lg text-[9px] font-bold uppercase tracking-wider hover:bg-[#005a50] transition-all shadow-sm"
+                          >
+                            <Navigation size={12} />
+                            Lihat Rute
+                          </button>
+                        </div>
+                        
+                        <div className="p-4 space-y-3 flex-1">
+                          {((data as any).reports as SalesReport[]).sort((a, b) => new Date(a.reported_at).getTime() - new Date(b.reported_at).getTime()).map((report, idx) => (
+                            <div key={report.id} className="flex gap-3 group cursor-pointer" onClick={() => { setSelectedReport(report); setShowDetail(true); }}>
+                              <div className="flex flex-col items-center shrink-0">
+                                <div className="w-5 h-5 rounded-full border-2 border-[#006E62] bg-white flex items-center justify-center text-[8px] font-bold text-[#006E62] z-10">
+                                  {idx + 1}
+                                </div>
+                                {idx < (data as any).reports.length - 1 && <div className="w-0.5 flex-1 bg-gray-100 my-1"></div>}
+                              </div>
+                              <div className="pb-2">
+                                <div className="flex items-center justify-between gap-2 mb-0.5">
+                                  <p className="text-[11px] font-bold text-gray-800 group-hover:text-[#006E62] transition-colors">{report.customer_name}</p>
+                                  <span className="text-[9px] text-gray-400 font-medium whitespace-nowrap">
+                                    {new Date(report.reported_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                </div>
+                                <p className="text-[10px] text-gray-400 line-clamp-1 italic">"{report.description}"</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           {((activeTab === 'today' && todayReports.length === 0) || 
             (activeTab === 'history' && historyReports.length === 0) || 
@@ -246,6 +335,17 @@ const SalesReportMain: React.FC = () => {
         <SalesReportDetail 
           report={selectedReport}
           onClose={() => { setShowDetail(false); setSelectedReport(null); }}
+        />
+      )}
+
+      {showRouteMap && routeMapReports.length > 0 && (
+        <SalesRouteMap 
+          reports={routeMapReports}
+          onClose={() => { setShowRouteMap(false); setRouteMapReports([]); }}
+          onViewDetail={(report) => {
+            setSelectedReport(report);
+            setShowDetail(true);
+          }}
         />
       )}
     </div>
