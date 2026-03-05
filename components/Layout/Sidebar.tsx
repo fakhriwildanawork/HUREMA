@@ -131,6 +131,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed,
               <NavItem id="kpi" icon={Target} label="Key Performance Indicator" indent />
               <NavItem id="key_activity" icon={CheckSquare} label="Key Activities" indent />
               <NavItem id="sales_report" icon={MapPin} label="Sales Report" indent />
+              <NavItem id="feedback" icon={ClipboardList} label="Feedback Pegawai" indent />
             </div>
           )}
         </div>

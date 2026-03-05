@@ -574,3 +574,23 @@ export type KeyActivityInput = Omit<KeyActivity, 'id' | 'created_at' | 'updated_
 };
 
 export type KeyActivityReportInput = Omit<KeyActivityReport, 'id' | 'created_at' | 'updated_at' | 'status' | 'verification_data' | 'account' | 'activity' | 'reported_at'>;
+
+export interface Feedback {
+  id: string;
+  account_id: string;
+  category: 'Gaji' | 'Fasilitas' | 'Hubungan Kerja' | 'Lainnya' | string;
+  priority: 'Low' | 'Medium' | 'High';
+  is_anonymous: boolean;
+  description: string;
+  attachments: string[]; // Array of file IDs
+  links: string[]; // Array of URLs
+  status: 'Unread' | 'Read';
+  created_at: string;
+  updated_at?: string;
+  account?: {
+    full_name: string;
+    internal_nik: string;
+  };
+}
+
+export type FeedbackInput = Omit<Feedback, 'id' | 'created_at' | 'updated_at' | 'status' | 'account'>;
