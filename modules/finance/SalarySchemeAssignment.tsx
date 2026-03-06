@@ -14,6 +14,7 @@ const SalarySchemeAssignment: React.FC<SalarySchemeAssignmentProps> = ({ onBack 
   const [loading, setLoading] = useState(false);
   const [schemes, setSchemes] = useState<SalaryScheme[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [assignments, setAssignments] = useState<any[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [distinctAttrs, setDistinctAttrs] = useState<{ positions: string[], grades: string[] }>({ positions: [], grades: [] });
   
@@ -29,16 +30,18 @@ const SalarySchemeAssignment: React.FC<SalarySchemeAssignmentProps> = ({ onBack 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [sData, aData, lData, dData] = await Promise.all([
+        const [sData, aData, lData, dData, asData] = await Promise.all([
           financeService.getSchemes(),
           accountService.getAll(),
           locationService.getAll(),
-          accountService.getDistinctAttributes()
+          accountService.getDistinctAttributes(),
+          financeService.getAssignments()
         ]);
         setSchemes(sData);
         setAccounts(aData);
         setLocations(lData);
         setDistinctAttrs(dData);
+        setAssignments(asData);
       } catch (error) {
         console.error('Error fetching data:', error);
       }
@@ -47,6 +50,10 @@ const SalarySchemeAssignment: React.FC<SalarySchemeAssignmentProps> = ({ onBack 
   }, []);
 
   const filteredAccounts = accounts.filter(acc => {
+    // Filter out accounts that already have an assignment
+    const hasAssignment = assignments.some(as => as.account_id === acc.id);
+    if (hasAssignment) return false;
+
     const matchesLocation = !filterLocation || acc.location_id === filterLocation;
     const matchesGrade = !filterGrade || acc.grade === filterGrade;
     const matchesPosition = !filterPosition || acc.position === filterPosition;

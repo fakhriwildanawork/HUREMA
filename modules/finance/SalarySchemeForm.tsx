@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Save, Receipt, Clock, AlertTriangle, Info } from 'lucide-react';
+import { ArrowLeft, Save, Receipt, Clock, AlertTriangle, Info, DollarSign, Briefcase, MapPin, Plus } from 'lucide-react';
 import { financeService } from '../../services/financeService';
 import { SalaryScheme, SalarySchemeInput } from '../../types';
 import Swal from 'sweetalert2';
@@ -8,6 +8,55 @@ interface SalarySchemeFormProps {
   scheme?: SalaryScheme | null;
   onBack: () => void;
 }
+
+const formatNumber = (num: number) => {
+  return num.toLocaleString('id-ID');
+};
+
+const parseNumber = (str: string) => {
+  if (typeof str !== 'string') return 0;
+  return Number(str.replace(/\./g, '')) || 0;
+};
+
+const InputGroup = ({ 
+  label, 
+  name, 
+  icon: Icon, 
+  prefix = "Rp", 
+  value, 
+  onChange 
+}: { 
+  label: string, 
+  name: string, 
+  icon: any, 
+  prefix?: string,
+  value: number,
+  onChange: (val: number) => void
+}) => (
+  <div className="space-y-1.5">
+    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+      <Icon size={12} />
+      {label}
+    </label>
+    <div className="relative">
+      {prefix && (
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">
+          {prefix}
+        </div>
+      )}
+      <input
+        type="text"
+        value={formatNumber(value)}
+        onChange={(e) => {
+          const val = parseNumber(e.target.value);
+          onChange(val);
+        }}
+        className={`w-full ${prefix ? 'pl-10' : 'px-4'} pr-4 py-2.5 bg-gray-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-[#006E62] transition-all font-medium`}
+        required
+      />
+    </div>
+  </div>
+);
 
 const SalarySchemeForm: React.FC<SalarySchemeFormProps> = ({ scheme, onBack }) => {
   const [loading, setLoading] = useState(false);
@@ -53,28 +102,9 @@ const SalarySchemeForm: React.FC<SalarySchemeFormProps> = ({ scheme, onBack }) =
     }
   };
 
-  const InputGroup = ({ label, name, icon: Icon, type = "number", prefix = "Rp" }: { label: string, name: keyof SalarySchemeInput, icon: any, type?: string, prefix?: string }) => (
-    <div className="space-y-1.5">
-      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-        <Icon size={12} />
-        {label}
-      </label>
-      <div className="relative">
-        {prefix && (
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">
-            {prefix}
-          </div>
-        )}
-        <input
-          type={type}
-          value={formData[name] as any}
-          onChange={(e) => setFormData({ ...formData, [name]: type === 'number' ? Number(e.target.value) : e.target.value })}
-          className={`w-full ${prefix ? 'pl-10' : 'px-4'} pr-4 py-2.5 bg-gray-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-[#006E62] transition-all font-medium`}
-          required
-        />
-      </div>
-    </div>
-  );
+  const handleInputChange = (name: keyof SalarySchemeInput, val: number) => {
+    setFormData(prev => ({ ...prev, [name]: val }));
+  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -143,12 +173,36 @@ const SalarySchemeForm: React.FC<SalarySchemeFormProps> = ({ scheme, onBack }) =
               <h3 className="font-bold text-sm uppercase tracking-wider">Komponen Pendapatan</h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <InputGroup label={`Gaji Pokok (${formData.type})`} name="basic_salary" icon={Receipt} />
+              <InputGroup 
+                label={`Gaji Pokok (${formData.type})`} 
+                name="basic_salary" 
+                icon={DollarSign} 
+                value={formData.basic_salary}
+                onChange={(val) => handleInputChange('basic_salary', val)}
+              />
               {formData.type === 'Bulanan' && (
                 <>
-                  <InputGroup label="Tunjangan Jabatan" name="position_allowance" icon={Receipt} />
-                  <InputGroup label="Tunjangan Penempatan" name="placement_allowance" icon={Receipt} />
-                  <InputGroup label="Tunjangan Lainnya" name="other_allowance" icon={Receipt} />
+                  <InputGroup 
+                    label="Tunjangan Jabatan" 
+                    name="position_allowance" 
+                    icon={Briefcase} 
+                    value={formData.position_allowance}
+                    onChange={(val) => handleInputChange('position_allowance', val)}
+                  />
+                  <InputGroup 
+                    label="Tunjangan Penempatan" 
+                    name="placement_allowance" 
+                    icon={MapPin} 
+                    value={formData.placement_allowance}
+                    onChange={(val) => handleInputChange('placement_allowance', val)}
+                  />
+                  <InputGroup 
+                    label="Tunjangan Lainnya" 
+                    name="other_allowance" 
+                    icon={Plus} 
+                    value={formData.other_allowance}
+                    onChange={(val) => handleInputChange('other_allowance', val)}
+                  />
                 </>
               )}
             </div>
@@ -167,11 +221,35 @@ const SalarySchemeForm: React.FC<SalarySchemeFormProps> = ({ scheme, onBack }) =
               <h3 className="font-bold text-sm uppercase tracking-wider">Komponen Potongan</h3>
             </div>
             <div className="space-y-6">
-              <InputGroup label="Keterlambatan / Jam" name="late_deduction_per_hour" icon={Clock} />
-              <InputGroup label="Pulang Awal / Jam" name="early_leave_deduction_per_hour" icon={Clock} />
-              <InputGroup label="Tanpa Absen Pulang / Jam" name="no_clock_out_deduction_per_hour" icon={Clock} />
+              <InputGroup 
+                label="Keterlambatan / Jam" 
+                name="late_deduction_per_hour" 
+                icon={Clock} 
+                value={formData.late_deduction_per_hour}
+                onChange={(val) => handleInputChange('late_deduction_per_hour', val)}
+              />
+              <InputGroup 
+                label="Pulang Awal / Jam" 
+                name="early_leave_deduction_per_hour" 
+                icon={Clock} 
+                value={formData.early_leave_deduction_per_hour}
+                onChange={(val) => handleInputChange('early_leave_deduction_per_hour', val)}
+              />
+              <InputGroup 
+                label="Tanpa Absen Pulang / Jam" 
+                name="no_clock_out_deduction_per_hour" 
+                icon={Clock} 
+                value={formData.no_clock_out_deduction_per_hour}
+                onChange={(val) => handleInputChange('no_clock_out_deduction_per_hour', val)}
+              />
               {formData.type === 'Bulanan' && (
-                <InputGroup label="Absen (Mangkir) / Hari" name="absent_deduction_per_day" icon={AlertTriangle} />
+                <InputGroup 
+                  label="Absen (Mangkir) / Hari" 
+                  name="absent_deduction_per_day" 
+                  icon={AlertTriangle} 
+                  value={formData.absent_deduction_per_day}
+                  onChange={(val) => handleInputChange('absent_deduction_per_day', val)}
+                />
               )}
             </div>
           </div>
