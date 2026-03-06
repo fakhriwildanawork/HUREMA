@@ -188,6 +188,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed,
           {(isFinanceOpen || isCollapsed) && (
             <div className={`mt-1 overflow-hidden transition-all duration-300 ${isCollapsed ? '' : 'max-h-96'}`}>
               <NavItem id="salary_scheme" icon={Receipt} label="Master Skema Gaji" indent />
+              {user?.role === 'admin' && (
+                <NavItem id="salary_adjustment" icon={Receipt} label="Kustom Gaji" indent />
+              )}
               <NavItem id="reimbursement" icon={Receipt} label="Reimburse" indent badge={user?.role === 'admin' ? unreadReimbursements : undefined} />
             </div>
           )}

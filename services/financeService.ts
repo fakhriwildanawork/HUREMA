@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { SalaryScheme, SalarySchemeInput, SalaryAssignment, SalaryAssignmentExtended, Reimbursement, ReimbursementInput, ReimbursementStatus } from '../types';
+import { SalaryScheme, SalarySchemeInput, SalaryAssignment, SalaryAssignmentExtended, Reimbursement, ReimbursementInput, ReimbursementStatus, SalaryAdjustment, SalaryAdjustmentInput, PayrollStatus } from '../types';
 
 export const financeService = {
   // Salary Schemes
@@ -171,5 +171,68 @@ export const financeService = {
     
     if (error) throw error;
     return count || 0;
+  },
+
+  // Salary Adjustments
+  async getSalaryAdjustments(filters?: { month?: number, year?: number, account_id?: string }) {
+    let query = supabase
+      .from('finance_salary_adjustments')
+      .select(`
+        *,
+        account:accounts(full_name, internal_nik)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (filters?.month) query = query.eq('month', filters.month);
+    if (filters?.year) query = query.eq('year', filters.year);
+    if (filters?.account_id) query = query.eq('account_id', filters.account_id);
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data as SalaryAdjustment[];
+  },
+
+  async createSalaryAdjustment(adjustments: SalaryAdjustmentInput[]) {
+    const { data, error } = await supabase
+      .from('finance_salary_adjustments')
+      .insert(adjustments)
+      .select();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async updateSalaryAdjustment(id: string, adjustment: Partial<SalaryAdjustmentInput>) {
+    const { data, error } = await supabase
+      .from('finance_salary_adjustments')
+      .update({ ...adjustment, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select();
+    
+    if (error) throw error;
+    return data[0] as SalaryAdjustment;
+  },
+
+  async deleteSalaryAdjustment(id: string) {
+    const { error } = await supabase
+      .from('finance_salary_adjustments')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+    return true;
+  },
+
+  // Payroll Status Check
+  async getPayrollStatus(month: number, year: number) {
+    const { data, error } = await supabase
+      .from('finance_payroll_status')
+      .select('*')
+      .eq('month', month)
+      .eq('year', year)
+      .maybeSingle();
+    
+    if (error) throw error;
+    return data as PayrollStatus | null;
   }
 };

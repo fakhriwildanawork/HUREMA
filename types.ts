@@ -730,6 +730,32 @@ export interface SalaryAssignmentExtended extends SalaryAssignment {
   scheme?: SalaryScheme;
 }
 
+export interface SalaryAdjustment {
+  id: string;
+  account_id: string;
+  type: 'Addition' | 'Deduction';
+  amount: number;
+  month: number;
+  year: number;
+  description: string;
+  created_at: string;
+  updated_at: string;
+  account?: {
+    full_name: string;
+    internal_nik: string;
+  };
+}
+
+export type SalaryAdjustmentInput = Omit<SalaryAdjustment, 'id' | 'created_at' | 'updated_at' | 'account'>;
+
+export interface PayrollStatus {
+  id: string;
+  month: number;
+  year: number;
+  status: 'Draft' | 'Approved' | 'Paid';
+  updated_at: string;
+}
+
 export type ReimbursementStatus = 'Pending' | 'Approved' | 'Partially Approved' | 'Rejected';
 export type ReimbursementCategory = 'Operasional' | 'Akomodasi' | 'Inventaris' | 'Lainnya';
 
