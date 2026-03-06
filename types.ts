@@ -629,6 +629,31 @@ export interface MeetingNote {
   updated_at?: string;
 }
 
+export interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  category: 'Urgent' | 'Info' | 'Event' | 'Policy';
+  target_type: 'All' | 'Department' | 'Individual';
+  target_ids: string[]; // Department names or User IDs
+  publish_start: string;
+  publish_end: string;
+  attachments: string[];
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  creator?: { full_name: string };
+  is_read?: boolean;
+  read_count?: number;
+}
+
+export interface AnnouncementRead {
+  id: string;
+  announcement_id: string;
+  user_id: string;
+  read_at: string;
+}
+
 export interface Meeting {
   id: string;
   title: string;
