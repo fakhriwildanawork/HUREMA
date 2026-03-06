@@ -29,11 +29,19 @@ const SalarySchemeForm: React.FC<SalarySchemeFormProps> = ({ scheme, onBack }) =
     e.preventDefault();
     setLoading(true);
     try {
+      const dataToSave = { ...formData };
+      if (formData.type === 'Harian') {
+        dataToSave.position_allowance = 0;
+        dataToSave.placement_allowance = 0;
+        dataToSave.other_allowance = 0;
+        dataToSave.absent_deduction_per_day = 0;
+      }
+
       if (scheme) {
-        await financeService.updateScheme(scheme.id, formData);
+        await financeService.updateScheme(scheme.id, dataToSave);
         Swal.fire('Berhasil!', 'Skema gaji berhasil diperbarui.', 'success');
       } else {
-        await financeService.createScheme(formData);
+        await financeService.createScheme(dataToSave);
         Swal.fire('Berhasil!', 'Skema gaji baru berhasil dibuat.', 'success');
       }
       onBack();
@@ -136,9 +144,13 @@ const SalarySchemeForm: React.FC<SalarySchemeFormProps> = ({ scheme, onBack }) =
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <InputGroup label={`Gaji Pokok (${formData.type})`} name="basic_salary" icon={Receipt} />
-              <InputGroup label="Tunjangan Jabatan" name="position_allowance" icon={Receipt} />
-              <InputGroup label="Tunjangan Penempatan" name="placement_allowance" icon={Receipt} />
-              <InputGroup label="Tunjangan Lainnya" name="other_allowance" icon={Receipt} />
+              {formData.type === 'Bulanan' && (
+                <>
+                  <InputGroup label="Tunjangan Jabatan" name="position_allowance" icon={Receipt} />
+                  <InputGroup label="Tunjangan Penempatan" name="placement_allowance" icon={Receipt} />
+                  <InputGroup label="Tunjangan Lainnya" name="other_allowance" icon={Receipt} />
+                </>
+              )}
             </div>
             <div className="p-4 bg-emerald-50 rounded-lg flex gap-3">
               <Info className="text-emerald-600 shrink-0" size={18} />
@@ -158,7 +170,9 @@ const SalarySchemeForm: React.FC<SalarySchemeFormProps> = ({ scheme, onBack }) =
               <InputGroup label="Keterlambatan / Jam" name="late_deduction_per_hour" icon={Clock} />
               <InputGroup label="Pulang Awal / Jam" name="early_leave_deduction_per_hour" icon={Clock} />
               <InputGroup label="Tanpa Absen Pulang / Jam" name="no_clock_out_deduction_per_hour" icon={Clock} />
-              <InputGroup label="Absen (Mangkir) / Hari" name="absent_deduction_per_day" icon={AlertTriangle} />
+              {formData.type === 'Bulanan' && (
+                <InputGroup label="Absen (Mangkir) / Hari" name="absent_deduction_per_day" icon={AlertTriangle} />
+              )}
             </div>
           </div>
         </div>

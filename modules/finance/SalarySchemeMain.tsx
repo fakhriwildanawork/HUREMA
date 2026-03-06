@@ -169,20 +169,24 @@ const SalarySchemeMain: React.FC = () => {
                       Rp {scheme.basic_salary.toLocaleString('id-ID')}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-xs space-y-1">
-                        <div className="flex justify-between gap-4">
-                          <span className="text-gray-400">Jab:</span>
-                          <span className="font-medium">Rp {scheme.position_allowance.toLocaleString('id-ID')}</span>
+                      {scheme.type === 'Bulanan' ? (
+                        <div className="text-xs space-y-1">
+                          <div className="flex justify-between gap-4">
+                            <span className="text-gray-400">Jab:</span>
+                            <span className="font-medium">Rp {scheme.position_allowance.toLocaleString('id-ID')}</span>
+                          </div>
+                          <div className="flex justify-between gap-4">
+                            <span className="text-gray-400">Pen:</span>
+                            <span className="font-medium">Rp {scheme.placement_allowance.toLocaleString('id-ID')}</span>
+                          </div>
+                          <div className="flex justify-between gap-4">
+                            <span className="text-gray-400">Lain:</span>
+                            <span className="font-medium">Rp {scheme.other_allowance.toLocaleString('id-ID')}</span>
+                          </div>
                         </div>
-                        <div className="flex justify-between gap-4">
-                          <span className="text-gray-400">Pen:</span>
-                          <span className="font-medium">Rp {scheme.placement_allowance.toLocaleString('id-ID')}</span>
-                        </div>
-                        <div className="flex justify-between gap-4">
-                          <span className="text-gray-400">Lain:</span>
-                          <span className="font-medium">Rp {scheme.other_allowance.toLocaleString('id-ID')}</span>
-                        </div>
-                      </div>
+                      ) : (
+                        <span className="text-gray-400 text-[10px] italic">Hanya Gaji Pokok</span>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-xs space-y-1">
@@ -190,10 +194,12 @@ const SalarySchemeMain: React.FC = () => {
                           <span className="text-gray-400">Telat/Jam:</span>
                           <span className="font-medium text-red-600">Rp {scheme.late_deduction_per_hour.toLocaleString('id-ID')}</span>
                         </div>
-                        <div className="flex justify-between gap-4">
-                          <span className="text-gray-400">Absen/Hari:</span>
-                          <span className="font-medium text-red-600">Rp {scheme.absent_deduction_per_day.toLocaleString('id-ID')}</span>
-                        </div>
+                        {scheme.type === 'Bulanan' && (
+                          <div className="flex justify-between gap-4">
+                            <span className="text-gray-400">Absen/Hari:</span>
+                            <span className="font-medium text-red-600">Rp {scheme.absent_deduction_per_day.toLocaleString('id-ID')}</span>
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
