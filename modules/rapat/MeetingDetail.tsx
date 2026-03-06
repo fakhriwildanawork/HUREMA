@@ -58,60 +58,76 @@ const MeetingDetail: React.FC<MeetingDetailProps> = ({ meeting, onClose }) => {
                 <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1 flex items-center gap-2">
                   <FileText size={14} /> Notulensi Rapat
                 </h4>
-                <div className="p-6 bg-white border border-gray-100 rounded-2xl shadow-sm">
-                  <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap font-medium">{meeting.minutes_content || 'Tidak ada isi notulensi.'}</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="space-y-3">
-                  <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Lampiran Dokumentasi</h4>
-                  <div className="space-y-2">
-                    {meeting.attachments && meeting.attachments.length > 0 ? (
-                      meeting.attachments.map((fileId, idx) => (
-                        <a 
-                          key={idx}
-                          href={`https://drive.google.com/file/d/${fileId}/view`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-xl hover:border-emerald-200 hover:bg-emerald-50/30 transition-all group"
-                        >
-                          <div className="flex items-center gap-3">
-                            <Paperclip size={14} className="text-gray-400 group-hover:text-emerald-600" />
-                            <span className="text-xs font-bold text-gray-600 group-hover:text-emerald-600">Dokumentasi_{idx + 1}</span>
+                <div className="space-y-4">
+                  {meeting.notes && meeting.notes.length > 0 ? (
+                    meeting.notes.map((note, idx) => (
+                      <div key={note.id} className="p-6 bg-white border border-gray-100 rounded-2xl shadow-sm space-y-4">
+                        <div className="flex items-start gap-3">
+                          <div className="w-6 h-6 rounded-lg bg-gray-50 flex items-center justify-center text-[10px] font-bold text-gray-400 shrink-0">
+                            {idx + 1}
                           </div>
-                          <ExternalLink size={14} className="text-gray-300 group-hover:text-emerald-600" />
-                        </a>
-                      ))
-                    ) : (
-                      <p className="text-xs text-gray-400 italic px-1">Tidak ada lampiran file.</p>
-                    )}
-                  </div>
-                </div>
+                          <p className="text-sm text-gray-700 leading-relaxed font-medium whitespace-pre-wrap">{note.content}</p>
+                        </div>
 
-                <div className="space-y-3">
-                  <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Link Pendukung</h4>
-                  <div className="space-y-2">
-                    {meeting.links && meeting.links.length > 0 ? (
-                      meeting.links.map((link, idx) => (
-                        <a 
-                          key={idx}
-                          href={link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-xl hover:border-emerald-200 hover:bg-emerald-50/30 transition-all group"
-                        >
-                          <div className="flex items-center gap-3">
-                            <LinkIcon size={14} className="text-gray-400 group-hover:text-emerald-600" />
-                            <span className="text-xs font-bold text-gray-600 group-hover:text-emerald-600 truncate max-w-[150px]">{link}</span>
+                        {(note.attachments.length > 0 || note.links.length > 0) && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-50">
+                            {note.attachments.length > 0 && (
+                              <div className="space-y-2">
+                                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">Lampiran File</p>
+                                <div className="space-y-1">
+                                  {note.attachments.map((fileId, fIdx) => (
+                                    <a 
+                                      key={fIdx}
+                                      href={`https://drive.google.com/file/d/${fileId}/view`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center justify-between p-2 bg-gray-50 border border-gray-100 rounded-lg hover:bg-emerald-50 transition-colors group"
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <Paperclip size={10} className="text-gray-400 group-hover:text-emerald-600" />
+                                        <span className="text-[9px] font-bold text-gray-600 group-hover:text-emerald-600">Dokumentasi_{fIdx + 1}</span>
+                                      </div>
+                                      <ExternalLink size={10} className="text-gray-300 group-hover:text-emerald-600" />
+                                    </a>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {note.links.length > 0 && (
+                              <div className="space-y-2">
+                                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">Link Pendukung</p>
+                                <div className="space-y-1">
+                                  {note.links.map((link, lIdx) => (
+                                    <a 
+                                      key={lIdx}
+                                      href={link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center justify-between p-2 bg-gray-50 border border-gray-100 rounded-lg hover:bg-emerald-50 transition-colors group"
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <LinkIcon size={10} className="text-gray-400 group-hover:text-emerald-600" />
+                                        <span className="text-[9px] font-bold text-gray-600 group-hover:text-emerald-600 truncate max-w-[120px]">{link}</span>
+                                      </div>
+                                      <ExternalLink size={10} className="text-gray-300 group-hover:text-emerald-600" />
+                                    </a>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
-                          <ExternalLink size={14} className="text-gray-300 group-hover:text-emerald-600" />
-                        </a>
-                      ))
-                    ) : (
-                      <p className="text-xs text-gray-400 italic px-1">Tidak ada link pendukung.</p>
-                    )}
-                  </div>
+                        )}
+                        <div className="text-[8px] font-bold text-gray-300 uppercase tracking-widest text-right">
+                          Dicatat pada {new Date(note.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-12 bg-white border border-gray-100 rounded-2xl shadow-sm flex flex-col items-center justify-center text-gray-400">
+                      <FileText size={48} strokeWidth={1} className="mb-4 opacity-20" />
+                      <p className="text-[10px] font-bold uppercase tracking-widest">Tidak ada notulensi yang dicatat.</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

@@ -1,29 +1,51 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Save, Paperclip, Link as LinkIcon, Plus, Trash2, Loader2, Play, StopCircle, Clock, FileText, Send, AlertCircle } from 'lucide-react';
-import { Meeting } from '../../types';
+import { X, Save, Paperclip, Link as LinkIcon, Plus, Trash2, Loader2, Play, StopCircle, Clock, FileText, Send, AlertCircle, Edit2, Check, ExternalLink } from 'lucide-react';
+import { Meeting, MeetingNote } from '../../types';
 import { googleDriveService } from '../../services/googleDriveService';
+import { meetingService } from '../../services/meetingService';
+import Swal from 'sweetalert2';
 
 interface MeetingSessionProps {
   meeting: Meeting;
   onClose: () => void;
-  onEnd: (minutesContent: string, attachments: string[], links: string[]) => void;
+  onEnd: () => void;
 }
 
 const MeetingSession: React.FC<MeetingSessionProps> = ({ meeting, onClose, onEnd }) => {
-  const [minutesContent, setMinutesContent] = useState('');
-  const [links, setLinks] = useState<string[]>(['']);
-  const [attachments, setAttachments] = useState<string[]>([]);
+  const [notes, setNotes] = useState<MeetingNote[]>([]);
+  const [isLoadingNotes, setIsLoadingNotes] = useState(true);
+  
+  // Form for new/editing note
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [currentContent, setCurrentContent] = useState('');
+  const [currentLinks, setCurrentLinks] = useState<string[]>(['']);
+  const [currentAttachments, setCurrentAttachments] = useState<string[]>([]);
+  
   const [isUploading, setIsUploading] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    fetchNotes();
     const startTime = meeting.started_at ? new Date(meeting.started_at).getTime() : Date.now();
     const interval = setInterval(() => {
       setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
     }, 1000);
     return () => clearInterval(interval);
-  }, [meeting.started_at]);
+  }, [meeting.id, meeting.started_at]);
+
+  const fetchNotes = async () => {
+    try {
+      setIsLoadingNotes(true);
+      const data = await meetingService.getNotes(meeting.id);
+      setNotes(data);
+    } catch (error) {
+      console.error('Failed to fetch notes:', error);
+    } finally {
+      setIsLoadingNotes(false);
+    }
+  };
 
   const formatTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
@@ -32,12 +54,12 @@ const MeetingSession: React.FC<MeetingSessionProps> = ({ meeting, onClose, onEnd
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const handleAddLink = () => setLinks([...links, '']);
-  const handleRemoveLink = (index: number) => setLinks(links.filter((_, i) => i !== index));
+  const handleAddLink = () => setCurrentLinks([...currentLinks, '']);
+  const handleRemoveLink = (index: number) => setCurrentLinks(currentLinks.filter((_, i) => i !== index));
   const handleLinkChange = (index: number, value: string) => {
-    const newLinks = [...links];
+    const newLinks = [...currentLinks];
     newLinks[index] = value;
-    setLinks(newLinks);
+    setCurrentLinks(newLinks);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,7 +70,7 @@ const MeetingSession: React.FC<MeetingSessionProps> = ({ meeting, onClose, onEnd
       setIsUploading(true);
       for (let i = 0; i < files.length; i++) {
         const fileId = await googleDriveService.uploadFile(files[i]);
-        setAttachments(prev => [...prev, fileId]);
+        setCurrentAttachments(prev => [...prev, fileId]);
       }
     } catch (error) {
       alert('Gagal mengunggah file.');
@@ -58,23 +80,77 @@ const MeetingSession: React.FC<MeetingSessionProps> = ({ meeting, onClose, onEnd
     }
   };
 
-  const handleRemoveAttachment = (index: number) => setAttachments(attachments.filter((_, i) => i !== index));
+  const handleRemoveAttachment = (index: number) => setCurrentAttachments(currentAttachments.filter((_, i) => i !== index));
 
-  const handleEndMeeting = () => {
-    if (!minutesContent.trim()) {
-      alert('Tuliskan notulensi rapat sebelum mengakhiri.');
-      return;
+  const resetForm = () => {
+    setIsEditing(false);
+    setEditingNoteId(null);
+    setCurrentContent('');
+    setCurrentLinks(['']);
+    setCurrentAttachments([]);
+  };
+
+  const handleSaveNote = async () => {
+    if (!currentContent.trim()) return;
+    try {
+      const links = currentLinks.filter(l => l.trim() !== '');
+      if (editingNoteId) {
+        await meetingService.updateNote(editingNoteId, currentContent, currentAttachments, links);
+      } else {
+        await meetingService.addNote(meeting.id, currentContent, currentAttachments, links);
+      }
+      await fetchNotes();
+      resetForm();
+    } catch (error) {
+      Swal.fire('Gagal', 'Gagal menyimpan notulensi.', 'error');
     }
-    onEnd(
-      minutesContent,
-      attachments,
-      links.filter(l => l.trim() !== '')
-    );
+  };
+
+  const handleEditNote = (note: MeetingNote) => {
+    setIsEditing(true);
+    setEditingNoteId(note.id);
+    setCurrentContent(note.content);
+    setCurrentLinks(note.links.length > 0 ? note.links : ['']);
+    setCurrentAttachments(note.attachments);
+  };
+
+  const handleDeleteNote = async (id: string) => {
+    const result = await Swal.fire({
+      title: 'Hapus Poin?',
+      text: "Poin notulensi ini akan dihapus.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      confirmButtonText: 'Ya, Hapus!'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await meetingService.deleteNote(id);
+        await fetchNotes();
+      } catch (error) {
+        Swal.fire('Gagal', 'Gagal menghapus poin.', 'error');
+      }
+    }
+  };
+
+  const handleEndMeeting = async () => {
+    const result = await Swal.fire({
+      title: 'Akhiri Rapat?',
+      text: "Sesi rapat akan diakhiri dan notulensi akan dikunci.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Ya, Akhiri!'
+    });
+
+    if (result.isConfirmed) {
+      onEnd();
+    }
   };
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-5xl rounded-3xl overflow-hidden shadow-2xl flex flex-col animate-in fade-in zoom-in duration-300 h-[90vh]">
+      <div className="bg-white w-full max-w-6xl rounded-3xl overflow-hidden shadow-2xl flex flex-col animate-in fade-in zoom-in duration-300 h-[95vh]">
         <div className="p-6 border-b border-gray-100 flex items-center justify-between shrink-0 bg-amber-50/30">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center animate-pulse">
@@ -98,108 +174,207 @@ const MeetingSession: React.FC<MeetingSessionProps> = ({ meeting, onClose, onEnd
         </div>
 
         <div className="flex-1 flex overflow-hidden">
-          {/* Left: Editor */}
-          <div className="flex-1 p-6 overflow-y-auto space-y-6 scrollbar-none border-r border-gray-100">
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Isi Notulensi Rapat</label>
-              <textarea 
-                value={minutesContent}
-                onChange={(e) => setMinutesContent(e.target.value)}
-                placeholder="Tuliskan hasil pembahasan, keputusan, dan rencana tindak lanjut di sini..."
-                className="w-full h-[500px] px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-600/20 focus:border-amber-600 transition-all text-sm font-medium text-gray-700 resize-none leading-relaxed"
-              />
+          {/* Left: Notes List */}
+          <div className="flex-1 p-6 overflow-y-auto space-y-6 scrollbar-none border-r border-gray-100 bg-gray-50/30">
+            <div className="flex items-center justify-between px-1">
+              <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Daftar Notulensi ({notes.length})</h4>
+              {!isEditing && (
+                <button 
+                  onClick={() => setIsEditing(true)}
+                  className="text-[10px] font-bold text-amber-600 uppercase flex items-center gap-1 hover:underline"
+                >
+                  <Plus size={12} /> Tambah Notulensi
+                </button>
+              )}
             </div>
+
+            {isLoadingNotes ? (
+              <div className="flex flex-col items-center justify-center py-20">
+                <Loader2 size={32} className="animate-spin text-gray-300 mb-2" />
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Memuat Catatan...</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {notes.map((note, idx) => (
+                  <div key={note.id} className="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm hover:shadow-md transition-all group relative">
+                    <div className="absolute top-4 right-4 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={() => handleEditNote(note)}
+                        className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
+                      >
+                        <Edit2 size={14} />
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteNote(note.id)}
+                        className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className="w-6 h-6 rounded-lg bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-400 shrink-0">
+                        {idx + 1}
+                      </div>
+                      <p className="text-sm text-gray-700 leading-relaxed font-medium whitespace-pre-wrap">{note.content}</p>
+                    </div>
+
+                    {(note.attachments.length > 0 || note.links.length > 0) && (
+                      <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-50">
+                        {note.attachments.map((fileId, fIdx) => (
+                          <a 
+                            key={fIdx}
+                            href={`https://drive.google.com/file/d/${fileId}/view`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 px-2 py-1 bg-gray-50 text-gray-500 rounded text-[9px] font-bold uppercase hover:bg-amber-50 hover:text-amber-600 transition-colors"
+                          >
+                            <Paperclip size={10} />
+                            Bukti_{fIdx + 1}
+                          </a>
+                        ))}
+                        {note.links.map((link, lIdx) => (
+                          <a 
+                            key={lIdx}
+                            href={link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 px-2 py-1 bg-gray-50 text-gray-500 rounded text-[9px] font-bold uppercase hover:bg-amber-50 hover:text-amber-600 transition-colors"
+                          >
+                            <LinkIcon size={10} />
+                            Link_{lIdx + 1}
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                    <div className="mt-3 text-[8px] font-bold text-gray-300 uppercase tracking-widest">
+                      {new Date(note.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB
+                    </div>
+                  </div>
+                ))}
+
+                {notes.length === 0 && !isEditing && (
+                  <div className="flex flex-col items-center justify-center py-20 text-gray-400 bg-white rounded-2xl border border-dashed border-gray-200">
+                    <FileText size={48} strokeWidth={1} className="mb-4 opacity-20" />
+                    <p className="text-[10px] font-bold uppercase tracking-widest">Belum ada notulensi dicatat</p>
+                    <button 
+                      onClick={() => setIsEditing(true)}
+                      className="mt-4 px-4 py-2 bg-amber-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-amber-700 transition-all"
+                    >
+                      Mulai Mencatat
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Right: Attachments & Info */}
-          <div className="w-80 p-6 overflow-y-auto space-y-8 scrollbar-none bg-gray-50/30">
+          {/* Right: Editor / Form */}
+          <div className={`w-96 p-6 overflow-y-auto space-y-6 scrollbar-none transition-all ${isEditing ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 absolute right-0'}`}>
+            <div className="flex items-center justify-between px-1">
+              <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                {editingNoteId ? 'Edit Notulensi' : 'Tambah Notulensi'}
+              </h4>
+              <button onClick={resetForm} className="text-gray-400 hover:text-gray-600">
+                <X size={16} />
+              </button>
+            </div>
+
             <div className="space-y-4">
-              <div className="flex items-center justify-between px-1">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Dokumentasi (File)</label>
-                <button 
-                  type="button" 
-                  onClick={() => fileInputRef.current?.click()} 
-                  disabled={isUploading}
-                  className="text-[10px] font-bold text-amber-600 uppercase flex items-center gap-1 hover:underline disabled:opacity-50"
-                >
-                  <Plus size={12} /> Tambah
-                </button>
-                <input 
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  onChange={handleFileUpload}
-                  className="hidden"
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Isi Catatan</label>
+                <textarea 
+                  value={currentContent}
+                  onChange={(e) => setCurrentContent(e.target.value)}
+                  placeholder="Tuliskan poin pembahasan..."
+                  className="w-full h-48 px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-600/20 focus:border-amber-600 transition-all text-sm font-medium text-gray-700 resize-none"
                 />
               </div>
 
-              {isUploading && (
-                <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 text-amber-600 rounded-xl animate-pulse">
-                  <Loader2 size={14} className="animate-spin" />
-                  <span className="text-[10px] font-bold uppercase tracking-widest">Mengunggah...</span>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between px-1">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Lampiran (File)</label>
+                  <button 
+                    type="button" 
+                    onClick={() => fileInputRef.current?.click()} 
+                    disabled={isUploading}
+                    className="text-[10px] font-bold text-amber-600 uppercase flex items-center gap-1 hover:underline disabled:opacity-50"
+                  >
+                    <Plus size={12} /> Tambah
+                  </button>
+                  <input 
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
                 </div>
-              )}
 
-              <div className="space-y-2">
-                {attachments.map((fileId, idx) => (
-                  <div key={idx} className="flex items-center justify-between px-3 py-2 bg-white border border-gray-100 rounded-xl group">
-                    <div className="flex items-center gap-2 overflow-hidden">
-                      <Paperclip size={12} className="text-gray-400 shrink-0" />
-                      <span className="text-[10px] text-gray-600 truncate">File_{idx + 1}</span>
-                    </div>
-                    <button 
-                      type="button" 
-                      onClick={() => handleRemoveAttachment(idx)} 
-                      className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                {isUploading && (
+                  <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 text-amber-600 rounded-xl animate-pulse">
+                    <Loader2 size={14} className="animate-spin" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest">Mengunggah...</span>
                   </div>
-                ))}
-                {attachments.length === 0 && !isUploading && (
-                  <p className="text-[10px] text-gray-400 italic text-center py-4">Belum ada lampiran file.</p>
                 )}
-              </div>
-            </div>
 
-            <div className="space-y-4">
-              <div className="flex items-center justify-between px-1">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Link Pendukung</label>
-                <button type="button" onClick={handleAddLink} className="text-[10px] font-bold text-amber-600 uppercase flex items-center gap-1 hover:underline">
-                  <Plus size={12} /> Tambah
-                </button>
-              </div>
-              <div className="space-y-2">
-                {links.map((link, idx) => (
-                  <div key={idx} className="flex gap-2">
-                    <div className="relative flex-1">
-                      <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" size={14} />
-                      <input 
-                        type="url"
-                        value={link}
-                        onChange={(e) => handleLinkChange(idx, e.target.value)}
-                        placeholder="https://..."
-                        className="w-full pl-9 pr-4 py-2 bg-white border border-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600/20 text-[10px] font-medium"
-                      />
-                    </div>
-                    {links.length > 1 && (
-                      <button type="button" onClick={() => handleRemoveLink(idx)} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors">
-                        <Trash2 size={16} />
+                <div className="space-y-2">
+                  {currentAttachments.map((fileId, idx) => (
+                    <div key={idx} className="flex items-center justify-between px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl group">
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <Paperclip size={12} className="text-gray-400 shrink-0" />
+                        <span className="text-[10px] text-gray-600 truncate">File_{idx + 1}</span>
+                      </div>
+                      <button 
+                        type="button" 
+                        onClick={() => handleRemoveAttachment(idx)} 
+                        className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                      >
+                        <Trash2 size={14} />
                       </button>
-                    )}
-                  </div>
-                ))}
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl space-y-3">
-              <div className="flex items-center gap-2 text-amber-700">
-                <AlertCircle size={16} />
-                <span className="text-[10px] font-bold uppercase tracking-widest">Informasi Sesi</span>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between px-1">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Link Pendukung</label>
+                  <button type="button" onClick={handleAddLink} className="text-[10px] font-bold text-amber-600 uppercase flex items-center gap-1 hover:underline">
+                    <Plus size={12} /> Tambah
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {currentLinks.map((link, idx) => (
+                    <div key={idx} className="flex gap-2">
+                      <div className="relative flex-1">
+                        <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" size={14} />
+                        <input 
+                          type="url"
+                          value={link}
+                          onChange={(e) => handleLinkChange(idx, e.target.value)}
+                          placeholder="https://..."
+                          className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600/20 text-[10px] font-medium"
+                        />
+                      </div>
+                      {currentLinks.length > 1 && (
+                        <button type="button" onClick={() => handleRemoveLink(idx)} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors">
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
-              <p className="text-[10px] text-amber-600/80 leading-relaxed font-medium">
-                Hanya Notulen yang ditunjuk yang dapat menyimpan hasil rapat ini. Pastikan semua poin penting telah dicatat sebelum mengakhiri sesi.
-              </p>
+
+              <button 
+                onClick={handleSaveNote}
+                disabled={!currentContent.trim() || isUploading}
+                className="w-full py-3 bg-amber-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-amber-700 transition-all shadow-lg shadow-amber-600/20 flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                <Check size={16} />
+                {editingNoteId ? 'Perbarui Catatan' : 'Simpan Catatan'}
+              </button>
             </div>
           </div>
         </div>
@@ -210,12 +385,11 @@ const MeetingSession: React.FC<MeetingSessionProps> = ({ meeting, onClose, onEnd
             onClick={onClose}
             className="flex-1 py-3 border border-gray-200 text-gray-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-white transition-all"
           >
-            Simpan Draf & Keluar
+            Keluar Sesi
           </button>
           <button 
             onClick={handleEndMeeting}
-            disabled={isUploading}
-            className="flex-[2] py-3 bg-rose-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-rose-700 transition-all shadow-lg shadow-rose-600/20 flex items-center justify-center gap-2 disabled:opacity-50"
+            className="flex-[2] py-3 bg-rose-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-rose-700 transition-all shadow-lg shadow-rose-600/20 flex items-center justify-center gap-2"
           >
             <StopCircle size={18} />
             Akhiri Rapat & Kunci Notulensi

@@ -619,6 +619,16 @@ export interface Whistleblowing {
 
 export type WhistleblowingInput = Omit<Whistleblowing, 'id' | 'created_at' | 'updated_at' | 'status' | 'account' | 'reported_accounts'>;
 
+export interface MeetingNote {
+  id: string;
+  meeting_id: string;
+  content: string;
+  attachments: string[];
+  links: string[];
+  created_at: string;
+  updated_at?: string;
+}
+
 export interface Meeting {
   id: string;
   title: string;
@@ -652,6 +662,7 @@ export interface Meeting {
     full_name: string;
     internal_nik: string;
   }[];
+  notes?: MeetingNote[];
 }
 
-export type MeetingInput = Omit<Meeting, 'id' | 'created_at' | 'updated_at' | 'creator' | 'participants' | 'notulens'>;
+export type MeetingInput = Omit<Meeting, 'id' | 'created_at' | 'updated_at' | 'creator' | 'participants' | 'notulens' | 'notes'>;

@@ -118,11 +118,11 @@ const RapatMain: React.FC = () => {
     }
   };
 
-  const handleEndMeeting = async (minutesContent: string, attachments: string[], links: string[]) => {
+  const handleEndMeeting = async () => {
     if (!selectedMeeting) return;
     try {
       setIsSaving(true);
-      await meetingService.endMeeting(selectedMeeting.id, minutesContent, attachments, links);
+      await meetingService.endMeeting(selectedMeeting.id);
       await fetchData();
       setShowSession(false);
       setSelectedMeeting(null);

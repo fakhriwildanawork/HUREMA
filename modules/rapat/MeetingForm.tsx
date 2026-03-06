@@ -109,6 +109,13 @@ const MeetingForm: React.FC<MeetingFormProps> = ({ onClose, onSubmit, accounts }
 
   const mapPosition: [number, number] = [formData.latitude, formData.longitude];
 
+  const handleMarkerDragEnd = (e: any) => {
+    const marker = e.target;
+    const position = marker.getLatLng();
+    setFormData(prev => ({ ...prev, latitude: position.lat, longitude: position.lng }));
+    reverseGeocode(position.lat, position.lng);
+  };
+
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl flex flex-col animate-in fade-in zoom-in duration-300 max-h-[95vh]">
@@ -204,7 +211,13 @@ const MeetingForm: React.FC<MeetingFormProps> = ({ onClose, onSubmit, accounts }
                       attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                       url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     />
-                    <Marker position={mapPosition} />
+                    <Marker 
+                      position={mapPosition} 
+                      draggable={true}
+                      eventHandlers={{
+                        dragend: handleMarkerDragEnd,
+                      }}
+                    />
                     <ChangeView center={mapPosition} />
                   </MapContainer>
                 </div>
