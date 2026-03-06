@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { SalaryScheme, SalarySchemeInput, SalaryAssignment, SalaryAssignmentExtended, Reimbursement, ReimbursementInput, ReimbursementStatus, SalaryAdjustment, SalaryAdjustmentInput, PayrollStatus } from '../types';
+import { SalaryScheme, SalarySchemeInput, SalaryAssignment, SalaryAssignmentExtended, Reimbursement, ReimbursementInput, ReimbursementStatus, SalaryAdjustment, SalaryAdjustmentInput, PayrollStatus, Payroll, PayrollItem, PayrollSettings } from '../types';
 
 export const financeService = {
   // Salary Schemes
@@ -234,5 +234,137 @@ export const financeService = {
     
     if (error) throw error;
     return data as PayrollStatus | null;
+  },
+
+  // Payroll Management
+  async getPayrolls() {
+    const { data, error } = await supabase
+      .from('finance_payrolls')
+      .select(`
+        *,
+        verifier:accounts!finance_payrolls_verifier_id_fkey(full_name)
+      `)
+      .order('year', { ascending: false })
+      .order('month', { ascending: false });
+    
+    if (error) throw error;
+    return data as Payroll[];
+  },
+
+  async createPayroll(payroll: Omit<Payroll, 'id' | 'created_at' | 'updated_at'>) {
+    const { data, error } = await supabase
+      .from('finance_payrolls')
+      .insert([payroll])
+      .select();
+    
+    if (error) throw error;
+    return data[0] as Payroll;
+  },
+
+  async updatePayrollStatus(id: string, status: Payroll['status'], verifierId?: string, notes?: string) {
+    const updateData: any = { status, updated_at: new Date().toISOString() };
+    if (verifierId) updateData.verifier_id = verifierId;
+    if (notes) updateData.verification_notes = notes;
+    if (status === 'Approved') updateData.verified_at = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from('finance_payrolls')
+      .update(updateData)
+      .eq('id', id)
+      .select();
+    
+    if (error) throw error;
+    return data[0] as Payroll;
+  },
+
+  async deletePayroll(id: string) {
+    const { error } = await supabase
+      .from('finance_payrolls')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+    return true;
+  },
+
+  async getPayrollItems(payrollId: string) {
+    const { data, error } = await supabase
+      .from('finance_payroll_items')
+      .select(`
+        *,
+        account:accounts(full_name, internal_nik, position, department, location)
+      `)
+      .eq('payroll_id', payrollId);
+    
+    if (error) throw error;
+    return data as PayrollItem[];
+  },
+
+  async getEmployeePayslips(accountId: string) {
+    const { data, error } = await supabase
+      .from('finance_payroll_items')
+      .select(`
+        *,
+        payroll:finance_payrolls!inner(*),
+        account:accounts(full_name, internal_nik, position, department, location)
+      `)
+      .eq('account_id', accountId)
+      .eq('payroll.status', 'Paid')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return data as PayrollItem[];
+  },
+
+  async upsertPayrollItems(items: Omit<PayrollItem, 'id' | 'created_at' | 'updated_at' | 'account'>[]) {
+    const { data, error } = await supabase
+      .from('finance_payroll_items')
+      .upsert(items, { onConflict: 'payroll_id,account_id' })
+      .select();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async updatePayrollItem(id: string, update: Partial<PayrollItem>) {
+    const { data, error } = await supabase
+      .from('finance_payroll_items')
+      .update({ ...update, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select();
+    
+    if (error) throw error;
+    return data[0] as PayrollItem;
+  },
+
+  async deletePayrollItems(ids: string[]) {
+    const { error } = await supabase
+      .from('finance_payroll_items')
+      .delete()
+      .in('id', ids);
+    
+    if (error) throw error;
+    return true;
+  },
+
+  async getPayrollSettings() {
+    const { data, error } = await supabase
+      .from('finance_payroll_settings')
+      .select('*')
+      .single();
+    
+    if (error) throw error;
+    return data as PayrollSettings;
+  },
+
+  async updatePayrollSettings(settings: Partial<PayrollSettings>) {
+    const { data, error } = await supabase
+      .from('finance_payroll_settings')
+      .update({ ...settings, updated_at: new Date().toISOString() })
+      .eq('id', settings.id)
+      .select();
+    
+    if (error) throw error;
+    return data[0] as PayrollSettings;
   }
 };

@@ -24,6 +24,8 @@ const RapatMain = lazy(() => import('./modules/rapat/RapatMain'));
 const PengumumanMain = lazy(() => import('./modules/pengumuman/PengumumanMain'));
 const SalarySchemeMain = lazy(() => import('./modules/finance/SalarySchemeMain'));
 const SalaryAdjustmentMain = lazy(() => import('./modules/finance/SalaryAdjustmentMain'));
+const PayrollMain = lazy(() => import('./modules/finance/PayrollMain'));
+const MyPayslip = lazy(() => import('./modules/finance/MyPayslip'));
 const ReimbursementMain = lazy(() => import('./modules/finance/ReimbursementMain'));
 const MasterMain = lazy(() => import('./modules/settings/MasterMain'));
 const Login = lazy(() => import('./modules/auth/Login'));
@@ -33,7 +35,7 @@ import { AuthUser } from './types';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'document' | 'settings' | 'presence' | 'overtime' | 'submission' | 'leave' | 'annual_leave' | 'permission' | 'maternity_leave' | 'master_app' | 'kpi' | 'key_activity' | 'sales_report' | 'feedback' | 'lapor' | 'rapat' | 'pengumuman' | 'salary_scheme' | 'salary_adjustment' | 'reimbursement'>('presence');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'document' | 'settings' | 'presence' | 'overtime' | 'submission' | 'leave' | 'annual_leave' | 'permission' | 'maternity_leave' | 'master_app' | 'kpi' | 'key_activity' | 'sales_report' | 'feedback' | 'lapor' | 'rapat' | 'pengumuman' | 'salary_scheme' | 'salary_adjustment' | 'payroll' | 'my_payslip' | 'reimbursement'>('presence');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
@@ -202,6 +204,10 @@ const App: React.FC = () => {
               <SalarySchemeMain />
             ) : activeTab === 'salary_adjustment' ? (
               <SalaryAdjustmentMain />
+            ) : activeTab === 'payroll' ? (
+              <PayrollMain />
+            ) : activeTab === 'my_payslip' ? (
+              <MyPayslip />
             ) : activeTab === 'reimbursement' ? (
               <ReimbursementMain />
             ) : activeTab === 'master_app' ? (

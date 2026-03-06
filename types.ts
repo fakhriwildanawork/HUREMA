@@ -756,6 +756,89 @@ export interface PayrollStatus {
   updated_at: string;
 }
 
+export interface Payroll {
+  id: string;
+  month: number;
+  year: number;
+  start_date: string;
+  end_date: string;
+  status: 'Draft' | 'Pending' | 'Approved' | 'Paid';
+  verifier_id?: string;
+  verified_at?: string;
+  verification_notes?: string;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+  verifier?: {
+    full_name: string;
+  };
+}
+
+export interface PayrollItem {
+  id: string;
+  payroll_id: string;
+  account_id: string;
+  
+  salary_type: 'Harian' | 'Bulanan';
+  
+  basic_salary: number;
+  basic_salary_notes?: string;
+  
+  position_allowance: number;
+  position_allowance_notes?: string;
+  
+  placement_allowance: number;
+  placement_allowance_notes?: string;
+  
+  other_allowance: number;
+  other_allowance_notes?: string;
+  
+  other_additions: number;
+  other_additions_notes?: string;
+  
+  late_deduction: number;
+  late_deduction_notes?: string;
+  
+  early_leave_deduction: number;
+  early_leave_deduction_notes?: string;
+  
+  absent_deduction: number;
+  absent_deduction_notes?: string;
+  
+  other_deductions: number;
+  other_deductions_notes?: string;
+  
+  bpjs_kesehatan: number;
+  bpjs_ketenagakerjaan: number;
+  pph21: number;
+  
+  total_income: number;
+  total_deduction: number;
+  take_home_pay: number;
+  
+  created_at: string;
+  updated_at: string;
+  payroll?: Payroll;
+  account?: {
+    full_name: string;
+    internal_nik: string;
+    position: string;
+    department: string;
+    location: string;
+  };
+}
+
+export interface PayrollSettings {
+  id: string;
+  company_name: string;
+  company_address?: string;
+  company_phone?: string;
+  company_email?: string;
+  company_website?: string;
+  company_logo_url?: string;
+  updated_at: string;
+}
+
 export type ReimbursementStatus = 'Pending' | 'Approved' | 'Partially Approved' | 'Rejected';
 export type ReimbursementCategory = 'Operasional' | 'Akomodasi' | 'Inventaris' | 'Lainnya';
 
