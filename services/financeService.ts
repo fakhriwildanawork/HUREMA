@@ -103,7 +103,7 @@ export const financeService = {
       .from('finance_reimbursements')
       .select(`
         *,
-        account:accounts(full_name, internal_nik)
+        account:accounts!finance_reimbursements_account_id_fkey(full_name, internal_nik)
       `)
       .order('created_at', { ascending: false });
 

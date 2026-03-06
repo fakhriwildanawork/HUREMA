@@ -129,7 +129,7 @@ const ReimbursementMain: React.FC = () => {
               onChange={(e) => setFilterYear(Number(e.target.value))}
               className="bg-gray-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-[#006E62] transition-all"
             >
-              {Array.from({ length: 5 }, (_, i) => (
+              {Array.from({ length: 10 }, (_, i) => (
                 <option key={i} value={new Date().getFullYear() - i}>
                   {new Date().getFullYear() - i}
                 </option>
