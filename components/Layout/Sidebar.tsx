@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   MapPin, LayoutDashboard, Settings, Users, 
   CalendarClock, Files, ChevronDown, ChevronRight, 
-  Menu as MenuIcon, ChevronLeft, Database, Fingerprint, LogOut, Timer, ClipboardCheck, Plane, Calendar, ClipboardList, Heart, Target, BarChart3, CheckSquare, AlertTriangle, Video, Megaphone
+  Menu as MenuIcon, ChevronLeft, Database, Fingerprint, LogOut, Timer, ClipboardCheck, Plane, Calendar, ClipboardList, Heart, Target, BarChart3, CheckSquare, AlertTriangle, Video, Megaphone, Receipt
 } from 'lucide-react';
 import { authService } from '../../services/authService';
 import Swal from 'sweetalert2';
@@ -17,6 +17,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed, setIsCollapsed }) => {
   const [isMasterOpen, setIsMasterOpen] = useState(true);
   const [isPerformanceOpen, setIsPerformanceOpen] = useState(false);
+  const [isFinanceOpen, setIsFinanceOpen] = useState(false);
   const user = authService.getCurrentUser();
 
   const handleLogout = async () => {
@@ -135,6 +136,29 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed,
               <NavItem id="lapor" icon={AlertTriangle} label="Lapor Pelanggaran" indent />
               <NavItem id="rapat" icon={Video} label="Notulensi Rapat" indent />
               <NavItem id="pengumuman" icon={Megaphone} label="Pengumuman" indent />
+            </div>
+          )}
+        </div>
+
+        {/* Finance Menu Group */}
+        <div className="mt-4">
+          <button 
+            onClick={() => setIsFinanceOpen(!isFinanceOpen)}
+            className={`flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-200 w-full mb-1 text-gray-600 hover:bg-gray-100`}
+            title={isCollapsed ? 'Finance' : ''}
+          >
+            <Receipt size={20} className="shrink-0 text-gray-400" />
+            {!isCollapsed && (
+              <div className="flex items-center justify-between flex-1 overflow-hidden">
+                <span className="font-medium text-sm truncate">Finance</span>
+                {isFinanceOpen ? <ChevronDown size={16} className="text-gray-300" /> : <ChevronRight size={16} className="text-gray-300" />}
+              </div>
+            )}
+          </button>
+          
+          {(isFinanceOpen || isCollapsed) && (
+            <div className={`mt-1 overflow-hidden transition-all duration-300 ${isCollapsed ? '' : 'max-h-96'}`}>
+              <NavItem id="salary_scheme" icon={Receipt} label="Master Skema Gaji" indent />
             </div>
           )}
         </div>

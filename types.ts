@@ -691,3 +691,41 @@ export interface Meeting {
 }
 
 export type MeetingInput = Omit<Meeting, 'id' | 'created_at' | 'updated_at' | 'creator' | 'participants' | 'notulens' | 'notes'>;
+
+export interface SalaryScheme {
+  id: string;
+  name: string;
+  description: string | null;
+  type: 'Harian' | 'Bulanan';
+  basic_salary: number;
+  position_allowance: number;
+  placement_allowance: number;
+  other_allowance: number;
+  late_deduction_per_hour: number;
+  early_leave_deduction_per_hour: number;
+  no_clock_out_deduction_per_hour: number;
+  absent_deduction_per_day: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type SalarySchemeInput = Omit<SalaryScheme, 'id' | 'created_at' | 'updated_at'>;
+
+export interface SalaryAssignment {
+  id: string;
+  scheme_id: string;
+  account_id: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface SalaryAssignmentExtended extends SalaryAssignment {
+  account?: {
+    full_name: string;
+    internal_nik: string;
+    position: string;
+    grade: string;
+    location_id: string;
+  };
+  scheme?: SalaryScheme;
+}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
-import { X, LayoutDashboard, Users, MapPin, CalendarClock, Files, Settings, Database, Fingerprint, Timer, ClipboardCheck, Plane, Calendar, ClipboardList, Heart, Target, CheckSquare, AlertTriangle, Video, Megaphone } from 'lucide-react';
+import { X, LayoutDashboard, Users, MapPin, CalendarClock, Files, Settings, Database, Fingerprint, Timer, ClipboardCheck, Plane, Calendar, ClipboardList, Heart, Target, CheckSquare, AlertTriangle, Video, Megaphone, Receipt } from 'lucide-react';
 import Sidebar from './components/Layout/Sidebar';
 import Header from './components/Layout/Header';
 
@@ -22,6 +22,7 @@ const FeedbackMain = lazy(() => import('./modules/feedback/FeedbackMain'));
 const LaporMain = lazy(() => import('./modules/lapor/LaporMain'));
 const RapatMain = lazy(() => import('./modules/rapat/RapatMain'));
 const PengumumanMain = lazy(() => import('./modules/pengumuman/PengumumanMain'));
+const SalarySchemeMain = lazy(() => import('./modules/finance/SalarySchemeMain'));
 const MasterMain = lazy(() => import('./modules/settings/MasterMain'));
 const Login = lazy(() => import('./modules/auth/Login'));
 
@@ -30,7 +31,7 @@ import { AuthUser } from './types';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'document' | 'settings' | 'presence' | 'overtime' | 'submission' | 'leave' | 'annual_leave' | 'permission' | 'maternity_leave' | 'master_app' | 'kpi' | 'key_activity' | 'sales_report' | 'feedback' | 'lapor' | 'rapat' | 'pengumuman'>('presence');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'document' | 'settings' | 'presence' | 'overtime' | 'submission' | 'leave' | 'annual_leave' | 'permission' | 'maternity_leave' | 'master_app' | 'kpi' | 'key_activity' | 'sales_report' | 'feedback' | 'lapor' | 'rapat' | 'pengumuman' | 'salary_scheme'>('presence');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
@@ -123,6 +124,13 @@ const App: React.FC = () => {
               <NavItemMobile id="lapor" icon={AlertTriangle} label="Lapor Pelanggaran" />
               <NavItemMobile id="rapat" icon={Video} label="Notulensi Rapat" />
               <NavItemMobile id="pengumuman" icon={Megaphone} label="Pengumuman" />
+
+              <div className="flex items-center gap-3 px-4 py-3 text-gray-400 mt-2">
+                <Receipt size={20} />
+                <span className="font-bold text-[10px] uppercase tracking-widest">Finance</span>
+              </div>
+              <NavItemMobile id="salary_scheme" icon={Receipt} label="Master Skema Gaji" indent />
+
               <NavItemMobile id="leave" icon={Plane} label="Libur Mandiri" />
               <NavItemMobile id="annual_leave" icon={Calendar} label="Cuti Tahunan" />
               <NavItemMobile id="permission" icon={ClipboardList} label="Izin" />
@@ -184,6 +192,8 @@ const App: React.FC = () => {
               <RapatMain />
             ) : activeTab === 'pengumuman' ? (
               <PengumumanMain user={user} />
+            ) : activeTab === 'salary_scheme' ? (
+              <SalarySchemeMain />
             ) : activeTab === 'master_app' ? (
               <MasterMain />
             ) : (
