@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   MapPin, LayoutDashboard, Settings, Users, 
   CalendarClock, Files, ChevronDown, ChevronRight, 
   Menu as MenuIcon, ChevronLeft, Database, Fingerprint, LogOut, Timer, ClipboardCheck, Plane, Calendar, ClipboardList, Heart, Target, BarChart3, CheckSquare, AlertTriangle, Video, Megaphone, Receipt
 } from 'lucide-react';
 import { authService } from '../../services/authService';
+import { financeService } from '../../services/financeService';
 import Swal from 'sweetalert2';
 
 interface SidebarProps {
@@ -18,7 +19,25 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed,
   const [isMasterOpen, setIsMasterOpen] = useState(true);
   const [isPerformanceOpen, setIsPerformanceOpen] = useState(false);
   const [isFinanceOpen, setIsFinanceOpen] = useState(false);
+  const [unreadReimbursements, setUnreadReimbursements] = useState(0);
   const user = authService.getCurrentUser();
+
+  useEffect(() => {
+    if (user?.role === 'admin') {
+      const fetchUnread = async () => {
+        try {
+          const count = await financeService.getUnreadCount();
+          setUnreadReimbursements(count);
+        } catch (error) {
+          console.error('Error fetching unread count:', error);
+        }
+      };
+      fetchUnread();
+      // Refresh every 1 minute
+      const interval = setInterval(fetchUnread, 60000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
 
   const handleLogout = async () => {
     const result = await Swal.fire({
@@ -147,10 +166,20 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed,
             className={`flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-200 w-full mb-1 text-gray-600 hover:bg-gray-100`}
             title={isCollapsed ? 'Finance' : ''}
           >
-            <Receipt size={20} className="shrink-0 text-gray-400" />
+            <div className="relative shrink-0">
+              <Receipt size={20} className="text-gray-400" />
+              {unreadReimbursements > 0 && isCollapsed && (
+                <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border border-white"></div>
+              )}
+            </div>
             {!isCollapsed && (
               <div className="flex items-center justify-between flex-1 overflow-hidden">
-                <span className="font-medium text-sm truncate">Finance</span>
+                <div className="flex items-center gap-2 truncate">
+                  <span className="font-medium text-sm">Finance</span>
+                  {unreadReimbursements > 0 && (
+                    <span className="bg-red-500 text-white text-[8px] font-bold px-1 rounded-full">NEW</span>
+                  )}
+                </div>
                 {isFinanceOpen ? <ChevronDown size={16} className="text-gray-300" /> : <ChevronRight size={16} className="text-gray-300" />}
               </div>
             )}
@@ -159,6 +188,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed,
           {(isFinanceOpen || isCollapsed) && (
             <div className={`mt-1 overflow-hidden transition-all duration-300 ${isCollapsed ? '' : 'max-h-96'}`}>
               <NavItem id="salary_scheme" icon={Receipt} label="Master Skema Gaji" indent />
+              <NavItem id="reimbursement" icon={Receipt} label="Reimburse" indent badge={user?.role === 'admin' ? unreadReimbursements : undefined} />
             </div>
           )}
         </div>

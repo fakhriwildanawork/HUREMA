@@ -729,3 +729,37 @@ export interface SalaryAssignmentExtended extends SalaryAssignment {
   };
   scheme?: SalaryScheme;
 }
+
+export type ReimbursementStatus = 'Pending' | 'Approved' | 'Partially Approved' | 'Rejected';
+export type ReimbursementCategory = 'Operasional' | 'Akomodasi' | 'Inventaris' | 'Lainnya';
+
+export interface Reimbursement {
+  id: string;
+  account_id: string;
+  transaction_date: string;
+  category: string;
+  description: string;
+  amount_requested: number;
+  amount_approved: number | null;
+  proof_file_id: string | null;
+  payment_method: 'Cash' | 'Transfer';
+  target_type: 'Bank' | 'E-Wallet' | null;
+  target_name: string | null;
+  account_number: string | null;
+  account_holder: string | null;
+  status: ReimbursementStatus;
+  is_read: boolean;
+  admin_notes: string | null;
+  payment_proof_id: string | null;
+  verifier_id: string | null;
+  verified_at: string | null;
+  created_at: string;
+  updated_at: string;
+  // Join properties
+  account?: {
+    full_name: string;
+    internal_nik: string;
+  };
+}
+
+export type ReimbursementInput = Omit<Reimbursement, 'id' | 'account_id' | 'status' | 'is_read' | 'amount_approved' | 'admin_notes' | 'payment_proof_id' | 'verifier_id' | 'verified_at' | 'created_at' | 'updated_at' | 'account'>;

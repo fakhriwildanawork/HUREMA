@@ -23,6 +23,7 @@ const LaporMain = lazy(() => import('./modules/lapor/LaporMain'));
 const RapatMain = lazy(() => import('./modules/rapat/RapatMain'));
 const PengumumanMain = lazy(() => import('./modules/pengumuman/PengumumanMain'));
 const SalarySchemeMain = lazy(() => import('./modules/finance/SalarySchemeMain'));
+const ReimbursementMain = lazy(() => import('./modules/finance/ReimbursementMain'));
 const MasterMain = lazy(() => import('./modules/settings/MasterMain'));
 const Login = lazy(() => import('./modules/auth/Login'));
 
@@ -31,7 +32,7 @@ import { AuthUser } from './types';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'document' | 'settings' | 'presence' | 'overtime' | 'submission' | 'leave' | 'annual_leave' | 'permission' | 'maternity_leave' | 'master_app' | 'kpi' | 'key_activity' | 'sales_report' | 'feedback' | 'lapor' | 'rapat' | 'pengumuman' | 'salary_scheme'>('presence');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'document' | 'settings' | 'presence' | 'overtime' | 'submission' | 'leave' | 'annual_leave' | 'permission' | 'maternity_leave' | 'master_app' | 'kpi' | 'key_activity' | 'sales_report' | 'feedback' | 'lapor' | 'rapat' | 'pengumuman' | 'salary_scheme' | 'reimbursement'>('presence');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
@@ -130,6 +131,7 @@ const App: React.FC = () => {
                 <span className="font-bold text-[10px] uppercase tracking-widest">Finance</span>
               </div>
               <NavItemMobile id="salary_scheme" icon={Receipt} label="Master Skema Gaji" indent />
+              <NavItemMobile id="reimbursement" icon={Receipt} label="Reimburse" indent />
 
               <NavItemMobile id="leave" icon={Plane} label="Libur Mandiri" />
               <NavItemMobile id="annual_leave" icon={Calendar} label="Cuti Tahunan" />
@@ -194,6 +196,8 @@ const App: React.FC = () => {
               <PengumumanMain user={user} />
             ) : activeTab === 'salary_scheme' ? (
               <SalarySchemeMain />
+            ) : activeTab === 'reimbursement' ? (
+              <ReimbursementMain />
             ) : activeTab === 'master_app' ? (
               <MasterMain />
             ) : (
