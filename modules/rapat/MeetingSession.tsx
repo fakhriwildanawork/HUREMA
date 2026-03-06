@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Save, Paperclip, Link as LinkIcon, Plus, Trash2, Loader2, Play, StopCircle, Clock, FileText, Send, AlertCircle, Edit2, Check, ExternalLink } from 'lucide-react';
+import { X, Save, Paperclip, Link as LinkIcon, Plus, Trash2, Loader2, Play, StopCircle, Clock, FileText, Send, AlertCircle, Edit2, Check, ExternalLink, Eye } from 'lucide-react';
 import { Meeting, MeetingNote } from '../../types';
 import { googleDriveService } from '../../services/googleDriveService';
 import { meetingService } from '../../services/meetingService';
@@ -18,6 +18,7 @@ const MeetingSession: React.FC<MeetingSessionProps> = ({ meeting, onClose, onEnd
   // Form for new/editing note
   const [isEditing, setIsEditing] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [viewingNote, setViewingNote] = useState<MeetingNote | null>(null);
   const [currentContent, setCurrentContent] = useState('');
   const [currentLinks, setCurrentLinks] = useState<string[]>(['']);
   const [currentAttachments, setCurrentAttachments] = useState<string[]>([]);
@@ -198,6 +199,13 @@ const MeetingSession: React.FC<MeetingSessionProps> = ({ meeting, onClose, onEnd
                 {notes.map((note, idx) => (
                   <div key={note.id} className="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm hover:shadow-md transition-all group relative">
                     <div className="absolute top-4 right-4 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={() => setViewingNote(note)}
+                        className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
+                        title="Lihat Detail"
+                      >
+                        <Eye size={14} />
+                      </button>
                       <button 
                         onClick={() => handleEditNote(note)}
                         className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
@@ -396,6 +404,93 @@ const MeetingSession: React.FC<MeetingSessionProps> = ({ meeting, onClose, onEnd
           </button>
         </div>
       </div>
+
+      {/* Note Detail Modal */}
+      {viewingNote && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl flex flex-col animate-in zoom-in duration-300">
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
+                  <FileText size={20} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-gray-800 tracking-tight">Detail Notulensi</h3>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+                    Dicatat pada {new Date(viewingNote.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setViewingNote(null)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-8 overflow-y-auto max-h-[70vh] space-y-8">
+              <div className="space-y-3">
+                <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Isi Catatan</h4>
+                <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100">
+                  <p className="text-sm text-gray-700 leading-relaxed font-medium whitespace-pre-wrap">{viewingNote.content}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                <div className="space-y-3">
+                  <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Lampiran File</h4>
+                  <div className="space-y-2">
+                    {viewingNote.attachments.length > 0 ? viewingNote.attachments.map((fileId, idx) => (
+                      <a 
+                        key={idx}
+                        href={`https://drive.google.com/file/d/${fileId}/view`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl hover:border-amber-200 hover:bg-amber-50/30 transition-all group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Paperclip size={14} className="text-gray-400 group-hover:text-amber-600" />
+                          <span className="text-xs font-bold text-gray-600 group-hover:text-amber-600">Dokumentasi_{idx + 1}</span>
+                        </div>
+                        <ExternalLink size={14} className="text-gray-300 group-hover:text-amber-600" />
+                      </a>
+                    )) : (
+                      <p className="text-xs text-gray-400 italic px-1">Tidak ada lampiran.</p>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Link Pendukung</h4>
+                  <div className="space-y-2">
+                    {viewingNote.links.length > 0 ? viewingNote.links.map((link, idx) => (
+                      <a 
+                        key={idx}
+                        href={link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl hover:border-amber-200 hover:bg-amber-50/30 transition-all group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <LinkIcon size={14} className="text-gray-400 group-hover:text-amber-600" />
+                          <span className="text-xs font-bold text-gray-600 group-hover:text-amber-600 truncate max-w-[120px]">{link}</span>
+                        </div>
+                        <ExternalLink size={14} className="text-gray-300 group-hover:text-amber-600" />
+                      </a>
+                    )) : (
+                      <p className="text-xs text-gray-400 italic px-1">Tidak ada link.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-100 bg-gray-50/50 flex justify-end">
+              <button 
+                onClick={() => setViewingNote(null)}
+                className="px-8 py-2 bg-gray-800 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-black transition-all"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
