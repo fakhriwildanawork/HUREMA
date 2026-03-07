@@ -91,7 +91,6 @@ const PayslipDetail: React.FC<PayslipDetailProps> = ({ payroll, onBack }) => {
         logging: false,
         backgroundColor: '#ffffff',
         width: 720,
-        // Removed fixed height to allow full content capture
         onclone: (clonedDoc) => {
           // 1. Remove ALL style and link tags to completely avoid oklch parser errors
           const styleStuff = clonedDoc.querySelectorAll('style, link[rel="stylesheet"]');
@@ -117,8 +116,8 @@ const PayslipDetail: React.FC<PayslipDetailProps> = ({ payroll, onBack }) => {
             captureEl.style.left = '0';
             captureEl.style.margin = '0';
             captureEl.style.width = '720px';
-            captureEl.style.minHeight = '1080px'; // Slightly less than A4 height
-            captureEl.style.padding = '80px 40px'; // More vertical padding
+            captureEl.style.minHeight = '1018px'; // A4 aspect ratio for 720px width
+            captureEl.style.padding = '60px'; // Balanced padding
           }
 
           // 4. Final check for any inline oklch
@@ -135,10 +134,25 @@ const PayslipDetail: React.FC<PayslipDetailProps> = ({ payroll, onBack }) => {
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
       const imgProps = pdf.getImageProperties(imgData);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
       
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      // Calculate dimensions to fit the image on the A4 page while maintaining aspect ratio
+      const ratio = imgProps.width / imgProps.height;
+      let finalWidth = pdfWidth;
+      let finalHeight = pdfWidth / ratio;
+      
+      if (finalHeight > pdfHeight) {
+        finalHeight = pdfHeight;
+        finalWidth = pdfHeight * ratio;
+      }
+      
+      // Center the image on the page
+      const xOffset = (pdfWidth - finalWidth) / 2;
+      const yOffset = (pdfHeight - finalHeight) / 2;
+      
+      pdf.addImage(imgData, 'PNG', xOffset, yOffset, finalWidth, finalHeight);
       pdf.save(`Payslip_${item.account?.full_name}_${new Date(0, payroll.month - 1).toLocaleString('id-ID', { month: 'long' })}${payroll.year}.pdf`);
       
       Swal.close();
@@ -366,10 +380,10 @@ const PayslipDetail: React.FC<PayslipDetailProps> = ({ payroll, onBack }) => {
                   fontFamily: "'Inter', sans-serif",
                   backgroundColor: '#ffffff',
                   width: '720px',
-                  minHeight: '1080px',
+                  minHeight: '1018px',
                   boxSizing: 'border-box',
                   position: 'relative',
-                  padding: '80px 40px'
+                  padding: '60px'
                 }}
               >
                 {/* Header / Kop */}
