@@ -67,9 +67,10 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
 
     setCalculating(true);
     try {
-      const [attendances, adjustments] = await Promise.all([
+      const [attendances, adjustments, earlySalaryRequests] = await Promise.all([
         presenceService.getAttendanceByRange(config.start_date, config.end_date),
-        financeService.getSalaryAdjustments({ month: config.month, year: config.year })
+        financeService.getSalaryAdjustments({ month: config.month, year: config.year }),
+        financeService.getEarlySalaryRequests({ month: config.month, year: config.year })
       ]);
 
       const newItems: Partial<PayrollItem>[] = selectedAccountIds.map(accountId => {
@@ -79,6 +80,14 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
         
         const userAttendances = attendances.filter(at => at.account_id === accountId);
         const userAdjustments = adjustments.filter(ad => ad.account_id === accountId);
+        const userEarlySalary = earlySalaryRequests
+          .filter(es => es.account_id === accountId && es.status === 'Paid')
+          .reduce((sum, es) => sum + es.amount, 0);
+        
+        const userEarlySalaryNotes = earlySalaryRequests
+          .filter(es => es.account_id === accountId && es.status === 'Paid')
+          .map(es => `Kasbon: Rp ${es.amount.toLocaleString('id-ID')}`)
+          .join(', ');
 
         // Basic Salary Calculation
         let basicSalary = scheme?.basic_salary || 0;
@@ -119,11 +128,11 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
 
         const otherDeductions = userAdjustments
           .filter(ad => ad.type === 'Deduction')
-          .reduce((sum, ad) => sum + ad.amount, 0);
-        const otherDeductionsNotes = userAdjustments
-          .filter(ad => ad.type === 'Deduction')
-          .map(ad => ad.description)
-          .join(', ');
+          .reduce((sum, ad) => sum + ad.amount, 0) + userEarlySalary;
+        const otherDeductionsNotes = [
+          ...userAdjustments.filter(ad => ad.type === 'Deduction').map(ad => ad.description),
+          userEarlySalaryNotes
+        ].filter(Boolean).join(', ');
 
         const totalIncome = basicSalary + (scheme?.position_allowance || 0) + (scheme?.placement_allowance || 0) + (scheme?.other_allowance || 0) + otherAdditions;
         const totalDeduction = lateDeduction + earlyDeduction + noClockOutDeduction + absentDeduction + otherDeductions;

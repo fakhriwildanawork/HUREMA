@@ -196,6 +196,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed,
               )}
               <NavItem id="my_payslip" icon={Receipt} label="Slip Gaji Saya" indent />
               <NavItem id="reimbursement" icon={Receipt} label="Reimburse" indent badge={user?.role === 'admin' ? unreadReimbursements : undefined} />
+              <NavItem id="early_salary" icon={Receipt} label="Ambil Gaji Awal" indent />
             </div>
           )}
         </div>

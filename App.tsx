@@ -27,6 +27,7 @@ const SalaryAdjustmentMain = lazy(() => import('./modules/finance/SalaryAdjustme
 const PayrollMain = lazy(() => import('./modules/finance/PayrollMain'));
 const MyPayslip = lazy(() => import('./modules/finance/MyPayslip'));
 const ReimbursementMain = lazy(() => import('./modules/finance/ReimbursementMain'));
+const EarlySalaryMain = lazy(() => import('./modules/finance/EarlySalaryModule'));
 const MasterMain = lazy(() => import('./modules/settings/MasterMain'));
 const Login = lazy(() => import('./modules/auth/Login'));
 
@@ -35,7 +36,7 @@ import { AuthUser } from './types';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'document' | 'settings' | 'presence' | 'overtime' | 'submission' | 'leave' | 'annual_leave' | 'permission' | 'maternity_leave' | 'master_app' | 'kpi' | 'key_activity' | 'sales_report' | 'feedback' | 'lapor' | 'rapat' | 'pengumuman' | 'salary_scheme' | 'salary_adjustment' | 'payroll' | 'my_payslip' | 'reimbursement'>('presence');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'document' | 'settings' | 'presence' | 'overtime' | 'submission' | 'leave' | 'annual_leave' | 'permission' | 'maternity_leave' | 'master_app' | 'kpi' | 'key_activity' | 'sales_report' | 'feedback' | 'lapor' | 'rapat' | 'pengumuman' | 'salary_scheme' | 'salary_adjustment' | 'payroll' | 'my_payslip' | 'reimbursement' | 'early_salary'>('presence');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
@@ -138,6 +139,7 @@ const App: React.FC = () => {
                 <NavItemMobile id="salary_adjustment" icon={Receipt} label="Kustom Gaji" indent />
               )}
               <NavItemMobile id="reimbursement" icon={Receipt} label="Reimburse" indent />
+              <NavItemMobile id="early_salary" icon={Receipt} label="Ambil Gaji Awal" indent />
 
               <NavItemMobile id="leave" icon={Plane} label="Libur Mandiri" />
               <NavItemMobile id="annual_leave" icon={Calendar} label="Cuti Tahunan" />
@@ -210,6 +212,8 @@ const App: React.FC = () => {
               <MyPayslip />
             ) : activeTab === 'reimbursement' ? (
               <ReimbursementMain />
+            ) : activeTab === 'early_salary' ? (
+              <EarlySalaryMain />
             ) : activeTab === 'master_app' ? (
               <MasterMain />
             ) : (

@@ -880,3 +880,28 @@ export interface Reimbursement {
 }
 
 export type ReimbursementInput = Omit<Reimbursement, 'id' | 'account_id' | 'status' | 'is_read' | 'amount_approved' | 'admin_notes' | 'payment_proof_id' | 'verifier_id' | 'verified_at' | 'created_at' | 'updated_at' | 'account'>;
+
+export type EarlySalaryStatus = 'Pending' | 'Approved' | 'Paid' | 'Rejected';
+
+export interface EarlySalaryRequest {
+  id: string;
+  account_id: string;
+  month: number;
+  year: number;
+  amount: number;
+  reason: string;
+  status: EarlySalaryStatus;
+  payment_proof_id: string | null;
+  rejection_reason: string | null;
+  verifier_id: string | null;
+  verified_at: string | null;
+  created_at: string;
+  updated_at: string;
+  // Join properties
+  account?: {
+    full_name: string;
+    internal_nik: string;
+  };
+}
+
+export type EarlySalaryRequestInput = Omit<EarlySalaryRequest, 'id' | 'account_id' | 'status' | 'payment_proof_id' | 'rejection_reason' | 'verifier_id' | 'verified_at' | 'created_at' | 'updated_at' | 'account'>;

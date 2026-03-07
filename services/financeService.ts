@@ -1,7 +1,56 @@
 import { supabase } from '../lib/supabase';
-import { SalaryScheme, SalarySchemeInput, SalaryAssignment, SalaryAssignmentExtended, Reimbursement, ReimbursementInput, ReimbursementStatus, SalaryAdjustment, SalaryAdjustmentInput, PayrollStatus, Payroll, PayrollItem, PayrollSettings } from '../types';
+import { SalaryScheme, SalarySchemeInput, SalaryAssignment, SalaryAssignmentExtended, Reimbursement, ReimbursementInput, ReimbursementStatus, SalaryAdjustment, SalaryAdjustmentInput, PayrollStatus, Payroll, PayrollItem, PayrollSettings, EarlySalaryRequest, EarlySalaryRequestInput, EarlySalaryStatus } from '../types';
 
 export const financeService = {
+  // Early Salary Requests
+  async getEarlySalaryRequests(filters?: { account_id?: string, month?: number, year?: number }) {
+    let query = supabase
+      .from('finance_early_salary_requests')
+      .select(`
+        *,
+        account:accounts(full_name, internal_nik)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (filters?.account_id) query = query.eq('account_id', filters.account_id);
+    if (filters?.month) query = query.eq('month', filters.month);
+    if (filters?.year) query = query.eq('year', filters.year);
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data as EarlySalaryRequest[];
+  },
+
+  async createEarlySalaryRequest(request: EarlySalaryRequestInput & { account_id: string }) {
+    const { data, error } = await supabase
+      .from('finance_early_salary_requests')
+      .insert([request])
+      .select();
+    
+    if (error) throw error;
+    return data[0] as EarlySalaryRequest;
+  },
+
+  async updateEarlySalaryStatus(id: string, update: { 
+    status: EarlySalaryStatus, 
+    payment_proof_id?: string | null,
+    rejection_reason?: string | null,
+    verifier_id: string 
+  }) {
+    const { data, error } = await supabase
+      .from('finance_early_salary_requests')
+      .update({
+        ...update,
+        verified_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select();
+    
+    if (error) throw error;
+    return data[0] as EarlySalaryRequest;
+  },
+
   // Salary Schemes
   async getSchemes() {
     const { data, error } = await supabase
