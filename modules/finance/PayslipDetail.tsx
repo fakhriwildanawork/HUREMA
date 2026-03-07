@@ -90,10 +90,14 @@ const PayslipDetail: React.FC<PayslipDetailProps> = ({ payroll, onBack }) => {
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
-        width: 794,
+        windowWidth: 1200,
+        windowHeight: 1600,
+        x: 0,
+        y: 0,
+        scrollX: 0,
+        scrollY: 0,
         onclone: (clonedDoc) => {
           // 1. Remove ALL style and link tags to completely avoid oklch parser errors
-          // We rely on the comprehensive inline styles we've added to the payslip elements
           const styleStuff = clonedDoc.querySelectorAll('style, link[rel="stylesheet"]');
           styleStuff.forEach(el => el.remove());
 
@@ -101,22 +105,23 @@ const PayslipDetail: React.FC<PayslipDetailProps> = ({ payroll, onBack }) => {
           const fontStyle = clonedDoc.createElement('style');
           fontStyle.textContent = `
             @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-            * { font-family: 'Inter', sans-serif !important; }
+            * { font-family: 'Inter', sans-serif !important; box-sizing: border-box; }
           `;
           clonedDoc.head.appendChild(fontStyle);
 
-          // 3. Final check for any inline oklch that might have slipped through
+          // 3. Ensure the capture area is visible and at the top
+          const captureEl = clonedDoc.getElementById('payslip-capture-area');
+          if (captureEl) {
+            captureEl.style.position = 'static';
+            captureEl.style.margin = '0';
+          }
+
+          // 4. Final check for any inline oklch that might have slipped through
           const all = clonedDoc.querySelectorAll('*');
           all.forEach(el => {
             const htmlEl = el as HTMLElement;
             if (htmlEl.style && htmlEl.style.cssText.includes('oklch')) {
               htmlEl.style.cssText = htmlEl.style.cssText.replace(/oklch\([^)]+\)/g, '#000000');
-            }
-            if (el instanceof SVGElement) {
-              ['fill', 'stroke'].forEach(attr => {
-                const val = el.getAttribute(attr);
-                if (val && val.includes('oklch')) el.setAttribute(attr, 'currentColor');
-              });
             }
           });
         }
@@ -350,14 +355,15 @@ const PayslipDetail: React.FC<PayslipDetailProps> = ({ payroll, onBack }) => {
             <div className="flex-1 overflow-y-auto p-8 bg-gray-100 custom-scrollbar">
               <div 
                 ref={payslipRef}
+                id="payslip-capture-area"
                 className="mx-auto p-12 flex flex-col"
                 style={{ 
                   fontFamily: "'Inter', sans-serif",
                   backgroundColor: '#ffffff',
-                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
                   width: '794px',
                   minHeight: '1123px',
-                  boxSizing: 'border-box'
+                  boxSizing: 'border-box',
+                  position: 'relative'
                 }}
               >
                 {/* Header / Kop */}
