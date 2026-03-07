@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS finance_payrolls (
     verified_at TIMESTAMP WITH TIME ZONE,
     verification_notes TEXT,
     created_by UUID REFERENCES accounts(id),
+    updated_by UUID REFERENCES accounts(id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(month, year)

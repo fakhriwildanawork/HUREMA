@@ -243,8 +243,7 @@ export const financeService = {
       .select(`
         *,
         verifier:accounts!finance_payrolls_verifier_id_fkey(full_name),
-        creator:accounts!finance_payrolls_created_by_fkey(full_name),
-        updater:accounts!finance_payrolls_updated_by_fkey(full_name)
+        creator:accounts!finance_payrolls_created_by_fkey(full_name)
       `)
       .order('year', { ascending: false })
       .order('month', { ascending: false });
@@ -254,9 +253,12 @@ export const financeService = {
   },
 
   async createPayroll(payroll: Omit<Payroll, 'id' | 'created_at' | 'updated_at'>) {
+    // Remove updated_by if it exists because the column might not exist in DB yet
+    const { updated_by, ...insertData } = payroll as any;
+
     const { data, error } = await supabase
       .from('finance_payrolls')
-      .insert([payroll])
+      .insert([insertData])
       .select();
     
     if (error) throw error;
@@ -264,9 +266,12 @@ export const financeService = {
   },
 
   async updatePayroll(id: string, payroll: Partial<Omit<Payroll, 'id' | 'created_at' | 'updated_at'>>) {
+    // Remove updated_by if it exists in the object because the column might not exist in DB yet
+    const { updated_by, ...updateData } = payroll as any;
+    
     const { data, error } = await supabase
       .from('finance_payrolls')
-      .update({ ...payroll, updated_at: new Date().toISOString() })
+      .update({ ...updateData, updated_at: new Date().toISOString() })
       .eq('id', id)
       .select();
     
