@@ -92,12 +92,42 @@ const PayslipDetail: React.FC<PayslipDetailProps> = ({ payroll, onBack }) => {
         backgroundColor: '#ffffff',
         onclone: (clonedDoc) => {
           // Fix for html2canvas not supporting oklch colors (Tailwind 4)
+          // We must remove or replace ALL oklch references in ALL style tags
           const styleElements = clonedDoc.querySelectorAll('style');
           styleElements.forEach(style => {
-            if (style.innerHTML.includes('oklch')) {
-              // Replace oklch with a safe fallback to prevent parser crash
-              style.innerHTML = style.innerHTML.replace(/oklch\([^)]+\)/g, '#000000');
+            try {
+              const css = style.textContent || '';
+              if (css.includes('oklch')) {
+                // Aggressive replacement for oklch with a safe color
+                style.textContent = css.replace(/oklch\([^)]+\)/g, 'rgb(0, 0, 0)');
+              }
+            } catch (e) {
+              console.warn('Failed to patch style tag', e);
             }
+          });
+
+          // Also handle inline styles that might have been computed
+          const allElements = clonedDoc.getElementsByTagName('*');
+          for (let i = 0; i < allElements.length; i++) {
+            const el = allElements[i] as HTMLElement;
+            if (el.style) {
+              try {
+                if (el.style.color && el.style.color.includes('oklch')) el.style.color = 'rgb(0, 0, 0)';
+                if (el.style.backgroundColor && el.style.backgroundColor.includes('oklch')) el.style.backgroundColor = 'transparent';
+                if (el.style.borderColor && el.style.borderColor.includes('oklch')) el.style.borderColor = 'transparent';
+                if (el.style.outlineColor && el.style.outlineColor.includes('oklch')) el.style.outlineColor = 'transparent';
+                if (el.style.fill && el.style.fill.includes('oklch')) el.style.fill = 'currentColor';
+                if (el.style.stroke && el.style.stroke.includes('oklch')) el.style.stroke = 'currentColor';
+              } catch (e) {}
+            }
+          }
+          
+          // Remove any link tags that might point to external CSS with oklch
+          const links = clonedDoc.querySelectorAll('link[rel="stylesheet"]');
+          links.forEach(link => {
+            try {
+              link.remove();
+            } catch (e) {}
           });
         }
       });
@@ -330,8 +360,12 @@ const PayslipDetail: React.FC<PayslipDetailProps> = ({ payroll, onBack }) => {
             <div className="flex-1 overflow-y-auto p-8 bg-gray-100 custom-scrollbar">
               <div 
                 ref={payslipRef}
-                className="bg-white w-full max-w-[210mm] mx-auto p-12 shadow-lg min-h-[297mm] flex flex-col"
-                style={{ fontFamily: "'Inter', sans-serif" }}
+                className="w-full max-w-[210mm] mx-auto p-12 min-h-[297mm] flex flex-col"
+                style={{ 
+                  fontFamily: "'Inter', sans-serif",
+                  backgroundColor: '#ffffff',
+                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
+                }}
               >
                 {/* Header / Kop */}
                 <div className="flex justify-between items-start border-b-4 pb-6 mb-8" style={{ borderBottomColor: '#006E62' }}>
