@@ -51,6 +51,7 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
         }
       } catch (error) {
         console.error('Error fetching data:', error);
+        Swal.fire('Gagal!', 'Terjadi kesalahan saat memuat data payroll.', 'error');
       } finally {
         setLoading(false);
       }
@@ -156,8 +157,8 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
             full_name: account?.full_name || '',
             internal_nik: account?.internal_nik || '',
             position: account?.position || '',
-            department: account?.department || '',
-            location: account?.location || ''
+            department: (account as any)?.department || '-',
+            location: account?.location?.name || (account as any)?.location || '-'
           }
         };
       });
@@ -538,7 +539,10 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
                       <tr key={item.account_id} className="hover:bg-gray-50 transition-colors text-xs group">
                         <td className="px-4 py-3 sticky left-0 bg-white group-hover:bg-gray-50 z-10 border-r border-gray-50">
                           <div className="font-bold text-gray-800 whitespace-nowrap">{item.account?.full_name}</div>
-                          <div className="text-[9px] text-gray-400 uppercase tracking-widest">{item.account?.internal_nik} • {item.salary_type}</div>
+                          <div className="text-[9px] text-gray-400 uppercase tracking-widest">
+                            {item.account?.internal_nik} • {item.salary_type}
+                            {item.account?.position && ` • ${item.account.position}`}
+                          </div>
                         </td>
                         
                         {/* Editable Cells */}

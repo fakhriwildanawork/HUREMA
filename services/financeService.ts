@@ -310,7 +310,7 @@ export const financeService = {
       .from('finance_payroll_items')
       .select(`
         *,
-        account:accounts(full_name, internal_nik, position, department, location)
+        account:accounts(full_name, internal_nik, position, location:locations(name))
       `)
       .eq('payroll_id', payrollId);
     
@@ -324,7 +324,7 @@ export const financeService = {
       .select(`
         *,
         payroll:finance_payrolls!inner(*),
-        account:accounts(full_name, internal_nik, position, department, location)
+        account:accounts(full_name, internal_nik, position, location:locations(name))
       `)
       .eq('account_id', accountId)
       .eq('payroll.status', 'Paid')
