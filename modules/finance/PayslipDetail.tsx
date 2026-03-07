@@ -230,7 +230,7 @@ const PayslipDetail: React.FC<PayslipDetailProps> = ({ payroll, onBack }) => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-xs text-gray-600">{item.account?.position}</div>
-                      <div className="text-[10px] text-gray-400">{item.account?.location}</div>
+                      <div className="text-[10px] text-gray-400">{item.account?.location?.name || (item.account as any)?.location || '-'}</div>
                     </td>
                     <td className="px-6 py-4 font-mono text-xs text-emerald-600 font-bold">
                       Rp {item.total_income.toLocaleString('id-ID')}
@@ -351,11 +351,11 @@ const PayslipDetail: React.FC<PayslipDetailProps> = ({ payroll, onBack }) => {
                   <div className="space-y-4">
                     <div className="space-y-1">
                       <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Jabatan / Divisi</div>
-                      <div className="text-sm font-bold text-gray-800">{viewingItem.account?.position} / {viewingItem.account?.department}</div>
+                      <div className="text-sm font-bold text-gray-800">{viewingItem.account?.position} / {(viewingItem.account as any)?.department || '-'}</div>
                     </div>
                     <div className="space-y-1">
                       <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Lokasi Penugasan</div>
-                      <div className="text-sm font-bold text-gray-700">{viewingItem.account?.location}</div>
+                      <div className="text-sm font-bold text-gray-700">{viewingItem.account?.location?.name || (viewingItem.account as any)?.location || '-'}</div>
                     </div>
                   </div>
                 </div>
