@@ -3,6 +3,7 @@ import { ArrowLeft, Save, Calculator, Search, Check, AlertCircle, Info, UserChec
 import { financeService } from '../../services/financeService';
 import { accountService } from '../../services/accountService';
 import { presenceService } from '../../services/presenceService';
+import { authService } from '../../services/authService';
 import { Account, SalaryScheme, SalaryAssignmentExtended, SalaryAdjustment, Payroll, PayrollItem, PayrollSettings } from '../../types';
 import Swal from 'sweetalert2';
 
@@ -75,18 +76,16 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
         const assignment = assignments.find(as => as.account_id === accountId);
         const scheme = assignment?.scheme;
         
-        if (!scheme) return null;
-
         const userAttendances = attendances.filter(at => at.account_id === accountId);
         const userAdjustments = adjustments.filter(ad => ad.account_id === accountId);
 
         // Basic Salary Calculation
-        let basicSalary = scheme.basic_salary;
+        let basicSalary = scheme?.basic_salary || 0;
         let basicSalaryNotes = '';
-        if (scheme.type === 'Harian') {
+        if (scheme?.type === 'Harian') {
           const daysPresent = userAttendances.length;
-          basicSalary = scheme.basic_salary * daysPresent;
-          basicSalaryNotes = `${daysPresent} Hari x Rp ${scheme.basic_salary.toLocaleString('id-ID')}`;
+          basicSalary = (scheme?.basic_salary || 0) * daysPresent;
+          basicSalaryNotes = `${daysPresent} Hari x Rp ${(scheme?.basic_salary || 0).toLocaleString('id-ID')}`;
         }
 
         // Deductions from Attendance
@@ -99,14 +98,14 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
           if (at.check_in && !at.check_out) noClockOutDays += 1;
         });
 
-        const lateDeduction = (scheme.late_deduction_per_minute || 0) * lateMins;
-        const earlyDeduction = (scheme.early_leave_deduction_per_minute || 0) * earlyMins;
-        const noClockOutDeduction = (scheme.no_clock_out_deduction_per_day || 0) * noClockOutDays;
+        const lateDeduction = (scheme?.late_deduction_per_minute || 0) * lateMins;
+        const earlyDeduction = (scheme?.early_leave_deduction_per_minute || 0) * earlyMins;
+        const noClockOutDeduction = (scheme?.no_clock_out_deduction_per_day || 0) * noClockOutDays;
         
         // Absent Deduction (Simplified: assume 22 working days if not present)
         // This is a rough estimation, in real app we'd check against a schedule
         const absentDays = Math.max(0, 22 - userAttendances.length); 
-        const absentDeduction = (scheme.absent_deduction_per_day || 0) * absentDays;
+        const absentDeduction = (scheme?.absent_deduction_per_day || 0) * absentDays;
 
         // Custom Adjustments
         const otherAdditions = userAdjustments
@@ -125,18 +124,18 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
           .map(ad => ad.description)
           .join(', ');
 
-        const totalIncome = basicSalary + scheme.position_allowance + scheme.placement_allowance + scheme.other_allowance + otherAdditions;
+        const totalIncome = basicSalary + (scheme?.position_allowance || 0) + (scheme?.placement_allowance || 0) + (scheme?.other_allowance || 0) + otherAdditions;
         const totalDeduction = lateDeduction + earlyDeduction + noClockOutDeduction + absentDeduction + otherDeductions;
         const takeHomePay = Math.max(0, totalIncome - totalDeduction);
 
         return {
           account_id: accountId,
-          salary_type: scheme.type,
+          salary_type: scheme?.type || 'N/A',
           basic_salary: basicSalary,
-          basic_salary_notes: basicSalaryNotes,
-          position_allowance: scheme.position_allowance,
-          placement_allowance: scheme.placement_allowance,
-          other_allowance: scheme.other_allowance,
+          basic_salary_notes: basicSalaryNotes || (!scheme ? 'Skema Belum Diatur' : ''),
+          position_allowance: scheme?.position_allowance || 0,
+          placement_allowance: scheme?.placement_allowance || 0,
+          other_allowance: scheme?.other_allowance || 0,
           other_additions: otherAdditions,
           other_additions_notes: otherAdditionsNotes,
           late_deduction: lateDeduction,
@@ -161,7 +160,7 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
             location: account?.location || ''
           }
         };
-      }).filter(Boolean) as Partial<PayrollItem>[];
+      });
 
       setPayrollItems(newItems);
       Swal.fire('Berhasil!', 'Kalkulasi otomatis selesai. Silakan review dan sesuaikan jika perlu.', 'success');
@@ -205,6 +204,7 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
     setLoading(true);
     try {
       let payrollId = payroll?.id;
+      const currentUser = authService.getCurrentUser();
       
       if (!payrollId) {
         const newPayroll = await financeService.createPayroll({
@@ -214,11 +214,14 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
           end_date: config.end_date,
           status: status,
           verifier_id: config.verifier_id || undefined,
-          created_by: undefined // Should be current user ID
+          created_by: currentUser?.id,
+          updated_by: currentUser?.id
         });
         payrollId = newPayroll.id;
       } else {
         await financeService.updatePayrollStatus(payrollId, status, config.verifier_id || undefined);
+        // Also update updated_by
+        await financeService.updatePayroll(payrollId, { updated_by: currentUser?.id });
       }
 
       const itemsToSave = payrollItems.map(item => ({
@@ -293,6 +296,19 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
             <p className="text-sm text-gray-500">Hitung gaji karyawan berdasarkan presensi dan skema gaji.</p>
           </div>
         </div>
+        {payroll && (
+          <div className="text-right">
+            <div className="text-[10px] text-gray-400 uppercase tracking-widest">Audit Trail</div>
+            <div className="text-xs text-gray-500">
+              Dibuat oleh: <span className="font-bold text-gray-700">{payroll.creator?.full_name || '-'}</span>
+            </div>
+            {payroll.updater && (
+              <div className="text-xs text-gray-500">
+                Diubah oleh: <span className="font-bold text-gray-700">{payroll.updater.full_name}</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="space-y-6">

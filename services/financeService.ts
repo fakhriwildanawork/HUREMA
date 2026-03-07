@@ -242,7 +242,9 @@ export const financeService = {
       .from('finance_payrolls')
       .select(`
         *,
-        verifier:accounts!finance_payrolls_verifier_id_fkey(full_name)
+        verifier:accounts!finance_payrolls_verifier_id_fkey(full_name),
+        creator:accounts!finance_payrolls_created_by_fkey(full_name),
+        updater:accounts!finance_payrolls_updated_by_fkey(full_name)
       `)
       .order('year', { ascending: false })
       .order('month', { ascending: false });
@@ -255,6 +257,17 @@ export const financeService = {
     const { data, error } = await supabase
       .from('finance_payrolls')
       .insert([payroll])
+      .select();
+    
+    if (error) throw error;
+    return data[0] as Payroll;
+  },
+
+  async updatePayroll(id: string, payroll: Partial<Omit<Payroll, 'id' | 'created_at' | 'updated_at'>>) {
+    const { data, error } = await supabase
+      .from('finance_payrolls')
+      .update({ ...payroll, updated_at: new Date().toISOString() })
+      .eq('id', id)
       .select();
     
     if (error) throw error;

@@ -191,6 +191,7 @@ const PayrollMain: React.FC = () => {
                 <th className="px-6 py-4">Periode</th>
                 <th className="px-6 py-4">Rentang Analisa</th>
                 <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4">Dibuat Oleh</th>
                 <th className="px-6 py-4">Verifikator</th>
                 <th className="px-6 py-4 text-right">Aksi</th>
               </tr>
@@ -198,7 +199,7 @@ const PayrollMain: React.FC = () => {
             <tbody className="divide-y divide-gray-50">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center">
+                  <td colSpan={7} className="px-6 py-12 text-center">
                     <div className="flex flex-col items-center gap-2">
                       <div className="w-8 h-8 border-4 border-[#006E62] border-t-transparent rounded-full animate-spin"></div>
                       <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Memuat Data...</span>
@@ -207,7 +208,7 @@ const PayrollMain: React.FC = () => {
                 </tr>
               ) : filteredPayrolls.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center">
+                  <td colSpan={7} className="px-6 py-12 text-center">
                     <div className="flex flex-col items-center gap-2 text-gray-400">
                       <Calendar size={48} strokeWidth={1} />
                       <p className="text-sm font-medium">Belum ada data payroll.</p>
@@ -238,6 +239,12 @@ const PayrollMain: React.FC = () => {
                     </td>
                     <td className="px-6 py-4">
                       {getStatusBadge(p.status)}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-xs font-medium text-gray-700">{p.creator?.full_name || '-'}</div>
+                      <div className="text-[10px] text-gray-400">
+                        {new Date(p.created_at).toLocaleDateString('id-ID')}
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-xs font-medium text-gray-700">{p.verifier?.full_name || '-'}</div>

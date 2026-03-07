@@ -767,9 +767,16 @@ export interface Payroll {
   verified_at?: string;
   verification_notes?: string;
   created_by?: string;
+  updated_by?: string;
   created_at: string;
   updated_at: string;
   verifier?: {
+    full_name: string;
+  };
+  creator?: {
+    full_name: string;
+  };
+  updater?: {
     full_name: string;
   };
 }
