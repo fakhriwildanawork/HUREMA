@@ -86,35 +86,39 @@ const PayslipDetail: React.FC<PayslipDetailProps> = ({ payroll, onBack }) => {
       });
 
       const canvas = await html2canvas(payslipRef.current, {
-        scale: 3, // Higher scale for better quality
+        scale: 2,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
-        windowWidth: 800, // Fixed width for consistent rendering
+        width: 794,
         onclone: (clonedDoc) => {
-          // Fix for html2canvas not supporting oklch colors (Tailwind 4)
-          const styleElements = clonedDoc.querySelectorAll('style');
-          styleElements.forEach(style => {
-            try {
-              const css = style.textContent || '';
-              if (css.includes('oklch')) {
-                // Replace oklch with a safe color to prevent parser crash
-                style.textContent = css.replace(/oklch\([^)]+\)/g, 'rgb(0, 0, 0)');
-              }
-            } catch (e) {}
-          });
+          // 1. Remove ALL style and link tags to completely avoid oklch parser errors
+          // We rely on the comprehensive inline styles we've added to the payslip elements
+          const styleStuff = clonedDoc.querySelectorAll('style, link[rel="stylesheet"]');
+          styleStuff.forEach(el => el.remove());
 
-          // We MUST NOT remove all links, but we can disable the ones that cause issues
-          // Instead of removing, we'll try to let it render with inline styles as fallback
-          
-          // Force critical layout properties on the cloned elements
-          const allElements = clonedDoc.getElementsByTagName('*');
-          for (let i = 0; i < allElements.length; i++) {
-            const el = allElements[i] as HTMLElement;
-            if (el.style && el.style.color && el.style.color.includes('oklch')) {
-              el.style.color = 'rgb(0, 0, 0)';
+          // 2. Add a basic font-face for Inter to maintain typography
+          const fontStyle = clonedDoc.createElement('style');
+          fontStyle.textContent = `
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+            * { font-family: 'Inter', sans-serif !important; }
+          `;
+          clonedDoc.head.appendChild(fontStyle);
+
+          // 3. Final check for any inline oklch that might have slipped through
+          const all = clonedDoc.querySelectorAll('*');
+          all.forEach(el => {
+            const htmlEl = el as HTMLElement;
+            if (htmlEl.style && htmlEl.style.cssText.includes('oklch')) {
+              htmlEl.style.cssText = htmlEl.style.cssText.replace(/oklch\([^)]+\)/g, '#000000');
             }
-          }
+            if (el instanceof SVGElement) {
+              ['fill', 'stroke'].forEach(attr => {
+                const val = el.getAttribute(attr);
+                if (val && val.includes('oklch')) el.setAttribute(attr, 'currentColor');
+              });
+            }
+          });
         }
       });
       
@@ -346,11 +350,14 @@ const PayslipDetail: React.FC<PayslipDetailProps> = ({ payroll, onBack }) => {
             <div className="flex-1 overflow-y-auto p-8 bg-gray-100 custom-scrollbar">
               <div 
                 ref={payslipRef}
-                className="w-full max-w-[210mm] mx-auto p-12 min-h-[297mm] flex flex-col"
+                className="mx-auto p-12 flex flex-col"
                 style={{ 
                   fontFamily: "'Inter', sans-serif",
                   backgroundColor: '#ffffff',
-                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
+                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                  width: '794px',
+                  minHeight: '1123px',
+                  boxSizing: 'border-box'
                 }}
               >
                 {/* Header / Kop */}
@@ -385,142 +392,142 @@ const PayslipDetail: React.FC<PayslipDetailProps> = ({ payroll, onBack }) => {
                 </div>
 
                 {/* Employee Info */}
-                <div className="grid grid-cols-2 gap-12 mb-12 p-6 rounded-2xl border" style={{ backgroundColor: '#f9fafb', borderColor: '#f3f4f6', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '48px', padding: '24px', borderRadius: '16px', borderWidth: '1px', marginBottom: '48px' }}>
-                  <div className="space-y-4" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <div className="space-y-1">
-                      <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#9ca3af', fontSize: '10px' }}>Nama Pegawai</div>
-                      <div className="text-lg font-black" style={{ color: '#1f2937', fontSize: '18px' }}>{viewingItem.account?.full_name}</div>
+                <div className="mb-12 p-6 rounded-2xl border" style={{ backgroundColor: '#f9fafb', borderColor: '#f3f4f6', display: 'flex', justifyContent: 'space-between', gap: '48px', padding: '24px', borderRadius: '16px', borderStyle: 'solid', borderWidth: '1px', marginBottom: '48px', width: '100%', boxSizing: 'border-box' }}>
+                  <div className="space-y-4" style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 }}>
+                    <div className="space-y-1" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#9ca3af', fontSize: '10px', fontWeight: '700' }}>Nama Pegawai</div>
+                      <div className="text-lg font-black" style={{ color: '#1f2937', fontSize: '18px', fontWeight: '900' }}>{viewingItem.account?.full_name}</div>
                     </div>
-                    <div className="space-y-1">
-                      <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#9ca3af', fontSize: '10px' }}>Nomor Induk Karyawan (NIK)</div>
-                      <div className="text-sm font-bold" style={{ color: '#374151', fontSize: '14px' }}>{viewingItem.account?.internal_nik}</div>
+                    <div className="space-y-1" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#9ca3af', fontSize: '10px', fontWeight: '700' }}>Nomor Induk Karyawan (NIK)</div>
+                      <div className="text-sm font-bold" style={{ color: '#374151', fontSize: '14px', fontWeight: '700' }}>{viewingItem.account?.internal_nik}</div>
                     </div>
                   </div>
-                  <div className="space-y-4" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <div className="space-y-1">
-                      <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#9ca3af', fontSize: '10px' }}>Golongan / Jabatan</div>
-                      <div className="text-sm font-bold" style={{ color: '#1f2937', fontSize: '14px' }}>{viewingItem.account?.grade || '-'} / {viewingItem.account?.position}</div>
+                  <div className="space-y-4" style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 }}>
+                    <div className="space-y-1" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#9ca3af', fontSize: '10px', fontWeight: '700' }}>Golongan / Jabatan</div>
+                      <div className="text-sm font-bold" style={{ color: '#1f2937', fontSize: '14px', fontWeight: '700' }}>{viewingItem.account?.grade || '-'} / {viewingItem.account?.position}</div>
                     </div>
-                    <div className="space-y-1">
-                      <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#9ca3af', fontSize: '10px' }}>Lokasi Penugasan</div>
-                      <div className="text-sm font-bold" style={{ color: '#374151', fontSize: '14px' }}>{viewingItem.account?.location?.name || (viewingItem.account as any)?.location || '-'}</div>
+                    <div className="space-y-1" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#9ca3af', fontSize: '10px', fontWeight: '700' }}>Lokasi Penugasan</div>
+                      <div className="text-sm font-bold" style={{ color: '#374151', fontSize: '14px', fontWeight: '700' }}>{viewingItem.account?.location?.name || (viewingItem.account as any)?.location || '-'}</div>
                     </div>
                   </div>
                 </div>
 
                 {/* Salary Components */}
-                <div className="grid grid-cols-2 gap-12 flex-1" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '48px', flex: 1 }}>
+                <div className="flex-1" style={{ display: 'flex', justifyContent: 'space-between', gap: '48px', flex: 1, width: '100%', boxSizing: 'border-box' }}>
                   {/* Earnings */}
-                  <div className="space-y-6" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                    <div className="flex items-center gap-2 border-b-2 pb-2" style={{ borderColor: '#d1fae5', display: 'flex', alignItems: 'center', gap: '8px', borderBottomWidth: '2px', paddingBottom: '8px' }}>
+                  <div className="space-y-6" style={{ display: 'flex', flexDirection: 'column', gap: '24px', flex: 1 }}>
+                    <div className="flex items-center gap-2 border-b-2 pb-2" style={{ borderColor: '#d1fae5', display: 'flex', alignItems: 'center', gap: '8px', borderBottomStyle: 'solid', borderBottomWidth: '2px', paddingBottom: '8px' }}>
                       <div className="p-1.5 rounded-lg" style={{ backgroundColor: '#d1fae5', color: '#059669', padding: '6px' }}><DollarSign size={14} /></div>
-                      <h3 className="text-xs font-black uppercase tracking-widest" style={{ color: '#047857', fontSize: '12px' }}>Pendapatan (Earnings)</h3>
+                      <h3 className="text-xs font-black uppercase tracking-widest" style={{ color: '#047857', fontSize: '12px', fontWeight: '900' }}>Pendapatan (Earnings)</h3>
                     </div>
                     <div className="space-y-4" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                       <div className="flex justify-between items-start" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div className="space-y-0.5">
-                          <div className="text-xs font-bold" style={{ color: '#374151', fontSize: '12px' }}>Gaji Pokok ({viewingItem.salary_type})</div>
+                        <div className="space-y-0.5" style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <div className="text-xs font-bold" style={{ color: '#374151', fontSize: '12px', fontWeight: '700' }}>Gaji Pokok ({viewingItem.salary_type})</div>
                           {viewingItem.basic_salary_notes && <div className="text-[9px] italic" style={{ color: '#9ca3af', fontSize: '9px' }}>{viewingItem.basic_salary_notes}</div>}
                         </div>
-                        <div className="text-xs font-bold" style={{ color: '#1f2937', fontSize: '12px' }}>Rp {viewingItem.basic_salary.toLocaleString('id-ID')}</div>
+                        <div className="text-xs font-bold" style={{ color: '#1f2937', fontSize: '12px', fontWeight: '700' }}>Rp {viewingItem.basic_salary.toLocaleString('id-ID')}</div>
                       </div>
                       <div className="flex justify-between items-start" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div className="space-y-0.5">
-                          <div className="text-xs font-bold" style={{ color: '#374151', fontSize: '12px' }}>Tunjangan Jabatan</div>
+                        <div className="space-y-0.5" style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <div className="text-xs font-bold" style={{ color: '#374151', fontSize: '12px', fontWeight: '700' }}>Tunjangan Jabatan</div>
                           {viewingItem.position_allowance_notes && <div className="text-[9px] italic" style={{ color: '#9ca3af', fontSize: '9px' }}>{viewingItem.position_allowance_notes}</div>}
                         </div>
-                        <div className="text-xs font-bold" style={{ color: '#1f2937', fontSize: '12px' }}>Rp {viewingItem.position_allowance.toLocaleString('id-ID')}</div>
+                        <div className="text-xs font-bold" style={{ color: '#1f2937', fontSize: '12px', fontWeight: '700' }}>Rp {viewingItem.position_allowance.toLocaleString('id-ID')}</div>
                       </div>
                       <div className="flex justify-between items-start" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div className="space-y-0.5">
-                          <div className="text-xs font-bold" style={{ color: '#374151', fontSize: '12px' }}>Tunjangan Penempatan</div>
+                        <div className="space-y-0.5" style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <div className="text-xs font-bold" style={{ color: '#374151', fontSize: '12px', fontWeight: '700' }}>Tunjangan Penempatan</div>
                           {viewingItem.placement_allowance_notes && <div className="text-[9px] italic" style={{ color: '#9ca3af', fontSize: '9px' }}>{viewingItem.placement_allowance_notes}</div>}
                         </div>
-                        <div className="text-xs font-bold" style={{ color: '#1f2937', fontSize: '12px' }}>Rp {viewingItem.placement_allowance.toLocaleString('id-ID')}</div>
+                        <div className="text-xs font-bold" style={{ color: '#1f2937', fontSize: '12px', fontWeight: '700' }}>Rp {viewingItem.placement_allowance.toLocaleString('id-ID')}</div>
                       </div>
                       <div className="flex justify-between items-start" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div className="space-y-0.5">
-                          <div className="text-xs font-bold" style={{ color: '#374151', fontSize: '12px' }}>Tunjangan Lainnya</div>
+                        <div className="space-y-0.5" style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <div className="text-xs font-bold" style={{ color: '#374151', fontSize: '12px', fontWeight: '700' }}>Tunjangan Lainnya</div>
                           {viewingItem.other_allowance_notes && <div className="text-[9px] italic" style={{ color: '#9ca3af', fontSize: '9px' }}>{viewingItem.other_allowance_notes}</div>}
                         </div>
-                        <div className="text-xs font-bold" style={{ color: '#1f2937', fontSize: '12px' }}>Rp {viewingItem.other_allowance.toLocaleString('id-ID')}</div>
+                        <div className="text-xs font-bold" style={{ color: '#1f2937', fontSize: '12px', fontWeight: '700' }}>Rp {viewingItem.other_allowance.toLocaleString('id-ID')}</div>
                       </div>
                       <div className="flex justify-between items-start" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div className="space-y-0.5">
-                          <div className="text-xs font-bold" style={{ color: '#374151', fontSize: '12px' }}>Tambahan Gaji Lain</div>
+                        <div className="space-y-0.5" style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <div className="text-xs font-bold" style={{ color: '#374151', fontSize: '12px', fontWeight: '700' }}>Tambahan Gaji Lain</div>
                           {viewingItem.other_additions_notes && <div className="text-[9px] italic" style={{ color: '#9ca3af', fontSize: '9px' }}>{viewingItem.other_additions_notes}</div>}
                         </div>
-                        <div className="text-xs font-bold" style={{ color: '#1f2937', fontSize: '12px' }}>Rp {viewingItem.other_additions.toLocaleString('id-ID')}</div>
+                        <div className="text-xs font-bold" style={{ color: '#1f2937', fontSize: '12px', fontWeight: '700' }}>Rp {viewingItem.other_additions.toLocaleString('id-ID')}</div>
                       </div>
                     </div>
                   </div>
 
                   {/* Deductions */}
-                  <div className="space-y-6" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                    <div className="flex items-center gap-2 border-b-2 pb-2" style={{ borderColor: '#ffe4e6', display: 'flex', alignItems: 'center', gap: '8px', borderBottomWidth: '2px', paddingBottom: '8px' }}>
+                  <div className="space-y-6" style={{ display: 'flex', flexDirection: 'column', gap: '24px', flex: 1 }}>
+                    <div className="flex items-center gap-2 border-b-2 pb-2" style={{ borderColor: '#ffe4e6', display: 'flex', alignItems: 'center', gap: '8px', borderBottomStyle: 'solid', borderBottomWidth: '2px', paddingBottom: '8px' }}>
                       <div className="p-1.5 rounded-lg" style={{ backgroundColor: '#ffe4e6', color: '#e11d48', padding: '6px' }}><Trash2 size={14} /></div>
-                      <h3 className="text-xs font-black uppercase tracking-widest" style={{ color: '#be123c', fontSize: '12px' }}>Potongan (Deductions)</h3>
+                      <h3 className="text-xs font-black uppercase tracking-widest" style={{ color: '#be123c', fontSize: '12px', fontWeight: '900' }}>Potongan (Deductions)</h3>
                     </div>
                     <div className="space-y-4" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                       <div className="flex justify-between items-start" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div className="space-y-0.5">
-                          <div className="text-xs font-bold" style={{ color: '#374151', fontSize: '12px' }}>Potongan Keterlambatan</div>
+                        <div className="space-y-0.5" style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <div className="text-xs font-bold" style={{ color: '#374151', fontSize: '12px', fontWeight: '700' }}>Potongan Keterlambatan</div>
                           {viewingItem.late_deduction_notes && <div className="text-[9px] italic" style={{ color: '#9ca3af', fontSize: '9px' }}>{viewingItem.late_deduction_notes}</div>}
                         </div>
-                        <div className="text-xs font-bold" style={{ color: '#e11d48', fontSize: '12px' }}>Rp {viewingItem.late_deduction.toLocaleString('id-ID')}</div>
+                        <div className="text-xs font-bold" style={{ color: '#e11d48', fontSize: '12px', fontWeight: '700' }}>Rp {viewingItem.late_deduction.toLocaleString('id-ID')}</div>
                       </div>
                       <div className="flex justify-between items-start" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div className="space-y-0.5">
-                          <div className="text-xs font-bold" style={{ color: '#374151', fontSize: '12px' }}>Potongan Pulang Cepat</div>
+                        <div className="space-y-0.5" style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <div className="text-xs font-bold" style={{ color: '#374151', fontSize: '12px', fontWeight: '700' }}>Potongan Pulang Cepat</div>
                           {viewingItem.early_leave_deduction_notes && <div className="text-[9px] italic" style={{ color: '#9ca3af', fontSize: '9px' }}>{viewingItem.early_leave_deduction_notes}</div>}
                         </div>
-                        <div className="text-xs font-bold" style={{ color: '#e11d48', fontSize: '12px' }}>Rp {viewingItem.early_leave_deduction.toLocaleString('id-ID')}</div>
+                        <div className="text-xs font-bold" style={{ color: '#e11d48', fontSize: '12px', fontWeight: '700' }}>Rp {viewingItem.early_leave_deduction.toLocaleString('id-ID')}</div>
                       </div>
                       <div className="flex justify-between items-start" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div className="space-y-0.5">
-                          <div className="text-xs font-bold" style={{ color: '#374151', fontSize: '12px' }}>Potongan Absensi</div>
+                        <div className="space-y-0.5" style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <div className="text-xs font-bold" style={{ color: '#374151', fontSize: '12px', fontWeight: '700' }}>Potongan Absensi</div>
                           {viewingItem.absent_deduction_notes && <div className="text-[9px] italic" style={{ color: '#9ca3af', fontSize: '9px' }}>{viewingItem.absent_deduction_notes}</div>}
                         </div>
-                        <div className="text-xs font-bold" style={{ color: '#e11d48', fontSize: '12px' }}>Rp {viewingItem.absent_deduction.toLocaleString('id-ID')}</div>
+                        <div className="text-xs font-bold" style={{ color: '#e11d48', fontSize: '12px', fontWeight: '700' }}>Rp {viewingItem.absent_deduction.toLocaleString('id-ID')}</div>
                       </div>
                       <div className="flex justify-between items-start" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div className="space-y-0.5">
-                          <div className="text-xs font-bold" style={{ color: '#374151', fontSize: '12px' }}>Potongan Lainnya</div>
+                        <div className="space-y-0.5" style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <div className="text-xs font-bold" style={{ color: '#374151', fontSize: '12px', fontWeight: '700' }}>Potongan Lainnya</div>
                           {viewingItem.other_deductions_notes && <div className="text-[9px] italic" style={{ color: '#9ca3af', fontSize: '9px' }}>{viewingItem.other_deductions_notes}</div>}
                         </div>
-                        <div className="text-xs font-bold" style={{ color: '#e11d48', fontSize: '12px' }}>Rp {viewingItem.other_deductions.toLocaleString('id-ID')}</div>
+                        <div className="text-xs font-bold" style={{ color: '#e11d48', fontSize: '12px', fontWeight: '700' }}>Rp {viewingItem.other_deductions.toLocaleString('id-ID')}</div>
                       </div>
                       <div className="flex justify-between items-start" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div className="text-xs font-bold" style={{ color: '#374151', fontSize: '12px' }}>BPJS Kesehatan</div>
-                        <div className="text-xs font-bold" style={{ color: '#e11d48', fontSize: '12px' }}>Rp {viewingItem.bpjs_kesehatan.toLocaleString('id-ID')}</div>
+                        <div className="text-xs font-bold" style={{ color: '#374151', fontSize: '12px', fontWeight: '700' }}>BPJS Kesehatan</div>
+                        <div className="text-xs font-bold" style={{ color: '#e11d48', fontSize: '12px', fontWeight: '700' }}>Rp {viewingItem.bpjs_kesehatan.toLocaleString('id-ID')}</div>
                       </div>
                       <div className="flex justify-between items-start" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div className="text-xs font-bold" style={{ color: '#374151', fontSize: '12px' }}>BPJS Ketenagakerjaan</div>
-                        <div className="text-xs font-bold" style={{ color: '#e11d48', fontSize: '12px' }}>Rp {viewingItem.bpjs_ketenagakerjaan.toLocaleString('id-ID')}</div>
+                        <div className="text-xs font-bold" style={{ color: '#374151', fontSize: '12px', fontWeight: '700' }}>BPJS Ketenagakerjaan</div>
+                        <div className="text-xs font-bold" style={{ color: '#e11d48', fontSize: '12px', fontWeight: '700' }}>Rp {viewingItem.bpjs_ketenagakerjaan.toLocaleString('id-ID')}</div>
                       </div>
                       <div className="flex justify-between items-start" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div className="text-xs font-bold" style={{ color: '#374151', fontSize: '12px' }}>PPh 21</div>
-                        <div className="text-xs font-bold" style={{ color: '#e11d48', fontSize: '12px' }}>Rp {viewingItem.pph21.toLocaleString('id-ID')}</div>
+                        <div className="text-xs font-bold" style={{ color: '#374151', fontSize: '12px', fontWeight: '700' }}>PPh 21</div>
+                        <div className="text-xs font-bold" style={{ color: '#e11d48', fontSize: '12px', fontWeight: '700' }}>Rp {viewingItem.pph21.toLocaleString('id-ID')}</div>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Summary */}
-                <div className="mt-12 pt-8 border-t-2" style={{ borderColor: '#f3f4f6', borderTopWidth: '2px', paddingTop: '32px', marginTop: '48px' }}>
-                  <div className="grid grid-cols-2 gap-12" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '48px' }}>
-                    <div className="space-y-4" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div className="mt-12 pt-8 border-t-2" style={{ borderColor: '#f3f4f6', borderTopStyle: 'solid', borderTopWidth: '2px', paddingTop: '32px', marginTop: '48px', width: '100%', boxSizing: 'border-box' }}>
+                  <div className="gap-12" style={{ display: 'flex', justifyContent: 'space-between', gap: '48px' }}>
+                    <div className="space-y-4" style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 }}>
                       <div className="flex justify-between items-center px-4 py-2 rounded-lg" style={{ backgroundColor: '#ecfdf5', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 16px', borderRadius: '8px' }}>
-                        <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#047857', fontSize: '10px' }}>Total Pendapatan</span>
-                        <span className="text-sm font-black" style={{ color: '#047857', fontSize: '14px' }}>Rp {viewingItem.total_income.toLocaleString('id-ID')}</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#047857', fontSize: '10px', fontWeight: '900' }}>Total Pendapatan</span>
+                        <span className="text-sm font-black" style={{ color: '#047857', fontSize: '14px', fontWeight: '900' }}>Rp {viewingItem.total_income.toLocaleString('id-ID')}</span>
                       </div>
                       <div className="flex justify-between items-center px-4 py-2 rounded-lg" style={{ backgroundColor: '#fff1f2', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 16px', borderRadius: '8px' }}>
-                        <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#be123c', fontSize: '10px' }}>Total Potongan</span>
-                        <span className="text-sm font-black" style={{ color: '#be123c', fontSize: '14px' }}>Rp {viewingItem.total_deduction.toLocaleString('id-ID')}</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#be123c', fontSize: '10px', fontWeight: '900' }}>Total Potongan</span>
+                        <span className="text-sm font-black" style={{ color: '#be123c', fontSize: '14px', fontWeight: '900' }}>Rp {viewingItem.total_deduction.toLocaleString('id-ID')}</span>
                       </div>
                     </div>
-                    <div className="flex flex-col items-end justify-center text-white p-6 rounded-2xl shadow-xl" style={{ backgroundColor: '#006E62', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center', padding: '24px', borderRadius: '16px', color: '#ffffff' }}>
-                      <div className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-80 mb-1" style={{ fontSize: '10px', opacity: 0.8, marginBottom: '4px' }}>Take Home Pay</div>
+                    <div className="flex flex-col items-end justify-center text-white p-6 rounded-2xl shadow-xl" style={{ backgroundColor: '#006E62', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center', padding: '24px', borderRadius: '16px', color: '#ffffff', flex: 1 }}>
+                      <div className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-80 mb-1" style={{ fontSize: '10px', fontWeight: '700', opacity: 0.8, marginBottom: '4px' }}>Take Home Pay</div>
                       <div className="text-3xl font-black tracking-tighter" style={{ fontSize: '30px', fontWeight: '900' }}>Rp {viewingItem.take_home_pay.toLocaleString('id-ID')}</div>
                     </div>
                   </div>
