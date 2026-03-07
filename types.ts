@@ -701,9 +701,9 @@ export interface SalaryScheme {
   position_allowance: number;
   placement_allowance: number;
   other_allowance: number;
-  late_deduction_per_hour: number;
-  early_leave_deduction_per_hour: number;
-  no_clock_out_deduction_per_hour: number;
+  late_deduction_per_minute: number;
+  early_leave_deduction_per_minute: number;
+  no_clock_out_deduction_per_day: number;
   absent_deduction_per_day: number;
   created_at?: string;
   updated_at?: string;

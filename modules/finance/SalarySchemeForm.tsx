@@ -68,9 +68,9 @@ const SalarySchemeForm: React.FC<SalarySchemeFormProps> = ({ scheme, onBack }) =
     position_allowance: scheme?.position_allowance || 0,
     placement_allowance: scheme?.placement_allowance || 0,
     other_allowance: scheme?.other_allowance || 0,
-    late_deduction_per_hour: scheme?.late_deduction_per_hour || 0,
-    early_leave_deduction_per_hour: scheme?.early_leave_deduction_per_hour || 0,
-    no_clock_out_deduction_per_hour: scheme?.no_clock_out_deduction_per_hour || 0,
+    late_deduction_per_minute: scheme?.late_deduction_per_minute || 0,
+    early_leave_deduction_per_minute: scheme?.early_leave_deduction_per_minute || 0,
+    no_clock_out_deduction_per_day: scheme?.no_clock_out_deduction_per_day || 0,
     absent_deduction_per_day: scheme?.absent_deduction_per_day || 0,
   });
 
@@ -222,25 +222,25 @@ const SalarySchemeForm: React.FC<SalarySchemeFormProps> = ({ scheme, onBack }) =
             </div>
             <div className="space-y-6">
               <InputGroup 
-                label="Keterlambatan / Jam" 
-                name="late_deduction_per_hour" 
+                label="Keterlambatan / Menit" 
+                name="late_deduction_per_minute" 
                 icon={Clock} 
-                value={formData.late_deduction_per_hour}
-                onChange={(val) => handleInputChange('late_deduction_per_hour', val)}
+                value={formData.late_deduction_per_minute}
+                onChange={(val) => handleInputChange('late_deduction_per_minute', val)}
               />
               <InputGroup 
-                label="Pulang Awal / Jam" 
-                name="early_leave_deduction_per_hour" 
+                label="Pulang Awal / Menit" 
+                name="early_leave_deduction_per_minute" 
                 icon={Clock} 
-                value={formData.early_leave_deduction_per_hour}
-                onChange={(val) => handleInputChange('early_leave_deduction_per_hour', val)}
+                value={formData.early_leave_deduction_per_minute}
+                onChange={(val) => handleInputChange('early_leave_deduction_per_minute', val)}
               />
               <InputGroup 
-                label="Tanpa Absen Pulang / Jam" 
-                name="no_clock_out_deduction_per_hour" 
+                label="Tanpa Absen Pulang / Hari" 
+                name="no_clock_out_deduction_per_day" 
                 icon={Clock} 
-                value={formData.no_clock_out_deduction_per_hour}
-                onChange={(val) => handleInputChange('no_clock_out_deduction_per_hour', val)}
+                value={formData.no_clock_out_deduction_per_day}
+                onChange={(val) => handleInputChange('no_clock_out_deduction_per_day', val)}
               />
               {formData.type === 'Bulanan' && (
                 <InputGroup 

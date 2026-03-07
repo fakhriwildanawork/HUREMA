@@ -245,8 +245,12 @@ const SalarySchemeMain: React.FC = () => {
                       <td className="px-6 py-4">
                         <div className="text-xs space-y-1">
                           <div className="flex justify-between gap-4">
-                            <span className="text-gray-400">Telat/Jam:</span>
-                            <span className="font-medium text-red-600">Rp {scheme.late_deduction_per_hour.toLocaleString('id-ID')}</span>
+                            <span className="text-gray-400">Telat/Menit:</span>
+                            <span className="font-medium text-red-600">Rp {scheme.late_deduction_per_minute.toLocaleString('id-ID')}</span>
+                          </div>
+                          <div className="flex justify-between gap-4">
+                            <span className="text-gray-400">No Out/Hari:</span>
+                            <span className="font-medium text-red-600">Rp {scheme.no_clock_out_deduction_per_day.toLocaleString('id-ID')}</span>
                           </div>
                           {scheme.type === 'Bulanan' && (
                             <div className="flex justify-between gap-4">

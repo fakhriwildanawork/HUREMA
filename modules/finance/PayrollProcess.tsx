@@ -37,11 +37,11 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
         const [accs, asgs, vfrs] = await Promise.all([
           accountService.getAll(),
           financeService.getAssignments(),
-          accountService.getAll() // Filter for admins later
+          accountService.getAll()
         ]);
         setAccounts(accs);
         setAssignments(asgs);
-        setVerifiers(vfrs.filter(a => a.role === 'admin'));
+        setVerifiers(vfrs);
 
         if (payroll) {
           const items = await financeService.getPayrollItems(payroll.id);
@@ -92,18 +92,21 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
         // Deductions from Attendance
         let lateMins = 0;
         let earlyMins = 0;
+        let noClockOutDays = 0;
         userAttendances.forEach(at => {
           if (at.status_in === 'Terlambat') lateMins += at.late_minutes || 0;
           if (at.status_out === 'Pulang Cepat') earlyMins += at.early_departure_minutes || 0;
+          if (at.check_in && !at.check_out) noClockOutDays += 1;
         });
 
-        const lateDeduction = (scheme.late_penalty_per_minute || 0) * lateMins;
-        const earlyDeduction = (scheme.late_penalty_per_minute || 0) * earlyMins;
+        const lateDeduction = (scheme.late_deduction_per_minute || 0) * lateMins;
+        const earlyDeduction = (scheme.early_leave_deduction_per_minute || 0) * earlyMins;
+        const noClockOutDeduction = (scheme.no_clock_out_deduction_per_day || 0) * noClockOutDays;
         
         // Absent Deduction (Simplified: assume 22 working days if not present)
         // This is a rough estimation, in real app we'd check against a schedule
         const absentDays = Math.max(0, 22 - userAttendances.length); 
-        const absentDeduction = (scheme.absent_penalty_per_day || 0) * absentDays;
+        const absentDeduction = (scheme.absent_deduction_per_day || 0) * absentDays;
 
         // Custom Adjustments
         const otherAdditions = userAdjustments
@@ -123,7 +126,7 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
           .join(', ');
 
         const totalIncome = basicSalary + scheme.position_allowance + scheme.placement_allowance + scheme.other_allowance + otherAdditions;
-        const totalDeduction = lateDeduction + earlyDeduction + absentDeduction + otherDeductions;
+        const totalDeduction = lateDeduction + earlyDeduction + noClockOutDeduction + absentDeduction + otherDeductions;
         const takeHomePay = Math.max(0, totalIncome - totalDeduction);
 
         return {
@@ -140,8 +143,8 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
           late_deduction_notes: `${lateMins} Menit`,
           early_leave_deduction: earlyDeduction,
           early_leave_deduction_notes: `${earlyMins} Menit`,
-          absent_deduction: absentDeduction,
-          absent_deduction_notes: `${absentDays} Hari`,
+          absent_deduction: absentDeduction + noClockOutDeduction,
+          absent_deduction_notes: `${absentDays} Hari Absen, ${noClockOutDays} Hari No-Out`,
           other_deductions: otherDeductions,
           other_deductions_notes: otherDeductionsNotes,
           bpjs_kesehatan: 0,
@@ -170,20 +173,22 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
     }
   };
 
-  const handleManualOverride = (index: number, field: keyof PayrollItem, value: any) => {
-    const updatedItems = [...payrollItems];
-    const item = { ...updatedItems[index], [field]: value };
-    
-    // Recalculate totals
-    const income = (item.basic_salary || 0) + (item.position_allowance || 0) + (item.placement_allowance || 0) + (item.other_allowance || 0) + (item.other_additions || 0);
-    const deduction = (item.late_deduction || 0) + (item.early_leave_deduction || 0) + (item.absent_deduction || 0) + (item.other_deductions || 0) + (item.bpjs_kesehatan || 0) + (item.bpjs_ketenagakerjaan || 0) + (item.pph21 || 0);
-    
-    item.total_income = income;
-    item.total_deduction = deduction;
-    item.take_home_pay = Math.max(0, income - deduction);
-    
-    updatedItems[index] = item;
-    setPayrollItems(updatedItems);
+  const handleManualOverride = (index: number, updates: Partial<PayrollItem>) => {
+    setPayrollItems(prev => {
+      const updatedItems = [...prev];
+      const item = { ...updatedItems[index], ...updates };
+      
+      // Recalculate totals
+      const income = (item.basic_salary || 0) + (item.position_allowance || 0) + (item.placement_allowance || 0) + (item.other_allowance || 0) + (item.other_additions || 0);
+      const deduction = (item.late_deduction || 0) + (item.early_leave_deduction || 0) + (item.absent_deduction || 0) + (item.other_deductions || 0) + (item.bpjs_kesehatan || 0) + (item.bpjs_ketenagakerjaan || 0) + (item.pph21 || 0);
+      
+      item.total_income = income;
+      item.total_deduction = deduction;
+      item.take_home_pay = Math.max(0, income - deduction);
+      
+      updatedItems[index] = item;
+      return updatedItems;
+    });
   };
 
   const handleSave = async (status: Payroll['status'] = 'Draft') => {
@@ -259,8 +264,10 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
   };
 
   const filteredAccounts = accounts.filter(acc => 
-    acc.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    acc.internal_nik.toLowerCase().includes(searchQuery.toLowerCase())
+    acc.email !== 'fakhriwildana.work@gmail.com' && (
+      acc.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      acc.internal_nik.toLowerCase().includes(searchQuery.toLowerCase())
+    )
   );
 
   const toggleAccount = (id: string) => {
@@ -288,16 +295,17 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Config Sidebar */}
-        <div className="space-y-6">
+      <div className="space-y-6">
+        {/* Horizontal Config Bar */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Periode & Analisa */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
             <div className="flex items-center gap-2 text-[#006E62] mb-2">
               <Calendar size={18} />
               <h3 className="font-bold text-sm uppercase tracking-wider">Periode & Analisa</h3>
             </div>
 
-            <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Bulan</label>
                 <select
@@ -330,42 +338,99 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Mulai</label>
-                  <input
-                    type="date"
-                    value={config.start_date}
-                    onChange={(e) => setConfig({ ...config, start_date: e.target.value })}
-                    disabled={!!payroll}
-                    className="w-full px-3 py-2 bg-gray-50 border-none rounded-lg text-xs font-medium focus:ring-2 focus:ring-[#006E62]"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Selesai</label>
-                  <input
-                    type="date"
-                    value={config.end_date}
-                    onChange={(e) => setConfig({ ...config, end_date: e.target.value })}
-                    disabled={!!payroll}
-                    className="w-full px-3 py-2 bg-gray-50 border-none rounded-lg text-xs font-medium focus:ring-2 focus:ring-[#006E62]"
-                  />
-                </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Mulai</label>
+                <input
+                  type="date"
+                  value={config.start_date}
+                  onChange={(e) => setConfig({ ...config, start_date: e.target.value })}
+                  disabled={!!payroll}
+                  className="w-full px-3 py-2 bg-gray-50 border-none rounded-lg text-xs font-medium focus:ring-2 focus:ring-[#006E62]"
+                />
               </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Selesai</label>
+                <input
+                  type="date"
+                  value={config.end_date}
+                  onChange={(e) => setConfig({ ...config, end_date: e.target.value })}
+                  disabled={!!payroll}
+                  className="w-full px-3 py-2 bg-gray-50 border-none rounded-lg text-xs font-medium focus:ring-2 focus:ring-[#006E62]"
+                />
+              </div>
+            </div>
 
-              <div className="pt-2">
-                <button
-                  onClick={handleCalculate}
-                  disabled={calculating || isLocked}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all text-xs font-bold uppercase tracking-wider shadow-sm disabled:opacity-50"
-                >
-                  {calculating ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <Calculator size={16} />}
-                  Kalkulasi Otomatis
-                </button>
-              </div>
+            <div className="pt-2">
+              <button
+                onClick={handleCalculate}
+                disabled={calculating || isLocked}
+                className="w-full flex items-center justify-center gap-2 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all text-xs font-bold uppercase tracking-wider shadow-sm disabled:opacity-50"
+              >
+                {calculating ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <Calculator size={16} />}
+                Kalkulasi Otomatis
+              </button>
             </div>
           </div>
 
+          {/* Pilih Karyawan */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col h-full">
+            <div className="flex items-center gap-2 text-[#006E62] mb-4">
+              <Users size={18} />
+              <h3 className="font-bold text-sm uppercase tracking-wider">Pilih Karyawan</h3>
+            </div>
+            {payroll ? (
+              <div className="flex-1 flex items-center justify-center text-gray-400 text-xs italic">
+                Data karyawan sudah terkunci untuk payroll ini.
+              </div>
+            ) : (
+              <>
+                <div className="relative mb-4">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                  <input
+                    type="text"
+                    placeholder="Cari..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 bg-gray-50 border-none rounded-lg text-xs focus:ring-2 focus:ring-[#006E62]"
+                  />
+                </div>
+                <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar max-h-[120px]">
+                  <button
+                    onClick={() => {
+                      if (selectedAccountIds.length === filteredAccounts.length) setSelectedAccountIds([]);
+                      else setSelectedAccountIds(filteredAccounts.map(a => a.id));
+                    }}
+                    className="w-full text-left px-3 py-2 text-[10px] font-bold text-[#006E62] uppercase tracking-widest hover:bg-emerald-50 rounded-lg"
+                  >
+                    {selectedAccountIds.length === filteredAccounts.length ? 'Batal Pilih Semua' : 'Pilih Semua'}
+                  </button>
+                  {filteredAccounts.map((acc) => (
+                    <button
+                      key={acc.id}
+                      onClick={() => toggleAccount(acc.id)}
+                      className={`w-full flex items-center justify-between p-2 rounded-lg border transition-all text-left ${
+                        selectedAccountIds.includes(acc.id)
+                          ? 'border-[#006E62] bg-emerald-50'
+                          : 'border-gray-100 hover:border-gray-200'
+                      }`}
+                    >
+                      <div className="truncate pr-2">
+                        <div className="text-[10px] font-bold text-gray-800 truncate">{acc.full_name}</div>
+                        <div className="text-[8px] text-gray-500 uppercase tracking-wider">{acc.internal_nik}</div>
+                      </div>
+                      {selectedAccountIds.includes(acc.id) && (
+                        <div className="bg-[#006E62] text-white p-0.5 rounded-full shrink-0">
+                          <Check size={8} />
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Verifikasi */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
             <div className="flex items-center gap-2 text-[#006E62] mb-2">
               <UserCheck size={18} />
@@ -381,89 +446,37 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
                   disabled={isLocked}
                   className="w-full px-3 py-2 bg-gray-50 border-none rounded-lg text-sm font-medium focus:ring-2 focus:ring-[#006E62]"
                 >
-                  <option value="">-- Pilih Admin --</option>
+                  <option value="">-- Pilih User --</option>
                   {verifiers.map(v => (
                     <option key={v.id} value={v.id}>{v.full_name}</option>
                   ))}
                 </select>
               </div>
 
-              <div className="pt-2 space-y-2">
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => handleSave('Draft')}
                   disabled={loading || isLocked}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-all text-xs font-bold uppercase tracking-wider shadow-sm disabled:opacity-50"
+                  className="flex items-center justify-center gap-2 py-2.5 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-all text-[10px] font-bold uppercase tracking-wider shadow-sm disabled:opacity-50"
                 >
-                  <Save size={16} />
-                  Simpan Draft
+                  <Save size={14} />
+                  Draft
                 </button>
                 <button
                   onClick={() => handleSave('Pending')}
                   disabled={loading || isLocked}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#006E62] text-white rounded-lg hover:bg-[#005a50] transition-all text-xs font-bold uppercase tracking-wider shadow-md disabled:opacity-50"
+                  className="flex items-center justify-center gap-2 py-2.5 bg-[#006E62] text-white rounded-lg hover:bg-[#005a50] transition-all text-[10px] font-bold uppercase tracking-wider shadow-md disabled:opacity-50"
                 >
-                  <Check size={16} />
-                  Ajukan Verifikasi
+                  <Check size={14} />
+                  Ajukan
                 </button>
               </div>
             </div>
           </div>
-
-          {!payroll && (
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col h-[400px]">
-              <div className="flex items-center gap-2 text-[#006E62] mb-4">
-                <Users size={18} />
-                <h3 className="font-bold text-sm uppercase tracking-wider">Pilih Karyawan</h3>
-              </div>
-              <div className="relative mb-4">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                <input
-                  type="text"
-                  placeholder="Cari..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-gray-50 border-none rounded-lg text-xs focus:ring-2 focus:ring-[#006E62]"
-                />
-              </div>
-              <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
-                <button
-                  onClick={() => {
-                    if (selectedAccountIds.length === filteredAccounts.length) setSelectedAccountIds([]);
-                    else setSelectedAccountIds(filteredAccounts.map(a => a.id));
-                  }}
-                  className="w-full text-left px-3 py-2 text-[10px] font-bold text-[#006E62] uppercase tracking-widest hover:bg-emerald-50 rounded-lg"
-                >
-                  {selectedAccountIds.length === filteredAccounts.length ? 'Batal Pilih Semua' : 'Pilih Semua'}
-                </button>
-                {filteredAccounts.map((acc) => (
-                  <button
-                    key={acc.id}
-                    onClick={() => toggleAccount(acc.id)}
-                    className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all text-left ${
-                      selectedAccountIds.includes(acc.id)
-                        ? 'border-[#006E62] bg-emerald-50'
-                        : 'border-gray-100 hover:border-gray-200'
-                    }`}
-                  >
-                    <div>
-                      <div className="text-xs font-bold text-gray-800">{acc.full_name}</div>
-                      <div className="text-[9px] text-gray-500 uppercase tracking-wider">{acc.internal_nik}</div>
-                    </div>
-                    {selectedAccountIds.includes(acc.id) && (
-                      <div className="bg-[#006E62] text-white p-0.5 rounded-full">
-                        <Check size={10} />
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* Main Table */}
-        <div className="lg:col-span-3 space-y-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        {/* Main Table - Full Width */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="p-4 border-b border-gray-50 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Info size={16} className="text-blue-500" />
@@ -557,10 +570,10 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
                               });
 
                               if (formValues) {
-                                handleManualOverride(idx, cell.field as keyof PayrollItem, Number(formValues[0]));
-                                if (cell.field.includes('notes') === false) {
-                                  handleManualOverride(idx, `${cell.field}_notes` as keyof PayrollItem, formValues[1]);
-                                }
+                                handleManualOverride(idx, {
+                                  [cell.field]: Number(formValues[0]),
+                                  [`${cell.field}_notes`]: formValues[1]
+                                });
                               }
                             }}
                           >
@@ -583,8 +596,7 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
           </div>
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
 export default PayrollProcess;
