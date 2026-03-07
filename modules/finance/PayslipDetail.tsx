@@ -90,8 +90,8 @@ const PayslipDetail: React.FC<PayslipDetailProps> = ({ payroll, onBack }) => {
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
-        width: 720, // Reduced width for capture
-        height: 1050, // Reduced height for capture
+        width: 720,
+        // Removed fixed height to allow full content capture
         onclone: (clonedDoc) => {
           // 1. Remove ALL style and link tags to completely avoid oklch parser errors
           const styleStuff = clonedDoc.querySelectorAll('style, link[rel="stylesheet"]');
@@ -109,7 +109,6 @@ const PayslipDetail: React.FC<PayslipDetailProps> = ({ payroll, onBack }) => {
           // 3. Isolate the capture element and force its dimensions
           const captureEl = clonedDoc.getElementById('payslip-capture-area');
           if (captureEl) {
-            // Force it to be at the very top-left of the cloned document
             clonedDoc.body.innerHTML = '';
             clonedDoc.body.appendChild(captureEl);
             
@@ -118,8 +117,8 @@ const PayslipDetail: React.FC<PayslipDetailProps> = ({ payroll, onBack }) => {
             captureEl.style.left = '0';
             captureEl.style.margin = '0';
             captureEl.style.width = '720px';
-            captureEl.style.minHeight = '1050px';
-            captureEl.style.padding = '40px'; // Internal padding
+            captureEl.style.minHeight = '1080px'; // Slightly less than A4 height
+            captureEl.style.padding = '80px 40px'; // More vertical padding
           }
 
           // 4. Final check for any inline oklch
@@ -367,10 +366,10 @@ const PayslipDetail: React.FC<PayslipDetailProps> = ({ payroll, onBack }) => {
                   fontFamily: "'Inter', sans-serif",
                   backgroundColor: '#ffffff',
                   width: '720px',
-                  minHeight: '1050px',
+                  minHeight: '1080px',
                   boxSizing: 'border-box',
                   position: 'relative',
-                  padding: '40px'
+                  padding: '80px 40px'
                 }}
               >
                 {/* Header / Kop */}
