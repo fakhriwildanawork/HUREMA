@@ -832,6 +832,7 @@ export interface PayrollItem {
     position: string;
     department: string;
     location: string;
+    grade?: string;
   };
 }
 

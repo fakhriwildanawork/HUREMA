@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Search, Eye, Download, Trash2, Send, CheckCircle, AlertCircle, Printer, X, DollarSign, User, MapPin, Calendar, FileText } from 'lucide-react';
 import { financeService } from '../../services/financeService';
 import { Payroll, PayrollItem, PayrollSettings } from '../../types';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import Swal from 'sweetalert2';
 
@@ -75,20 +75,37 @@ const PayslipDetail: React.FC<PayslipDetailProps> = ({ payroll, onBack }) => {
   const downloadPDF = async (item: PayrollItem) => {
     if (!payslipRef.current) return;
     
-    const canvas = await html2canvas(payslipRef.current, {
-      scale: 2,
-      useCORS: true,
-      logging: false
-    });
-    
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const imgProps = pdf.getImageProperties(imgData);
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-    
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-    pdf.save(`Payslip_${item.account?.full_name}_${new Date(0, payroll.month - 1).toLocaleString('id-ID', { month: 'long' })}${payroll.year}.pdf`);
+    try {
+      Swal.fire({
+        title: 'Generating PDF...',
+        text: 'Mohon tunggu sebentar',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      const canvas = await html2canvas(payslipRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`Payslip_${item.account?.full_name}_${new Date(0, payroll.month - 1).toLocaleString('id-ID', { month: 'long' })}${payroll.year}.pdf`);
+      
+      Swal.close();
+    } catch (error) {
+      console.error('PDF Error:', error);
+      Swal.fire('Gagal!', 'Terjadi kesalahan saat membuat PDF.', 'error');
+    }
   };
 
   const filteredItems = items.filter(i => 
@@ -350,8 +367,8 @@ const PayslipDetail: React.FC<PayslipDetailProps> = ({ payroll, onBack }) => {
                   </div>
                   <div className="space-y-4">
                     <div className="space-y-1">
-                      <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Jabatan / Divisi</div>
-                      <div className="text-sm font-bold text-gray-800">{viewingItem.account?.position} / {(viewingItem.account as any)?.department || '-'}</div>
+                      <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Golongan / Jabatan</div>
+                      <div className="text-sm font-bold text-gray-800">{viewingItem.account?.grade || '-'} / {viewingItem.account?.position}</div>
                     </div>
                     <div className="space-y-1">
                       <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Lokasi Penugasan</div>

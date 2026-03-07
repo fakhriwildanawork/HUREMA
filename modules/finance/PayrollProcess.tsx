@@ -157,6 +157,7 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
             full_name: account?.full_name || '',
             internal_nik: account?.internal_nik || '',
             position: account?.position || '',
+            grade: account?.grade || '',
             department: (account as any)?.department || '-',
             location: account?.location?.name || (account as any)?.location || '-'
           }
