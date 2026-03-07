@@ -89,7 +89,17 @@ const PayslipDetail: React.FC<PayslipDetailProps> = ({ payroll, onBack }) => {
         scale: 2,
         useCORS: true,
         logging: false,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        onclone: (clonedDoc) => {
+          // Fix for html2canvas not supporting oklch colors (Tailwind 4)
+          const styleElements = clonedDoc.querySelectorAll('style');
+          styleElements.forEach(style => {
+            if (style.innerHTML.includes('oklch')) {
+              // Replace oklch with a safe fallback to prevent parser crash
+              style.innerHTML = style.innerHTML.replace(/oklch\([^)]+\)/g, '#000000');
+            }
+          });
+        }
       });
       
       const imgData = canvas.toDataURL('image/png');
@@ -324,7 +334,7 @@ const PayslipDetail: React.FC<PayslipDetailProps> = ({ payroll, onBack }) => {
                 style={{ fontFamily: "'Inter', sans-serif" }}
               >
                 {/* Header / Kop */}
-                <div className="flex justify-between items-start border-b-4 border-[#006E62] pb-6 mb-8">
+                <div className="flex justify-between items-start border-b-4 pb-6 mb-8" style={{ borderBottomColor: '#006E62' }}>
                   <div className="flex items-center gap-6">
                     {settings?.company_logo_url && (
                       <img 
@@ -335,8 +345,8 @@ const PayslipDetail: React.FC<PayslipDetailProps> = ({ payroll, onBack }) => {
                       />
                     )}
                     <div className="space-y-1">
-                      <h1 className="text-3xl font-black text-[#006E62] tracking-tighter uppercase">{settings?.company_name || 'HUREMA HRIS'}</h1>
-                      <div className="text-xs text-gray-500 max-w-md leading-relaxed">
+                      <h1 className="text-3xl font-black tracking-tighter uppercase" style={{ color: '#006E62' }}>{settings?.company_name || 'HUREMA HRIS'}</h1>
+                      <div className="text-xs max-w-md leading-relaxed" style={{ color: '#6b7280' }}>
                         {settings?.company_address && <div className="flex items-center gap-2"><MapPin size={10} /> {settings.company_address}</div>}
                         <div className="flex items-center gap-4 mt-1">
                           {settings?.company_phone && <span>Telp: {settings.company_phone}</span>}
@@ -346,33 +356,33 @@ const PayslipDetail: React.FC<PayslipDetailProps> = ({ payroll, onBack }) => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <h2 className="text-2xl font-black text-gray-300 uppercase tracking-widest">Slip Gaji</h2>
-                    <div className="text-sm font-bold text-gray-800 mt-2">
+                    <h2 className="text-2xl font-black uppercase tracking-widest" style={{ color: '#d1d5db' }}>Slip Gaji</h2>
+                    <div className="text-sm font-bold mt-2" style={{ color: '#1f2937' }}>
                       {new Date(0, payroll.month - 1).toLocaleString('id-ID', { month: 'long' })} {payroll.year}
                     </div>
                   </div>
                 </div>
 
                 {/* Employee Info */}
-                <div className="grid grid-cols-2 gap-12 mb-12 bg-gray-50 p-6 rounded-2xl border border-gray-100">
+                <div className="grid grid-cols-2 gap-12 mb-12 p-6 rounded-2xl border" style={{ backgroundColor: '#f9fafb', borderColor: '#f3f4f6' }}>
                   <div className="space-y-4">
                     <div className="space-y-1">
-                      <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Nama Pegawai</div>
-                      <div className="text-lg font-black text-gray-800">{viewingItem.account?.full_name}</div>
+                      <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#9ca3af' }}>Nama Pegawai</div>
+                      <div className="text-lg font-black" style={{ color: '#1f2937' }}>{viewingItem.account?.full_name}</div>
                     </div>
                     <div className="space-y-1">
-                      <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Nomor Induk Karyawan (NIK)</div>
-                      <div className="text-sm font-bold text-gray-700">{viewingItem.account?.internal_nik}</div>
+                      <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#9ca3af' }}>Nomor Induk Karyawan (NIK)</div>
+                      <div className="text-sm font-bold" style={{ color: '#374151' }}>{viewingItem.account?.internal_nik}</div>
                     </div>
                   </div>
                   <div className="space-y-4">
                     <div className="space-y-1">
-                      <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Golongan / Jabatan</div>
-                      <div className="text-sm font-bold text-gray-800">{viewingItem.account?.grade || '-'} / {viewingItem.account?.position}</div>
+                      <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#9ca3af' }}>Golongan / Jabatan</div>
+                      <div className="text-sm font-bold" style={{ color: '#1f2937' }}>{viewingItem.account?.grade || '-'} / {viewingItem.account?.position}</div>
                     </div>
                     <div className="space-y-1">
-                      <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Lokasi Penugasan</div>
-                      <div className="text-sm font-bold text-gray-700">{viewingItem.account?.location?.name || (viewingItem.account as any)?.location || '-'}</div>
+                      <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#9ca3af' }}>Lokasi Penugasan</div>
+                      <div className="text-sm font-bold" style={{ color: '#374151' }}>{viewingItem.account?.location?.name || (viewingItem.account as any)?.location || '-'}</div>
                     </div>
                   </div>
                 </div>
@@ -381,114 +391,114 @@ const PayslipDetail: React.FC<PayslipDetailProps> = ({ payroll, onBack }) => {
                 <div className="grid grid-cols-2 gap-12 flex-1">
                   {/* Earnings */}
                   <div className="space-y-6">
-                    <div className="flex items-center gap-2 border-b-2 border-emerald-100 pb-2">
-                      <div className="p-1.5 bg-emerald-100 text-emerald-600 rounded-lg"><DollarSign size={14} /></div>
-                      <h3 className="text-xs font-black text-emerald-700 uppercase tracking-widest">Pendapatan (Earnings)</h3>
+                    <div className="flex items-center gap-2 border-b-2 pb-2" style={{ borderColor: '#d1fae5' }}>
+                      <div className="p-1.5 rounded-lg" style={{ backgroundColor: '#d1fae5', color: '#059669' }}><DollarSign size={14} /></div>
+                      <h3 className="text-xs font-black uppercase tracking-widest" style={{ color: '#047857' }}>Pendapatan (Earnings)</h3>
                     </div>
                     <div className="space-y-4">
                       <div className="flex justify-between items-start group">
                         <div className="space-y-0.5">
-                          <div className="text-xs font-bold text-gray-700">Gaji Pokok ({viewingItem.salary_type})</div>
-                          {viewingItem.basic_salary_notes && <div className="text-[9px] text-gray-400 italic">{viewingItem.basic_salary_notes}</div>}
+                          <div className="text-xs font-bold" style={{ color: '#374151' }}>Gaji Pokok ({viewingItem.salary_type})</div>
+                          {viewingItem.basic_salary_notes && <div className="text-[9px] italic" style={{ color: '#9ca3af' }}>{viewingItem.basic_salary_notes}</div>}
                         </div>
-                        <div className="text-xs font-bold text-gray-800">Rp {viewingItem.basic_salary.toLocaleString('id-ID')}</div>
+                        <div className="text-xs font-bold" style={{ color: '#1f2937' }}>Rp {viewingItem.basic_salary.toLocaleString('id-ID')}</div>
                       </div>
                       <div className="flex justify-between items-start">
                         <div className="space-y-0.5">
-                          <div className="text-xs font-bold text-gray-700">Tunjangan Jabatan</div>
-                          {viewingItem.position_allowance_notes && <div className="text-[9px] text-gray-400 italic">{viewingItem.position_allowance_notes}</div>}
+                          <div className="text-xs font-bold" style={{ color: '#374151' }}>Tunjangan Jabatan</div>
+                          {viewingItem.position_allowance_notes && <div className="text-[9px] italic" style={{ color: '#9ca3af' }}>{viewingItem.position_allowance_notes}</div>}
                         </div>
-                        <div className="text-xs font-bold text-gray-800">Rp {viewingItem.position_allowance.toLocaleString('id-ID')}</div>
+                        <div className="text-xs font-bold" style={{ color: '#1f2937' }}>Rp {viewingItem.position_allowance.toLocaleString('id-ID')}</div>
                       </div>
                       <div className="flex justify-between items-start">
                         <div className="space-y-0.5">
-                          <div className="text-xs font-bold text-gray-700">Tunjangan Penempatan</div>
-                          {viewingItem.placement_allowance_notes && <div className="text-[9px] text-gray-400 italic">{viewingItem.placement_allowance_notes}</div>}
+                          <div className="text-xs font-bold" style={{ color: '#374151' }}>Tunjangan Penempatan</div>
+                          {viewingItem.placement_allowance_notes && <div className="text-[9px] italic" style={{ color: '#9ca3af' }}>{viewingItem.placement_allowance_notes}</div>}
                         </div>
-                        <div className="text-xs font-bold text-gray-800">Rp {viewingItem.placement_allowance.toLocaleString('id-ID')}</div>
+                        <div className="text-xs font-bold" style={{ color: '#1f2937' }}>Rp {viewingItem.placement_allowance.toLocaleString('id-ID')}</div>
                       </div>
                       <div className="flex justify-between items-start">
                         <div className="space-y-0.5">
-                          <div className="text-xs font-bold text-gray-700">Tunjangan Lainnya</div>
-                          {viewingItem.other_allowance_notes && <div className="text-[9px] text-gray-400 italic">{viewingItem.other_allowance_notes}</div>}
+                          <div className="text-xs font-bold" style={{ color: '#374151' }}>Tunjangan Lainnya</div>
+                          {viewingItem.other_allowance_notes && <div className="text-[9px] italic" style={{ color: '#9ca3af' }}>{viewingItem.other_allowance_notes}</div>}
                         </div>
-                        <div className="text-xs font-bold text-gray-800">Rp {viewingItem.other_allowance.toLocaleString('id-ID')}</div>
+                        <div className="text-xs font-bold" style={{ color: '#1f2937' }}>Rp {viewingItem.other_allowance.toLocaleString('id-ID')}</div>
                       </div>
                       <div className="flex justify-between items-start">
                         <div className="space-y-0.5">
-                          <div className="text-xs font-bold text-gray-700">Tambahan Gaji Lain</div>
-                          {viewingItem.other_additions_notes && <div className="text-[9px] text-gray-400 italic">{viewingItem.other_additions_notes}</div>}
+                          <div className="text-xs font-bold" style={{ color: '#374151' }}>Tambahan Gaji Lain</div>
+                          {viewingItem.other_additions_notes && <div className="text-[9px] italic" style={{ color: '#9ca3af' }}>{viewingItem.other_additions_notes}</div>}
                         </div>
-                        <div className="text-xs font-bold text-gray-800">Rp {viewingItem.other_additions.toLocaleString('id-ID')}</div>
+                        <div className="text-xs font-bold" style={{ color: '#1f2937' }}>Rp {viewingItem.other_additions.toLocaleString('id-ID')}</div>
                       </div>
                     </div>
                   </div>
 
                   {/* Deductions */}
                   <div className="space-y-6">
-                    <div className="flex items-center gap-2 border-b-2 border-rose-100 pb-2">
-                      <div className="p-1.5 bg-rose-100 text-rose-600 rounded-lg"><Trash2 size={14} /></div>
-                      <h3 className="text-xs font-black text-rose-700 uppercase tracking-widest">Potongan (Deductions)</h3>
+                    <div className="flex items-center gap-2 border-b-2 pb-2" style={{ borderColor: '#ffe4e6' }}>
+                      <div className="p-1.5 rounded-lg" style={{ backgroundColor: '#ffe4e6', color: '#e11d48' }}><Trash2 size={14} /></div>
+                      <h3 className="text-xs font-black uppercase tracking-widest" style={{ color: '#be123c' }}>Potongan (Deductions)</h3>
                     </div>
                     <div className="space-y-4">
                       <div className="flex justify-between items-start">
                         <div className="space-y-0.5">
-                          <div className="text-xs font-bold text-gray-700">Potongan Keterlambatan</div>
-                          {viewingItem.late_deduction_notes && <div className="text-[9px] text-gray-400 italic">{viewingItem.late_deduction_notes}</div>}
+                          <div className="text-xs font-bold" style={{ color: '#374151' }}>Potongan Keterlambatan</div>
+                          {viewingItem.late_deduction_notes && <div className="text-[9px] italic" style={{ color: '#9ca3af' }}>{viewingItem.late_deduction_notes}</div>}
                         </div>
-                        <div className="text-xs font-bold text-rose-600">Rp {viewingItem.late_deduction.toLocaleString('id-ID')}</div>
+                        <div className="text-xs font-bold" style={{ color: '#e11d48' }}>Rp {viewingItem.late_deduction.toLocaleString('id-ID')}</div>
                       </div>
                       <div className="flex justify-between items-start">
                         <div className="space-y-0.5">
-                          <div className="text-xs font-bold text-gray-700">Potongan Pulang Cepat</div>
-                          {viewingItem.early_leave_deduction_notes && <div className="text-[9px] text-gray-400 italic">{viewingItem.early_leave_deduction_notes}</div>}
+                          <div className="text-xs font-bold" style={{ color: '#374151' }}>Potongan Pulang Cepat</div>
+                          {viewingItem.early_leave_deduction_notes && <div className="text-[9px] italic" style={{ color: '#9ca3af' }}>{viewingItem.early_leave_deduction_notes}</div>}
                         </div>
-                        <div className="text-xs font-bold text-rose-600">Rp {viewingItem.early_leave_deduction.toLocaleString('id-ID')}</div>
+                        <div className="text-xs font-bold" style={{ color: '#e11d48' }}>Rp {viewingItem.early_leave_deduction.toLocaleString('id-ID')}</div>
                       </div>
                       <div className="flex justify-between items-start">
                         <div className="space-y-0.5">
-                          <div className="text-xs font-bold text-gray-700">Potongan Absensi</div>
-                          {viewingItem.absent_deduction_notes && <div className="text-[9px] text-gray-400 italic">{viewingItem.absent_deduction_notes}</div>}
+                          <div className="text-xs font-bold" style={{ color: '#374151' }}>Potongan Absensi</div>
+                          {viewingItem.absent_deduction_notes && <div className="text-[9px] italic" style={{ color: '#9ca3af' }}>{viewingItem.absent_deduction_notes}</div>}
                         </div>
-                        <div className="text-xs font-bold text-rose-600">Rp {viewingItem.absent_deduction.toLocaleString('id-ID')}</div>
+                        <div className="text-xs font-bold" style={{ color: '#e11d48' }}>Rp {viewingItem.absent_deduction.toLocaleString('id-ID')}</div>
                       </div>
                       <div className="flex justify-between items-start">
                         <div className="space-y-0.5">
-                          <div className="text-xs font-bold text-gray-700">Potongan Lainnya</div>
-                          {viewingItem.other_deductions_notes && <div className="text-[9px] text-gray-400 italic">{viewingItem.other_deductions_notes}</div>}
+                          <div className="text-xs font-bold" style={{ color: '#374151' }}>Potongan Lainnya</div>
+                          {viewingItem.other_deductions_notes && <div className="text-[9px] italic" style={{ color: '#9ca3af' }}>{viewingItem.other_deductions_notes}</div>}
                         </div>
-                        <div className="text-xs font-bold text-rose-600">Rp {viewingItem.other_deductions.toLocaleString('id-ID')}</div>
+                        <div className="text-xs font-bold" style={{ color: '#e11d48' }}>Rp {viewingItem.other_deductions.toLocaleString('id-ID')}</div>
                       </div>
                       <div className="flex justify-between items-start">
-                        <div className="text-xs font-bold text-gray-700">BPJS Kesehatan</div>
-                        <div className="text-xs font-bold text-rose-600">Rp {viewingItem.bpjs_kesehatan.toLocaleString('id-ID')}</div>
+                        <div className="text-xs font-bold" style={{ color: '#374151' }}>BPJS Kesehatan</div>
+                        <div className="text-xs font-bold" style={{ color: '#e11d48' }}>Rp {viewingItem.bpjs_kesehatan.toLocaleString('id-ID')}</div>
                       </div>
                       <div className="flex justify-between items-start">
-                        <div className="text-xs font-bold text-gray-700">BPJS Ketenagakerjaan</div>
-                        <div className="text-xs font-bold text-rose-600">Rp {viewingItem.bpjs_ketenagakerjaan.toLocaleString('id-ID')}</div>
+                        <div className="text-xs font-bold" style={{ color: '#374151' }}>BPJS Ketenagakerjaan</div>
+                        <div className="text-xs font-bold" style={{ color: '#e11d48' }}>Rp {viewingItem.bpjs_ketenagakerjaan.toLocaleString('id-ID')}</div>
                       </div>
                       <div className="flex justify-between items-start">
-                        <div className="text-xs font-bold text-gray-700">PPh 21</div>
-                        <div className="text-xs font-bold text-rose-600">Rp {viewingItem.pph21.toLocaleString('id-ID')}</div>
+                        <div className="text-xs font-bold" style={{ color: '#374151' }}>PPh 21</div>
+                        <div className="text-xs font-bold" style={{ color: '#e11d48' }}>Rp {viewingItem.pph21.toLocaleString('id-ID')}</div>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Summary */}
-                <div className="mt-12 pt-8 border-t-2 border-gray-100">
+                <div className="mt-12 pt-8 border-t-2" style={{ borderColor: '#f3f4f6' }}>
                   <div className="grid grid-cols-2 gap-12">
                     <div className="space-y-4">
-                      <div className="flex justify-between items-center px-4 py-2 bg-emerald-50 rounded-lg">
-                        <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Total Pendapatan</span>
-                        <span className="text-sm font-black text-emerald-700">Rp {viewingItem.total_income.toLocaleString('id-ID')}</span>
+                      <div className="flex justify-between items-center px-4 py-2 rounded-lg" style={{ backgroundColor: '#ecfdf5' }}>
+                        <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#047857' }}>Total Pendapatan</span>
+                        <span className="text-sm font-black" style={{ color: '#047857' }}>Rp {viewingItem.total_income.toLocaleString('id-ID')}</span>
                       </div>
-                      <div className="flex justify-between items-center px-4 py-2 bg-rose-50 rounded-lg">
-                        <span className="text-[10px] font-black text-rose-700 uppercase tracking-widest">Total Potongan</span>
-                        <span className="text-sm font-black text-rose-700">Rp {viewingItem.total_deduction.toLocaleString('id-ID')}</span>
+                      <div className="flex justify-between items-center px-4 py-2 rounded-lg" style={{ backgroundColor: '#fff1f2' }}>
+                        <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#be123c' }}>Total Potongan</span>
+                        <span className="text-sm font-black" style={{ color: '#be123c' }}>Rp {viewingItem.total_deduction.toLocaleString('id-ID')}</span>
                       </div>
                     </div>
-                    <div className="flex flex-col items-end justify-center bg-[#006E62] text-white p-6 rounded-2xl shadow-xl">
+                    <div className="flex flex-col items-end justify-center text-white p-6 rounded-2xl shadow-xl" style={{ backgroundColor: '#006E62' }}>
                       <div className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-80 mb-1">Take Home Pay</div>
                       <div className="text-3xl font-black tracking-tighter">Rp {viewingItem.take_home_pay.toLocaleString('id-ID')}</div>
                     </div>
@@ -498,17 +508,17 @@ const PayslipDetail: React.FC<PayslipDetailProps> = ({ payroll, onBack }) => {
                 {/* Footer / Signatures */}
                 <div className="mt-auto pt-16 grid grid-cols-3 gap-12 text-center">
                   <div className="space-y-20">
-                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Diterima Oleh,</div>
-                    <div className="border-t border-gray-200 pt-2 text-xs font-bold text-gray-800">{viewingItem.account?.full_name}</div>
+                    <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#9ca3af' }}>Diterima Oleh,</div>
+                    <div className="border-t pt-2 text-xs font-bold" style={{ borderColor: '#e5e7eb', color: '#1f2937' }}>{viewingItem.account?.full_name}</div>
                   </div>
                   <div></div>
                   <div className="space-y-20">
-                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Disetujui Oleh,</div>
-                    <div className="border-t border-gray-200 pt-2 text-xs font-bold text-gray-800">{payroll.verifier?.full_name || 'HR Manager'}</div>
+                    <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#9ca3af' }}>Disetujui Oleh,</div>
+                    <div className="border-t pt-2 text-xs font-bold" style={{ borderColor: '#e5e7eb', color: '#1f2937' }}>{payroll.verifier?.full_name || 'HR Manager'}</div>
                   </div>
                 </div>
 
-                <div className="mt-12 text-[8px] text-gray-300 text-center uppercase tracking-[0.3em]">
+                <div className="mt-12 text-[8px] text-center uppercase tracking-[0.3em]" style={{ color: '#d1d5db' }}>
                   Dokumen ini dihasilkan secara otomatis oleh sistem HUREMA HRIS • {new Date().toLocaleString('id-ID')}
                 </div>
               </div>
