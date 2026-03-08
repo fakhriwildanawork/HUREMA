@@ -8,7 +8,7 @@ export const financeService = {
       .from('finance_early_salary_requests')
       .select(`
         *,
-        account:accounts(full_name, internal_nik)
+        account:accounts!finance_early_salary_requests_account_id_fkey(full_name, internal_nik)
       `)
       .order('created_at', { ascending: false });
 
