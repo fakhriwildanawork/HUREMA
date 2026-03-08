@@ -312,6 +312,8 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
         placement_allowance_notes: item.placement_allowance_notes,
         other_allowance: item.other_allowance!,
         other_allowance_notes: item.other_allowance_notes,
+        overtime_pay: item.overtime_pay!,
+        overtime_pay_notes: item.overtime_pay_notes,
         other_additions: item.other_additions!,
         other_additions_notes: item.other_additions_notes,
         late_deduction: item.late_deduction!,

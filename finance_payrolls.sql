@@ -38,6 +38,9 @@ CREATE TABLE IF NOT EXISTS finance_payroll_items (
     other_allowance DECIMAL(15, 2) NOT NULL DEFAULT 0,
     other_allowance_notes TEXT,
     
+    overtime_pay DECIMAL(15, 2) NOT NULL DEFAULT 0,
+    overtime_pay_notes TEXT,
+    
     other_additions DECIMAL(15, 2) NOT NULL DEFAULT 0,
     other_additions_notes TEXT,
     
