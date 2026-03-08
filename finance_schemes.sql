@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS finance_salary_schemes (
   position_allowance NUMERIC DEFAULT 0,
   placement_allowance NUMERIC DEFAULT 0,
   other_allowance NUMERIC DEFAULT 0,
+  overtime_rate_per_hour NUMERIC DEFAULT 0,
   late_deduction_per_hour NUMERIC DEFAULT 0,
   early_leave_deduction_per_hour NUMERIC DEFAULT 0,
   no_clock_out_deduction_per_hour NUMERIC DEFAULT 0,

@@ -25,6 +25,18 @@ export const submissionService = {
     return data as Submission[];
   },
 
+  async getSubmissionsByRange(startDate: string, endDate: string) {
+    const { data, error } = await supabase
+      .from('account_submissions')
+      .select('*')
+      .gte('created_at', `${startDate}T00:00:00Z`)
+      .lte('created_at', `${endDate}T23:59:59Z`)
+      .order('created_at', { ascending: true });
+    
+    if (error) throw error;
+    return data as Submission[];
+  },
+
   async getByAccountId(accountId: string) {
     const { data, error } = await supabase
       .from('account_submissions')

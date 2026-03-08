@@ -68,6 +68,7 @@ const SalarySchemeForm: React.FC<SalarySchemeFormProps> = ({ scheme, onBack }) =
     position_allowance: scheme?.position_allowance || 0,
     placement_allowance: scheme?.placement_allowance || 0,
     other_allowance: scheme?.other_allowance || 0,
+    overtime_rate_per_hour: scheme?.overtime_rate_per_hour || 0,
     late_deduction_per_minute: scheme?.late_deduction_per_minute || 0,
     early_leave_deduction_per_minute: scheme?.early_leave_deduction_per_minute || 0,
     no_clock_out_deduction_per_day: scheme?.no_clock_out_deduction_per_day || 0,
@@ -202,6 +203,13 @@ const SalarySchemeForm: React.FC<SalarySchemeFormProps> = ({ scheme, onBack }) =
                     icon={Plus} 
                     value={formData.other_allowance}
                     onChange={(val) => handleInputChange('other_allowance', val)}
+                  />
+                  <InputGroup 
+                    label="Upah Lembur / Jam" 
+                    name="overtime_rate_per_hour" 
+                    icon={Clock} 
+                    value={formData.overtime_rate_per_hour}
+                    onChange={(val) => handleInputChange('overtime_rate_per_hour', val)}
                   />
                 </>
               )}

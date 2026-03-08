@@ -3,6 +3,9 @@ import { ArrowLeft, Save, Calculator, Search, Check, AlertCircle, Info, UserChec
 import { financeService } from '../../services/financeService';
 import { accountService } from '../../services/accountService';
 import { presenceService } from '../../services/presenceService';
+import { overtimeService } from '../../services/overtimeService';
+import { submissionService } from '../../services/submissionService';
+import { scheduleService } from '../../services/scheduleService';
 import { authService } from '../../services/authService';
 import { Account, SalaryScheme, SalaryAssignmentExtended, SalaryAdjustment, Payroll, PayrollItem, PayrollSettings } from '../../types';
 import Swal from 'sweetalert2';
@@ -67,35 +70,99 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
 
     setCalculating(true);
     try {
-      const [attendances, adjustments, earlySalaryRequests] = await Promise.all([
+      const [attendances, adjustments, earlySalaryRequests, overtimes, submissions, allSchedules] = await Promise.all([
         presenceService.getAttendanceByRange(config.start_date, config.end_date),
         financeService.getSalaryAdjustments({ month: config.month, year: config.year }),
-        financeService.getEarlySalaryRequests({ month: config.month, year: config.year })
+        financeService.getEarlySalaryRequests({ month: config.month, year: config.year }),
+        overtimeService.getOvertimeByRange(config.start_date, config.end_date),
+        submissionService.getSubmissionsByRange(config.start_date, config.end_date),
+        scheduleService.getAll()
       ]);
 
       const newItems: Partial<PayrollItem>[] = selectedAccountIds.map(accountId => {
         const account = accounts.find(a => a.id === accountId);
         const assignment = assignments.find(as => as.account_id === accountId);
         const scheme = assignment?.scheme;
+        const schedule = allSchedules.find(s => s.id === account?.schedule_id);
         
         const userAttendances = attendances.filter(at => at.account_id === accountId);
         const userAdjustments = adjustments.filter(ad => ad.account_id === accountId);
         const userEarlySalary = earlySalaryRequests
-          .filter(es => es.account_id === accountId && es.status === 'Paid')
+          .filter(es => es.account_id === accountId && (es.status === 'Approved' || es.status === 'Paid'))
           .reduce((sum, es) => sum + es.amount, 0);
         
         const userEarlySalaryNotes = earlySalaryRequests
-          .filter(es => es.account_id === accountId && es.status === 'Paid')
+          .filter(es => es.account_id === accountId && (es.status === 'Approved' || es.status === 'Paid'))
           .map(es => `Kasbon: Rp ${es.amount.toLocaleString('id-ID')}`)
           .join(', ');
+
+        const userOvertimes = overtimes.filter(ot => ot.account_id === accountId);
+        const userSubmissions = submissions.filter(s => s.account_id === accountId && s.status === 'Disetujui');
+
+        // Calculate Overtime Pay
+        const totalOvertimeMinutes = userOvertimes.reduce((sum, ot) => sum + (ot.duration_minutes || 0), 0);
+        const totalOvertimeHours = totalOvertimeMinutes / 60;
+        const overtimePay = totalOvertimeHours * (scheme?.overtime_rate_per_hour || 0);
+        const overtimePayNotes = totalOvertimeHours > 0 ? `${totalOvertimeHours.toFixed(2)} Jam x Rp ${(scheme?.overtime_rate_per_hour || 0).toLocaleString('id-ID')}` : '';
+
+        // Calculate Attendance & Absences
+        const startDate = new Date(config.start_date);
+        const endDate = new Date(config.end_date);
+        const totalDaysInRange = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        
+        const attendanceDates = new Set(userAttendances.map(at => new Date(at.created_at || '').toISOString().split('T')[0]));
+        
+        // Submissions unique dates
+        const submissionDates = new Set<string>();
+        userSubmissions.forEach(s => {
+          if (['Cuti', 'Izin', 'Libur Mandiri', 'Cuti Melahirkan', 'Cuti Tahunan'].includes(s.type)) {
+            const sData = s.submission_data;
+            if (sData.start_date && sData.end_date) {
+              let current = new Date(sData.start_date);
+              const end = new Date(sData.end_date);
+              while (current <= end) {
+                const dateStr = current.toISOString().split('T')[0];
+                if (dateStr >= config.start_date && dateStr <= config.end_date) {
+                  submissionDates.add(dateStr);
+                }
+                current.setDate(current.getDate() + 1);
+              }
+            }
+          }
+        });
+
+        // Determine working days based on schedule
+        let absentDays = 0;
+        let presentDays = attendanceDates.size;
+        let validAbsenceDays = 0;
+
+        // Iterate through each day in range to check for absences
+        let current = new Date(startDate);
+        while (current <= endDate) {
+          const dateStr = current.toISOString().split('T')[0];
+          const dayOfWeek = current.getDay();
+          const rule = schedule?.rules?.find(r => r.day_of_week === dayOfWeek);
+          
+          const isWorkingDay = schedule?.id === 'FLEKSIBEL' || (account as any)?.schedule_type === 'Shift Dinamis' || (rule && !rule.is_holiday);
+          const isPresent = attendanceDates.has(dateStr);
+          const hasValidSubmission = submissionDates.has(dateStr);
+
+          if (isWorkingDay && !isPresent) {
+            if (hasValidSubmission) {
+              validAbsenceDays++;
+            } else {
+              absentDays++;
+            }
+          }
+          current.setDate(current.getDate() + 1);
+        }
 
         // Basic Salary Calculation
         let basicSalary = scheme?.basic_salary || 0;
         let basicSalaryNotes = '';
         if (scheme?.type === 'Harian') {
-          const daysPresent = userAttendances.length;
-          basicSalary = (scheme?.basic_salary || 0) * daysPresent;
-          basicSalaryNotes = `${daysPresent} Hari x Rp ${(scheme?.basic_salary || 0).toLocaleString('id-ID')}`;
+          basicSalary = (scheme?.basic_salary || 0) * presentDays;
+          basicSalaryNotes = `${presentDays} Hari x Rp ${(scheme?.basic_salary || 0).toLocaleString('id-ID')}`;
         }
 
         // Deductions from Attendance
@@ -111,10 +178,6 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
         const lateDeduction = (scheme?.late_deduction_per_minute || 0) * lateMins;
         const earlyDeduction = (scheme?.early_leave_deduction_per_minute || 0) * earlyMins;
         const noClockOutDeduction = (scheme?.no_clock_out_deduction_per_day || 0) * noClockOutDays;
-        
-        // Absent Deduction (Simplified: assume 22 working days if not present)
-        // This is a rough estimation, in real app we'd check against a schedule
-        const absentDays = Math.max(0, 22 - userAttendances.length); 
         const absentDeduction = (scheme?.absent_deduction_per_day || 0) * absentDays;
 
         // Custom Adjustments
@@ -134,7 +197,7 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
           userEarlySalaryNotes
         ].filter(Boolean).join(', ');
 
-        const totalIncome = basicSalary + (scheme?.position_allowance || 0) + (scheme?.placement_allowance || 0) + (scheme?.other_allowance || 0) + otherAdditions;
+        const totalIncome = basicSalary + (scheme?.position_allowance || 0) + (scheme?.placement_allowance || 0) + (scheme?.other_allowance || 0) + otherAdditions + overtimePay;
         const totalDeduction = lateDeduction + earlyDeduction + noClockOutDeduction + absentDeduction + otherDeductions;
         const takeHomePay = Math.max(0, totalIncome - totalDeduction);
 
@@ -146,6 +209,8 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
           position_allowance: scheme?.position_allowance || 0,
           placement_allowance: scheme?.placement_allowance || 0,
           other_allowance: scheme?.other_allowance || 0,
+          overtime_pay: overtimePay,
+          overtime_pay_notes: overtimePayNotes,
           other_additions: otherAdditions,
           other_additions_notes: otherAdditionsNotes,
           late_deduction: lateDeduction,
@@ -153,7 +218,7 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
           early_leave_deduction: earlyDeduction,
           early_leave_deduction_notes: `${earlyMins} Menit`,
           absent_deduction: absentDeduction + noClockOutDeduction,
-          absent_deduction_notes: `${absentDays} Hari Absen, ${noClockOutDays} Hari No-Out`,
+          absent_deduction_notes: `${absentDays} Hari Absen, ${noClockOutDays} Hari No-Out, ${validAbsenceDays} Hari Izin/Cuti`,
           other_deductions: otherDeductions,
           other_deductions_notes: otherDeductionsNotes,
           bpjs_kesehatan: 0,
@@ -189,7 +254,7 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
       const item = { ...updatedItems[index], ...updates };
       
       // Recalculate totals
-      const income = (item.basic_salary || 0) + (item.position_allowance || 0) + (item.placement_allowance || 0) + (item.other_allowance || 0) + (item.other_additions || 0);
+      const income = (item.basic_salary || 0) + (item.position_allowance || 0) + (item.placement_allowance || 0) + (item.other_allowance || 0) + (item.overtime_pay || 0) + (item.other_additions || 0);
       const deduction = (item.late_deduction || 0) + (item.early_leave_deduction || 0) + (item.absent_deduction || 0) + (item.other_deductions || 0) + (item.bpjs_kesehatan || 0) + (item.bpjs_ketenagakerjaan || 0) + (item.pph21 || 0);
       
       item.total_income = income;
@@ -523,6 +588,7 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
                     <th className="px-4 py-3">Tunj. Jabatan</th>
                     <th className="px-4 py-3">Tunj. Penempatan</th>
                     <th className="px-4 py-3">Tunj. Lain</th>
+                    <th className="px-4 py-3 text-emerald-600">Upah Lembur</th>
                     <th className="px-4 py-3">Tambahan Lain</th>
                     <th className="px-4 py-3 text-rose-600">Pot. Telat</th>
                     <th className="px-4 py-3 text-rose-600">Pot. Pulang Cepat</th>
@@ -561,6 +627,7 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
                           { field: 'position_allowance', value: item.position_allowance, notes: item.position_allowance_notes },
                           { field: 'placement_allowance', value: item.placement_allowance, notes: item.placement_allowance_notes },
                           { field: 'other_allowance', value: item.other_allowance, notes: item.other_allowance_notes },
+                          { field: 'overtime_pay', value: item.overtime_pay, notes: item.overtime_pay_notes, color: 'text-emerald-600' },
                           { field: 'other_additions', value: item.other_additions, notes: item.other_additions_notes },
                           { field: 'late_deduction', value: item.late_deduction, notes: item.late_deduction_notes, color: 'text-rose-600' },
                           { field: 'early_leave_deduction', value: item.early_leave_deduction, notes: item.early_leave_deduction_notes, color: 'text-rose-600' },

@@ -701,6 +701,7 @@ export interface SalaryScheme {
   position_allowance: number;
   placement_allowance: number;
   other_allowance: number;
+  overtime_rate_per_hour: number;
   late_deduction_per_minute: number;
   early_leave_deduction_per_minute: number;
   no_clock_out_deduction_per_day: number;
@@ -799,6 +800,9 @@ export interface PayrollItem {
   
   other_allowance: number;
   other_allowance_notes?: string;
+  
+  overtime_pay: number;
+  overtime_pay_notes?: string;
   
   other_additions: number;
   other_additions_notes?: string;
