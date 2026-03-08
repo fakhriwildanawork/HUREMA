@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   MapPin, LayoutDashboard, Settings, Users, 
   CalendarClock, Files, ChevronDown, ChevronRight, 
-  Menu as MenuIcon, ChevronLeft, Database, Fingerprint, LogOut, Timer, ClipboardCheck, Plane, Calendar, ClipboardList, Heart, Target, BarChart3, CheckSquare, AlertTriangle, Video, Megaphone, Receipt
+  Menu as MenuIcon, ChevronLeft, Database, Fingerprint, LogOut, Timer, ClipboardCheck, Plane, Calendar, ClipboardList, Heart, Target, BarChart3, CheckSquare, AlertTriangle, Video, Megaphone, Receipt, Trophy
 } from 'lucide-react';
 import { authService } from '../../services/authService';
 import { financeService } from '../../services/financeService';
@@ -155,6 +155,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed,
             <div className={`mt-1 overflow-hidden transition-all duration-300 ${isCollapsed ? '' : 'max-h-96'}`}>
               <NavItem id="kpi" icon={Target} label="Key Performance Indicator" indent />
               <NavItem id="key_activity" icon={CheckSquare} label="Key Activities" indent />
+              <NavItem id="employee_of_the_period" icon={Trophy} label="Employee of The Period" indent />
               <NavItem id="sales_report" icon={MapPin} label="Sales Report" indent />
               <NavItem id="feedback" icon={ClipboardList} label="Feedback Pegawai" indent />
               <NavItem id="lapor" icon={AlertTriangle} label="Lapor Pelanggaran" indent />

@@ -936,3 +936,24 @@ export interface Compensation {
 }
 
 export type CompensationInput = Omit<Compensation, 'id' | 'status' | 'is_read' | 'transaction_date' | 'processed_amount' | 'notes' | 'proof_file_id' | 'created_at' | 'updated_at' | 'account'>;
+
+export interface EmployeeOfThePeriod {
+  id: string;
+  account_ids: string[];
+  month: number;
+  year: number;
+  reason: string | null;
+  created_at: string;
+  updated_at: string;
+  created_by?: string;
+  // Join properties
+  accounts?: {
+    id: string;
+    full_name: string;
+    internal_nik: string;
+    photo_google_id?: string | null;
+    position: string;
+  }[];
+}
+
+export type EmployeeOfThePeriodInput = Omit<EmployeeOfThePeriod, 'id' | 'created_at' | 'updated_at' | 'accounts'>;
