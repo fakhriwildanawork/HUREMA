@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { SalaryScheme, SalarySchemeInput, SalaryAssignment, SalaryAssignmentExtended, Reimbursement, ReimbursementInput, ReimbursementStatus, SalaryAdjustment, SalaryAdjustmentInput, PayrollStatus, Payroll, PayrollItem, PayrollSettings, EarlySalaryRequest, EarlySalaryRequestInput, EarlySalaryStatus } from '../types';
+import { SalaryScheme, SalarySchemeInput, SalaryAssignment, SalaryAssignmentExtended, Reimbursement, ReimbursementInput, ReimbursementStatus, SalaryAdjustment, SalaryAdjustmentInput, PayrollStatus, Payroll, PayrollItem, PayrollSettings, EarlySalaryRequest, EarlySalaryRequestInput, EarlySalaryStatus, Compensation, CompensationInput, CompensationStatus } from '../types';
 
 export const financeService = {
   // Early Salary Requests
@@ -433,5 +433,64 @@ export const financeService = {
     
     if (error) throw error;
     return data[0] as PayrollSettings;
+  },
+
+  // Compensations
+  async getCompensations(filters?: { status?: CompensationStatus, account_id?: string }) {
+    let query = supabase
+      .from('account_compensation_logs')
+      .select(`
+        *,
+        account:accounts(full_name, internal_nik)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (filters?.status) query = query.eq('status', filters.status);
+    if (filters?.account_id) query = query.eq('account_id', filters.account_id);
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data as Compensation[];
+  },
+
+  async createCompensation(compensation: CompensationInput) {
+    const { data, error } = await supabase
+      .from('account_compensation_logs')
+      .insert([compensation])
+      .select();
+    
+    if (error) throw error;
+    return data[0] as Compensation;
+  },
+
+  async updateCompensation(id: string, update: Partial<Compensation>) {
+    const { data, error } = await supabase
+      .from('account_compensation_logs')
+      .update({ ...update, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select();
+    
+    if (error) throw error;
+    return data[0] as Compensation;
+  },
+
+  async markCompensationAsRead(id: string) {
+    const { error } = await supabase
+      .from('account_compensation_logs')
+      .update({ is_read: true })
+      .eq('id', id);
+    
+    if (error) throw error;
+    return true;
+  },
+
+  async getUnreadCompensationCount() {
+    const { count, error } = await supabase
+      .from('account_compensation_logs')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_read', false);
+    
+    if (error) throw error;
+    return count || 0;
   }
 };

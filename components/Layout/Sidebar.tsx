@@ -20,16 +20,21 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed,
   const [isPerformanceOpen, setIsPerformanceOpen] = useState(false);
   const [isFinanceOpen, setIsFinanceOpen] = useState(false);
   const [unreadReimbursements, setUnreadReimbursements] = useState(0);
+  const [unreadCompensations, setUnreadCompensations] = useState(0);
   const user = authService.getCurrentUser();
 
   useEffect(() => {
     if (user?.role === 'admin') {
       const fetchUnread = async () => {
         try {
-          const count = await financeService.getUnreadCount();
-          setUnreadReimbursements(count);
+          const [reimburseCount, compensationCount] = await Promise.all([
+            financeService.getUnreadCount(),
+            financeService.getUnreadCompensationCount()
+          ]);
+          setUnreadReimbursements(reimburseCount);
+          setUnreadCompensations(compensationCount);
         } catch (error) {
-          console.error('Error fetching unread count:', error);
+          console.error('Error fetching unread counts:', error);
         }
       };
       fetchUnread();
@@ -176,7 +181,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed,
               <div className="flex items-center justify-between flex-1 overflow-hidden">
                 <div className="flex items-center gap-2 truncate">
                   <span className="font-medium text-sm">Finance</span>
-                  {unreadReimbursements > 0 && (
+                  {(unreadReimbursements > 0 || unreadCompensations > 0) && (
                     <span className="bg-red-500 text-white text-[8px] font-bold px-1 rounded-full">NEW</span>
                   )}
                 </div>
@@ -197,6 +202,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed,
               <NavItem id="my_payslip" icon={Receipt} label="Slip Gaji Saya" indent />
               <NavItem id="reimbursement" icon={Receipt} label="Reimburse" indent badge={user?.role === 'admin' ? unreadReimbursements : undefined} />
               <NavItem id="early_salary" icon={Receipt} label="Ambil Gaji Awal" indent />
+              {user?.role === 'admin' && (
+                <NavItem id="compensation" icon={Receipt} label="Kompensasi" indent badge={unreadCompensations} />
+              )}
             </div>
           )}
         </div>

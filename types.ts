@@ -909,3 +909,30 @@ export interface EarlySalaryRequest {
 }
 
 export type EarlySalaryRequestInput = Omit<EarlySalaryRequest, 'id' | 'account_id' | 'status' | 'payment_proof_id' | 'rejection_reason' | 'verifier_id' | 'verified_at' | 'created_at' | 'updated_at' | 'account'>;
+
+export type CompensationStatus = 'Pending' | 'Completed';
+
+export interface Compensation {
+  id: string;
+  account_id: string;
+  termination_type: 'Resign' | 'Pemecatan';
+  termination_date: string;
+  amount: number;
+  type: 'Severance' | 'Penalty';
+  reason: string;
+  status: CompensationStatus;
+  is_read: boolean;
+  transaction_date?: string | null;
+  processed_amount?: number | null;
+  notes?: string | null;
+  proof_file_id?: string | null;
+  created_at: string;
+  updated_at: string;
+  // Join properties
+  account?: {
+    full_name: string;
+    internal_nik: string;
+  };
+}
+
+export type CompensationInput = Omit<Compensation, 'id' | 'status' | 'is_read' | 'transaction_date' | 'processed_amount' | 'notes' | 'proof_file_id' | 'created_at' | 'updated_at' | 'account'>;

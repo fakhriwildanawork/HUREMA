@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
 import { WarningLog, WarningLogExtended, WarningLogInput, TerminationLog, TerminationLogExtended, TerminationLogInput } from '../types';
 import { accountService } from './accountService';
+import { financeService } from './financeService';
 import ExcelJS from 'exceljs';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
@@ -84,6 +85,18 @@ export const disciplineService = {
     await accountService.update(input.account_id, {
       end_date: input.termination_date
     });
+
+    // Create Compensation Record if amount > 0
+    if (input.severance_amount > 0 || input.penalty_amount > 0) {
+      await financeService.createCompensation({
+        account_id: input.account_id,
+        termination_type: input.termination_type,
+        termination_date: input.termination_date,
+        amount: input.termination_type === 'Pemecatan' ? input.severance_amount : input.penalty_amount,
+        type: input.termination_type === 'Pemecatan' ? 'Severance' : 'Penalty',
+        reason: input.reason
+      });
+    }
 
     return data[0] as TerminationLog;
   },
@@ -289,6 +302,18 @@ export const disciplineService = {
       await accountService.update(item.account_id, {
         end_date: item.termination_date
       });
+
+      // Create Compensation Record if amount > 0
+      if (item.severance_amount > 0 || item.penalty_amount > 0) {
+        await financeService.createCompensation({
+          account_id: item.account_id,
+          termination_type: item.termination_type,
+          termination_date: item.termination_date,
+          amount: item.termination_type === 'Pemecatan' ? item.severance_amount : item.penalty_amount,
+          type: item.termination_type === 'Pemecatan' ? 'Severance' : 'Penalty',
+          reason: item.reason
+        });
+      }
     }
   }
 };
