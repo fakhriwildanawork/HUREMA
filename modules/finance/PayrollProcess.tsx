@@ -136,6 +136,13 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
         let presentDays = attendanceDates.size;
         let validAbsenceDays = 0;
 
+        const userLocationId = account?.location_id || (account as any)?.location_id;
+        const specialHolidays = allSchedules.filter(s => 
+          s.type === 3 && 
+          s.location_ids?.includes(userLocationId) &&
+          !s.excluded_account_ids?.includes(accountId)
+        );
+
         // Iterate through each day in range to check for absences
         let current = new Date(startDate);
         while (current <= endDate) {
@@ -143,13 +150,26 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
           const dayOfWeek = current.getDay();
           const rule = schedule?.rules?.find(r => r.day_of_week === dayOfWeek);
           
-          // Logic: Fleksibel and Shift Dinamis are considered "Full Working" unless there's a submission
+          // 1. Check Special Holiday (Type 3)
+          const isSpecialHoliday = specialHolidays.some(h => 
+            h.start_date && h.end_date && dateStr >= h.start_date && dateStr <= h.end_date
+          );
+
+          // 2. Check Regular Working Day
           const isFlexible = schedule?.id === 'FLEKSIBEL' || account?.schedule_type === 'Fleksibel' || account?.schedule_type === 'Shift Dinamis';
-          const isWorkingDay = isFlexible || (rule && !rule.is_holiday);
+          
+          let isWorkingDay = false;
+          if (!isSpecialHoliday) {
+            if (isFlexible) {
+              isWorkingDay = true;
+            } else if (rule) {
+              isWorkingDay = !rule.is_holiday;
+            }
+          }
           
           const isPresent = attendanceDates.has(dateStr);
           
-          // Find if there's an approved submission for this date
+          // 3. Check Submission
           const submission = userSubmissions.find(s => {
             const sData = s.submission_data || {};
             const start = sData.start_date || sData.date;
@@ -161,17 +181,10 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
           if (isWorkingDay && !isPresent) {
             if (submission) {
               validAbsenceDays++;
-              // Deduct if it's an unpaid leave type (Izin or Libur Mandiri)
-              // This applies to both fixed and flexible schedules
-              if (['Izin', 'Libur Mandiri'].includes(submission.type)) {
-                absentDays++;
-              }
+              // Izin/Libur Mandiri tetap ngga potong gaji secara default (Manual by Admin)
             } else {
-              // For fixed schedules, no submission means Alpha (Deducted)
-              // For flexible/dynamic, no submission means "Full Working" (Not Deducted)
-              if (!isFlexible) {
-                absentDays++;
-              }
+              // Alpha (No presence, no submission, is working day)
+              absentDays++;
             }
           }
           current.setDate(current.getDate() + 1);
@@ -238,7 +251,7 @@ const PayrollProcess: React.FC<PayrollProcessProps> = ({ payroll, onBack }) => {
           early_leave_deduction: earlyDeduction,
           early_leave_deduction_notes: `${earlyMins} Menit`,
           absent_deduction: absentDeduction + noClockOutDeduction,
-          absent_deduction_notes: `${absentDays} Hari Potong (Alpha/Izin), ${noClockOutDays} Hari No-Out, ${validAbsenceDays} Hari Total Izin/Cuti`,
+          absent_deduction_notes: `${absentDays} Hari Potong (Alpha), ${noClockOutDays} Hari No-Out, ${validAbsenceDays} Hari Total Izin/Cuti`,
           other_deductions: otherDeductions,
           other_deductions_notes: otherDeductionsNotes,
           bpjs_kesehatan: 0,
