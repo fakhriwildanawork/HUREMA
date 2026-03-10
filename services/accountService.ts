@@ -255,7 +255,7 @@ export const accountService = {
     return results;
   },
 
-  async updateImageByNikOrName(identifier: string, type: 'photo' | 'ktp' | 'ijazah', fileId: string) {
+  async updateImageByNikOrName(identifier: string, type: 'photo' | 'ktp' | 'ijazah' | 'sk' | 'mcu' | 'kontrak', fileId: string) {
     // Normalize identifier for name matching
     const normalizedId = identifier.toLowerCase().replace(/[^a-z0-9]/g, '');
     
@@ -266,43 +266,74 @@ export const accountService = {
       .eq('internal_nik', identifier)
       .maybeSingle();
 
-    if (byNik) {
+    if (nikError) throw nikError;
+
+    let targetId = byNik?.id;
+    let targetName = byNik?.full_name;
+
+    if (!targetId) {
+      // 2. Try matching by full_name (normalized)
+      const { data: allAccounts, error: allErr } = await supabase.from('accounts').select('id, full_name');
+      if (allErr) throw allErr;
+
+      const matches = allAccounts?.filter(acc => 
+        acc.full_name.toLowerCase().replace(/[^a-z0-9]/g, '') === normalizedId
+      );
+
+      if (!matches || matches.length === 0) {
+        throw new Error(`Akun dengan Nama/NIK "${identifier}" tidak ditemukan.`);
+      }
+
+      if (matches.length > 1) {
+        throw new Error(`Nama "${identifier}" ditemukan lebih dari satu akun (${matches.length}). Gunakan NIK agar spesifik.`);
+      }
+
+      targetId = matches[0].id;
+      targetName = matches[0].full_name;
+    }
+
+    // 3. Update field sesuai tipe
+    if (type === 'photo' || type === 'ktp' || type === 'ijazah') {
       const updateData: any = {};
       if (type === 'photo') updateData.photo_google_id = fileId;
       else if (type === 'ktp') updateData.ktp_google_id = fileId;
-      else if (type === 'ijazah') updateData.ijazah_google_id = fileId;
+      else if (type === 'ijazah') updateData.diploma_google_id = fileId;
 
-      const { error } = await supabase.from('accounts').update(updateData).eq('id', byNik.id);
+      const { error } = await supabase.from('accounts').update(updateData).eq('id', targetId);
       if (error) throw error;
-      return { success: true, name: byNik.full_name };
+    } else if (type === 'sk') {
+      const { data: latestLog } = await supabase
+        .from('account_career_logs')
+        .select('id')
+        .eq('account_id', targetId)
+        .order('change_date', { ascending: false })
+        .limit(1);
+      if (latestLog && latestLog.length > 0) {
+        await supabase.from('account_career_logs').update({ file_sk_id: fileId }).eq('id', latestLog[0].id);
+      }
+    } else if (type === 'mcu') {
+      const { data: latestLog } = await supabase
+        .from('account_health_logs')
+        .select('id')
+        .eq('account_id', targetId)
+        .order('change_date', { ascending: false })
+        .limit(1);
+      if (latestLog && latestLog.length > 0) {
+        await supabase.from('account_health_logs').update({ file_mcu_id: fileId }).eq('id', latestLog[0].id);
+      }
+    } else if (type === 'kontrak') {
+      const { data: latestContract } = await supabase
+        .from('account_contracts')
+        .select('id')
+        .eq('account_id', targetId)
+        .order('start_date', { ascending: false })
+        .limit(1);
+      if (latestContract && latestContract.length > 0) {
+        await supabase.from('account_contracts').update({ file_id: fileId }).eq('id', latestContract[0].id);
+      }
     }
 
-    // 2. Try matching by full_name (normalized)
-    // We fetch all accounts and match locally to handle normalization
-    const { data: allAccounts, error: allErr } = await supabase.from('accounts').select('id, full_name');
-    if (allErr) throw allErr;
-
-    const matches = allAccounts?.filter(acc => 
-      acc.full_name.toLowerCase().replace(/[^a-z0-9]/g, '') === normalizedId
-    );
-
-    if (!matches || matches.length === 0) {
-      throw new Error(`Akun dengan Nama/NIK "${identifier}" tidak ditemukan.`);
-    }
-
-    if (matches.length > 1) {
-      throw new Error(`Nama "${identifier}" ditemukan lebih dari satu akun (${matches.length}). Gunakan NIK agar spesifik.`);
-    }
-
-    const target = matches[0];
-    const updateData: any = {};
-    if (type === 'photo') updateData.photo_google_id = fileId;
-    else if (type === 'ktp') updateData.ktp_google_id = fileId;
-    else if (type === 'ijazah') updateData.ijazah_google_id = fileId;
-
-    const { error } = await supabase.from('accounts').update(updateData).eq('id', target.id);
-    if (error) throw error;
-    return { success: true, name: target.full_name };
+    return { success: true, name: targetName };
   },
 
   // Manual Log Management

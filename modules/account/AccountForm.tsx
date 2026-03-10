@@ -29,7 +29,6 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
     emergency_contact_phone: initialData?.emergency_contact_phone || '',
     last_education: initialData?.last_education || 'Sarjana',
     major: initialData?.major || '',
-    education_end_date: initialData?.education_end_date || '',
     internal_nik: initialData?.internal_nik || '',
     position: initialData?.position || '',
     grade: initialData?.grade || '',
@@ -536,10 +535,6 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
                     <Label htmlFor="major" required>Jurusan</Label>
                     <input id="major" name="major" value={formData.major} onChange={handleChange} placeholder="cth: Teknik Sipil" className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required />
                   </div>
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="education_end_date">Tgl Lulus / Akhir Pendidikan</Label>
-                  <input id="education_end_date" type="date" name="education_end_date" value={formData.education_end_date} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
                 </div>
                 <div className="grid grid-cols-1 gap-3">
                    <label htmlFor="diploma_google_id" className="flex items-center gap-4 p-2 border border-dashed border-gray-300 rounded cursor-pointer hover:bg-gray-50 group transition-colors">

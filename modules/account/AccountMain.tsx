@@ -250,12 +250,46 @@ const AccountMain: React.FC = () => {
                 return val;
               };
 
+              // Helper for robust date formatting from Excel
+              const formatExcelDate = (val: any) => {
+                const raw = getVal(val);
+                if (!raw) return null;
+                
+                // If it's a Date object
+                if (raw instanceof Date) {
+                  return raw.toISOString().split('T')[0];
+                }
+                
+                // If it's a serial number (Excel date)
+                if (typeof raw === 'number') {
+                  const date = new Date((raw - 25569) * 86400 * 1000);
+                  return date.toISOString().split('T')[0];
+                }
+                
+                // If it's a string, try to parse it
+                if (typeof raw === 'string') {
+                  const trimmed = raw.trim();
+                  if (!trimmed) return null;
+                  
+                  // Already YYYY-MM-DD
+                  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+                  
+                  // Try parsing common formats
+                  const date = new Date(trimmed);
+                  if (!isNaN(date.getTime())) {
+                    return date.toISOString().split('T')[0];
+                  }
+                }
+                
+                return null;
+              };
+
               return {
                 full_name: getVal(row['Nama Lengkap']),
                 nik_ktp: String(getVal(row['NIK KTP']) || ''),
                 gender: getVal(row['Gender']) || 'Laki-laki',
                 religion: getVal(row['Agama']) || 'Islam',
-                dob: getVal(row['Tgl Lahir (YYYY-MM-DD)']),
+                dob: formatExcelDate(row['Tgl Lahir (YYYY-MM-DD)']),
                 address: getVal(row['Alamat']),
                 phone: String(getVal(row['No Telepon']) || ''),
                 email: getVal(row['Email']),
@@ -266,7 +300,6 @@ const AccountMain: React.FC = () => {
                 emergency_contact_phone: String(getVal(row['No HP Kontak Darurat']) || ''),
                 last_education: getVal(row['Pendidikan Terakhir']) || 'Sarjana',
                 major: getVal(row['Jurusan']) || '',
-                education_end_date: getVal(row['Tgl Lulus (YYYY-MM-DD)']) || null,
                 internal_nik: String(getVal(row['NIK Internal']) || ''),
                 position: getVal(row['Jabatan']),
                 grade: getVal(row['Golongan']),
@@ -275,8 +308,8 @@ const AccountMain: React.FC = () => {
                 schedule_id: null,
                 schedule_name: getVal(row['Pilih Jadwal Kerja']),
                 employee_type: getVal(row['Jenis Karyawan']) || 'Tetap',
-                start_date: getVal(row['Tgl Mulai (YYYY-MM-DD)']),
-                end_date: getVal(row['Tgl Akhir (YYYY-MM-DD)']) || null,
+                start_date: formatExcelDate(row['Tgl Mulai (YYYY-MM-DD)']),
+                end_date: formatExcelDate(row['Tgl Akhir (YYYY-MM-DD)']),
                 schedule_type: getVal(row['Pilih Jadwal Kerja']) || 'Office Hour',
                 leave_quota: parseInt(getVal(row['Jatah Cuti Tahunan'])) || 12,
                 is_leave_accumulated: getVal(row['Akumulasi Cuti (Ya/Tidak)']) === 'Ya',
@@ -365,18 +398,36 @@ const AccountMain: React.FC = () => {
         const typeStr = parts[parts.length - 1].toLowerCase();
         const identifier = parts.slice(0, -1).join('_'); // Handle names with underscores
 
-        let type: 'photo' | 'ktp' | 'ijazah';
-        if (typeStr.includes('photo') || typeStr.includes('foto')) type = 'photo';
-        else if (typeStr.includes('ktp')) type = 'ktp';
-        else if (typeStr.includes('ijazah')) type = 'ijazah';
-        else throw new Error(`Tipe dokumen "${typeStr}" tidak dikenal. Gunakan: photo, ktp, atau ijazah.`);
+        let type: 'photo' | 'ktp' | 'ijazah' | 'sk' | 'mcu' | 'kontrak';
+        let folderId: string;
+
+        if (typeStr.includes('photo') || typeStr.includes('foto')) {
+          type = 'photo';
+          folderId = 'photos';
+        } else if (typeStr.includes('ktp')) {
+          type = 'ktp';
+          folderId = 'ktp';
+        } else if (typeStr.includes('ijazah') || typeStr.includes('diploma')) {
+          type = 'ijazah';
+          folderId = 'ijazah';
+        } else if (typeStr.includes('sk')) {
+          type = 'sk';
+          folderId = 'sk';
+        } else if (typeStr.includes('mcu')) {
+          type = 'mcu';
+          folderId = 'mcu';
+        } else if (typeStr.includes('kontrak') || typeStr.includes('contract')) {
+          type = 'kontrak';
+          folderId = 'contracts';
+        } else {
+          throw new Error(`Tipe dokumen "${typeStr}" tidak dikenal. Gunakan: photo, ktp, ijazah, sk, mcu, atau kontrak.`);
+        }
 
         // 1. Upload to Google Drive
-        const folderId = type === 'photo' ? 'photos' : type === 'ktp' ? 'ktp' : 'ijazah';
         const driveFileId = await googleDriveService.uploadFile(file, folderId);
 
         // 2. Update Database
-        const res = await accountService.updateImageByNikOrName(identifier, type, driveFileId);
+        await accountService.updateImageByNikOrName(identifier, type, driveFileId);
         results.success++;
       } catch (err: any) {
         results.failed++;
