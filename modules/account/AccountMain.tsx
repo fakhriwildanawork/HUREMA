@@ -1,10 +1,12 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Plus, Search, Users, Grid, List as ListIcon, 
   ArrowLeft, UserCircle, UserCheck, UserX,
-  History, FileBadge, Award, Activity, ShieldAlert 
+  History, FileBadge, Award, Activity, ShieldAlert,
+  Download, Upload
 } from 'lucide-react';
+import Papa from 'papaparse';
 import Swal from 'sweetalert2';
 import { accountService } from '../../services/accountService';
 import { Account, AccountInput } from '../../types';
@@ -32,6 +34,8 @@ const AccountMain: React.FC = () => {
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Tab State Internal Modul Akun
   const [activeSubTab, setActiveSubTab] = useState<'data' | 'career' | 'contract' | 'cert' | 'health' | 'discipline'>('data');
 
@@ -79,6 +83,121 @@ const AccountMain: React.FC = () => {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const downloadTemplate = () => {
+    const headers = [
+      'Nama Lengkap', 'NIK KTP', 'Gender', 'Agama', 'Tgl Lahir (YYYY-MM-DD)', 
+      'Alamat', 'No Telepon', 'Email', 'Status Nikah', 'Tanggungan', 
+      'NIK Internal', 'Jabatan', 'Golongan', 'Lokasi Penempatan', 
+      'Jenis Karyawan', 'Tgl Mulai (YYYY-MM-DD)', 'Kode Akses', 'Password'
+    ];
+    const csvContent = headers.join(',') + '\n';
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'template_impor_akun.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        const data = results.data as any[];
+        if (data.length === 0) {
+          Swal.fire('Gagal', 'File CSV kosong atau tidak valid', 'error');
+          return;
+        }
+
+        const confirm = await Swal.fire({
+          title: 'Konfirmasi Impor',
+          text: `Apakah Anda yakin ingin mengimpor ${data.length} data akun?`,
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonColor: '#006E62',
+          confirmButtonText: 'Ya, Impor Sekarang',
+          cancelButtonText: 'Batal'
+        });
+
+        if (confirm.isConfirmed) {
+          setIsSaving(true);
+          try {
+            const formattedData: (AccountInput & { location_name?: string })[] = data.map(row => ({
+              full_name: row['Nama Lengkap'],
+              nik_ktp: row['NIK KTP'],
+              gender: row['Gender'] || 'Laki-laki',
+              religion: row['Agama'] || 'Islam',
+              dob: row['Tgl Lahir (YYYY-MM-DD)'],
+              address: row['Alamat'],
+              phone: row['No Telepon'],
+              email: row['Email'],
+              marital_status: row['Status Nikah'] || 'Belum Menikah',
+              dependents_count: parseInt(row['Tanggungan']) || 0,
+              emergency_contact_name: '',
+              emergency_contact_rel: '',
+              emergency_contact_phone: '',
+              last_education: 'Sarjana',
+              major: '',
+              internal_nik: row['NIK Internal'],
+              position: row['Jabatan'],
+              grade: row['Golongan'],
+              location_id: null,
+              location_name: row['Lokasi Penempatan'],
+              schedule_id: null,
+              employee_type: row['Jenis Karyawan'] || 'Tetap',
+              start_date: row['Tgl Mulai (YYYY-MM-DD)'],
+              schedule_type: 'Office Hour',
+              leave_quota: 12,
+              is_leave_accumulated: false,
+              max_carry_over_days: 0,
+              carry_over_quota: 0,
+              maternity_leave_quota: 0,
+              is_presence_limited_checkin: true,
+              is_presence_limited_checkout: true,
+              is_presence_limited_ot_in: true,
+              is_presence_limited_ot_out: true,
+              access_code: row['Kode Akses'],
+              password: row['Password'] || '123456',
+              role: 'user',
+              mcu_status: '',
+              health_risk: ''
+            }));
+
+            const res = await accountService.bulkCreate(formattedData);
+            
+            let message = `${res.success} akun berhasil diimpor.`;
+            if (res.failed > 0) {
+              message += `\n${res.failed} akun gagal diimpor.`;
+            }
+
+            await Swal.fire({
+              title: res.failed === 0 ? 'Berhasil!' : 'Selesai dengan Catatan',
+              text: message,
+              icon: res.failed === 0 ? 'success' : 'warning',
+              footer: res.failed > 0 ? `<div style="max-height: 100px; overflow-y: auto; text-align: left; font-size: 10px; color: #ef4444;">${res.errors.join('<br/>')}</div>` : null
+            });
+
+            fetchAccounts();
+          } catch (error) {
+            Swal.fire('Gagal', 'Terjadi kesalahan sistem saat impor', 'error');
+          } finally {
+            setIsSaving(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+          }
+        } else {
+          if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+      }
+    });
   };
 
   const handleUpdate = async (id: string, input: Partial<AccountInput>) => {
@@ -200,6 +319,32 @@ const AccountMain: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 mr-2">
+                <button 
+                  onClick={downloadTemplate}
+                  className="flex items-center gap-1.5 text-gray-500 hover:text-[#006E62] px-2 py-1.5 text-[10px] font-bold uppercase transition-colors"
+                  title="Unduh Template CSV"
+                >
+                  <Download size={14} />
+                  <span className="hidden sm:inline">Template</span>
+                </button>
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-1.5 text-gray-500 hover:text-[#006E62] px-2 py-1.5 text-[10px] font-bold uppercase transition-colors"
+                  title="Impor Akun dari CSV"
+                >
+                  <Upload size={14} />
+                  <span className="hidden sm:inline">Impor</span>
+                </button>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleImport} 
+                  accept=".csv" 
+                  className="hidden" 
+                />
+              </div>
+
               <div className="flex border border-gray-200 rounded-md overflow-hidden bg-white">
                 <button 
                   onClick={() => setViewMode('grid')}

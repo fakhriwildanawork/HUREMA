@@ -193,6 +193,42 @@ export const accountService = {
     return true;
   },
 
+  async bulkCreate(accounts: (AccountInput & { location_name?: string })[]) {
+    const results = {
+      success: 0,
+      failed: 0,
+      errors: [] as string[]
+    };
+
+    // Get all locations for mapping
+    const { data: locations } = await supabase.from('locations').select('id, name');
+    const locationMap = new Map(locations?.map(l => [l.name.toLowerCase(), l.id]));
+
+    for (const acc of accounts) {
+      try {
+        const { location_name, ...rest } = acc;
+        
+        // Map location name to ID if not provided
+        if (!rest.location_id && location_name) {
+          rest.location_id = locationMap.get(location_name.toLowerCase()) || null;
+        }
+
+        if (!rest.location_id) {
+          throw new Error(`Lokasi "${location_name}" tidak ditemukan`);
+        }
+
+        // Use the existing create method to ensure logs and contracts are created
+        await this.create(rest);
+        results.success++;
+      } catch (err: any) {
+        results.failed++;
+        results.errors.push(`${acc.full_name || 'Tanpa Nama'}: ${err.message}`);
+      }
+    }
+
+    return results;
+  },
+
   // Manual Log Management
   async createCareerLog(logInput: CareerLogInput) {
     // Filtrasi: Pastikan hanya kolom yang ada di tabel account_career_logs yang dikirim
