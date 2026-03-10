@@ -26,7 +26,7 @@ const EmployeeOfThePeriodForm: React.FC<EmployeeOfThePeriodFormProps> = ({ onClo
     const fetchAccounts = async () => {
       try {
         const data = await accountService.getAll();
-        setAccounts(data.filter(a => a.status === 'Active'));
+        setAccounts(data);
       } catch (error) {
         console.error('Error fetching accounts:', error);
       }
