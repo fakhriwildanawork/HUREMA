@@ -46,6 +46,25 @@ export const scheduleService = {
     return (data as any[]).map(item => item.schedules) as unknown as Schedule[];
   },
 
+  async getById(id: string) {
+    const { data, error } = await supabase
+      .from('schedules')
+      .select(`
+        *,
+        schedule_locations(location_id),
+        schedule_rules(*)
+      `)
+      .eq('id', id)
+      .single();
+    
+    if (error) throw error;
+    return {
+      ...data,
+      location_ids: data.schedule_locations.map((sl: any) => sl.location_id),
+      rules: data.schedule_rules
+    } as Schedule;
+  },
+
   async create(input: ScheduleInput) {
     let { rules, location_ids, ...scheduleData } = input;
     

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { authService } from '../../services/authService';
 import { financeService } from '../../services/financeService';
+import { dispensationService } from '../../services/dispensationService';
 import Swal from 'sweetalert2';
 
 interface SidebarProps {
@@ -21,18 +22,21 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed,
   const [isFinanceOpen, setIsFinanceOpen] = useState(false);
   const [unreadReimbursements, setUnreadReimbursements] = useState(0);
   const [unreadCompensations, setUnreadCompensations] = useState(0);
+  const [unreadDispensations, setUnreadDispensations] = useState(0);
   const user = authService.getCurrentUser();
 
   useEffect(() => {
     if (user?.role === 'admin') {
       const fetchUnread = async () => {
         try {
-          const [reimburseCount, compensationCount] = await Promise.all([
+          const [reimburseCount, compensationCount, dispensationCount] = await Promise.all([
             financeService.getUnreadCount(),
-            financeService.getUnreadCompensationCount()
+            financeService.getUnreadCompensationCount(),
+            dispensationService.getUnreadCount()
           ]);
           setUnreadReimbursements(reimburseCount);
           setUnreadCompensations(compensationCount);
+          setUnreadDispensations(dispensationCount);
         } catch (error) {
           console.error('Error fetching unread counts:', error);
         }
@@ -213,6 +217,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed,
         <div className="mt-4">
           <NavItem id="presence" icon={Fingerprint} label="Presensi Reguler" />
           <NavItem id="overtime" icon={Timer} label="Presensi Lembur" />
+          <NavItem id="dispensation" icon={ClipboardList} label="Dispensasi Presensi" />
+          {user?.role === 'admin' && (
+            <NavItem id="admin_dispensation" icon={ClipboardList} label="Antrean Dispensasi" badge={unreadDispensations} />
+          )}
           <NavItem id="leave" icon={Plane} label="Libur Mandiri" />
           <NavItem id="annual_leave" icon={Calendar} label="Cuti Tahunan" />
           <NavItem id="permission" icon={ClipboardList} label="Izin" />

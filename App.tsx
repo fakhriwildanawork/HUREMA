@@ -30,6 +30,8 @@ const MyPayslip = lazy(() => import('./modules/finance/MyPayslip'));
 const ReimbursementMain = lazy(() => import('./modules/finance/ReimbursementMain'));
 const EarlySalaryMain = lazy(() => import('./modules/finance/EarlySalaryModule'));
 const CompensationMain = lazy(() => import('./modules/finance/CompensationMain'));
+const DispensationMain = lazy(() => import('./modules/dispensation/DispensationMain'));
+const AdminDispensationMain = lazy(() => import('./modules/dispensation/AdminDispensationMain'));
 const MasterMain = lazy(() => import('./modules/settings/MasterMain'));
 const Login = lazy(() => import('./modules/auth/Login'));
 
@@ -38,7 +40,7 @@ import { AuthUser } from './types';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'document' | 'settings' | 'presence' | 'overtime' | 'submission' | 'leave' | 'annual_leave' | 'permission' | 'maternity_leave' | 'master_app' | 'kpi' | 'key_activity' | 'sales_report' | 'feedback' | 'lapor' | 'rapat' | 'pengumuman' | 'salary_scheme' | 'salary_adjustment' | 'payroll' | 'my_payslip' | 'reimbursement' | 'early_salary' | 'compensation' | 'employee_of_the_period'>('presence');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'document' | 'settings' | 'presence' | 'overtime' | 'submission' | 'leave' | 'annual_leave' | 'permission' | 'maternity_leave' | 'master_app' | 'kpi' | 'key_activity' | 'sales_report' | 'feedback' | 'lapor' | 'rapat' | 'pengumuman' | 'salary_scheme' | 'salary_adjustment' | 'payroll' | 'my_payslip' | 'reimbursement' | 'early_salary' | 'compensation' | 'employee_of_the_period' | 'dispensation' | 'admin_dispensation'>('presence');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
@@ -224,6 +226,10 @@ const App: React.FC = () => {
               <EarlySalaryMain />
             ) : activeTab === 'compensation' ? (
               <CompensationMain />
+            ) : activeTab === 'dispensation' ? (
+              <DispensationMain />
+            ) : activeTab === 'admin_dispensation' ? (
+              <AdminDispensationMain />
             ) : activeTab === 'master_app' ? (
               <MasterMain />
             ) : (

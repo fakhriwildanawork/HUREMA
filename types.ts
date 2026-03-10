@@ -841,6 +841,35 @@ export interface PayrollItem {
   };
 }
 
+export type DispensationIssueType = 'LATE' | 'EARLY_LEAVE' | 'NO_CLOCK_OUT' | 'ABSENT';
+export type DispensationIssueStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export interface DispensationIssue {
+  type: DispensationIssueType;
+  status: DispensationIssueStatus;
+  admin_notes?: string;
+}
+
+export interface DispensationRequest {
+  id: string;
+  account_id: string;
+  presence_id: string | null;
+  date: string;
+  issues: DispensationIssue[];
+  reason: string;
+  file_id: string | null;
+  is_read: boolean;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'PARTIAL';
+  created_at: string;
+  updated_at?: string;
+  account?: {
+    full_name: string;
+    internal_nik: string;
+  };
+}
+
+export type DispensationRequestInput = Omit<DispensationRequest, 'id' | 'created_at' | 'updated_at' | 'status' | 'is_read' | 'account'>;
+
 export interface PayrollSettings {
   id: string;
   company_name: string;

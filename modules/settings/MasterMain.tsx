@@ -139,6 +139,49 @@ const MasterMain: React.FC = () => {
           </div>
         </div>
 
+        {/* Kebijakan Dispensasi */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-50 bg-gray-50/30 flex items-center gap-3">
+            <Timer size={18} className="text-blue-500" />
+            <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider">Kebijakan Dispensasi Presensi</h3>
+          </div>
+          
+          <div className="p-6 space-y-6">
+            <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+              <div className="flex-1 space-y-1">
+                <h4 className="text-sm font-bold text-gray-800">Batas Hari Pengajuan (X Hari)</h4>
+                <p className="text-xs text-gray-500 leading-relaxed">
+                  Tentukan berapa hari kebelakang pegawai diperbolehkan mengajukan dispensasi untuk data presensi yang bermasalah.
+                </p>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <input 
+                  type="number"
+                  min="1"
+                  max="31"
+                  value={settings.dispensation_window_days || 7}
+                  onChange={(e) => setSettings(prev => ({ ...prev, dispensation_window_days: parseInt(e.target.value) }))}
+                  className="w-20 px-3 py-2 rounded-xl border border-gray-200 text-sm font-bold text-center focus:ring-2 focus:ring-[#006E62] focus:border-transparent outline-none"
+                />
+                <button 
+                  onClick={() => handleUpdate('dispensation_window_days', settings.dispensation_window_days || 7)}
+                  className="bg-[#006E62] text-white p-2.5 rounded-xl shadow-md hover:bg-[#005c52] transition-all"
+                >
+                  <Save size={18} />
+                </button>
+              </div>
+            </div>
+
+            <div className="pt-4 flex gap-3 items-start border-t border-gray-50">
+               <Info size={16} className="text-blue-500 shrink-0 mt-0.5" />
+               <p className="text-[10px] text-gray-400 font-medium leading-relaxed italic">
+                 Nilai ini akan membatasi daftar presensi yang muncul saat pegawai ingin membuat pengajuan dispensasi baru.
+               </p>
+            </div>
+          </div>
+        </div>
+
         {/* Kebijakan Libur Mandiri */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-50 bg-gray-50/30 flex items-center gap-3">
