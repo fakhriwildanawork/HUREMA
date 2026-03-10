@@ -200,59 +200,121 @@ export const accountService = {
       errors: [] as string[]
     };
 
-    // Get all locations and schedules for mapping
+    // 1. Ambil semua lokasi dan jadwal sekaligus untuk pemetaan (Caching)
     const [{ data: locations }, { data: schedules }] = await Promise.all([
       supabase.from('locations').select('id, name'),
       supabase.from('schedules').select('id, name, type')
     ]);
 
     const locationMap = new Map(locations?.map(l => [l.name.toLowerCase(), l.id]));
+    const locationNameMap = new Map(locations?.map(l => [l.id, l.name]));
     const scheduleMap = new Map(schedules?.map(s => [s.name.toLowerCase(), s]));
 
-    for (const acc of accounts) {
-      try {
-        const { location_name, schedule_name, ...rest } = acc;
-        
-        // 1. Map location name to ID
-        if (!rest.location_id && location_name) {
-          const locId = locationMap.get(location_name.toLowerCase());
-          if (!locId) {
-            throw new Error(`Lokasi "${location_name}" tidak ditemukan di database. Silakan cek sheet Referensi Lokasi.`);
-          }
-          rest.location_id = locId;
-        } else if (!rest.location_id) {
-          throw new Error(`Kolom Lokasi Penempatan wajib diisi.`);
-        }
-
-        // 2. Map schedule name to ID and Type
-        if (schedule_name) {
-          const lowerName = schedule_name.toLowerCase();
-          if (lowerName === 'fleksibel') {
-            rest.schedule_type = 'FLEKSIBEL';
-            rest.schedule_id = null;
-          } else if (lowerName === 'shift dinamis') {
-            rest.schedule_type = 'DINAMIS';
-            rest.schedule_id = null;
-          } else {
-            const sch = scheduleMap.get(lowerName);
-            if (!sch) {
-              throw new Error(`Jadwal "${schedule_name}" tidak ditemukan. Silakan cek sheet Referensi Jadwal.`);
+    // 2. Proses dalam batch paralel untuk kecepatan (Concurrency: 5)
+    const batchSize = 5;
+    for (let i = 0; i < accounts.length; i += batchSize) {
+      const batch = accounts.slice(i, i + batchSize);
+      
+      await Promise.all(batch.map(async (acc) => {
+        try {
+          const { location_name, schedule_name, ...rest } = acc;
+          
+          // Map location name to ID
+          if (!rest.location_id && location_name) {
+            const locId = locationMap.get(location_name.toLowerCase());
+            if (!locId) {
+              throw new Error(`Lokasi "${location_name}" tidak ditemukan.`);
             }
-            rest.schedule_id = sch.id;
-            rest.schedule_type = sch.type === 1 ? 'Office Hour' : 'Shift';
+            rest.location_id = locId;
+          } else if (!rest.location_id) {
+            throw new Error(`Kolom Lokasi Penempatan wajib diisi.`);
           }
-        }
 
-        // Use the existing create method to ensure logs and contracts are created
-        await this.create(rest);
-        results.success++;
-      } catch (err: any) {
-        results.failed++;
-        results.errors.push(`${acc.full_name || 'Tanpa Nama'}: ${err.message}`);
-      }
+          // Map schedule name to ID and Type
+          if (schedule_name) {
+            const lowerName = schedule_name.toLowerCase();
+            if (lowerName === 'fleksibel') {
+              rest.schedule_type = 'FLEKSIBEL';
+              rest.schedule_id = null;
+            } else if (lowerName === 'shift dinamis') {
+              rest.schedule_type = 'DINAMIS';
+              rest.schedule_id = null;
+            } else {
+              const sch = scheduleMap.get(lowerName);
+              if (!sch) {
+                throw new Error(`Jadwal "${schedule_name}" tidak ditemukan.`);
+              }
+              rest.schedule_id = sch.id;
+              rest.schedule_type = sch.type === 1 ? 'Office Hour' : 'Shift';
+            }
+          }
+
+          // Gunakan versi optimasi yang tidak melakukan query lokasi ulang
+          const locName = locationNameMap.get(rest.location_id) || '-';
+          await this.createWithPredefinedLocation(rest, locName);
+          results.success++;
+        } catch (err: any) {
+          results.failed++;
+          results.errors.push(`${acc.full_name || 'Tanpa Nama'}: ${err.message}`);
+        }
+      }));
     }
 
     return results;
+  },
+
+  /**
+   * Versi optimasi dari create() khusus untuk bulk import.
+   * Menghindari query SELECT tambahan untuk nama lokasi karena sudah ada di Map.
+   */
+  async createWithPredefinedLocation(account: AccountInput & { file_sk_id?: string, file_mcu_id?: string, contract_initial?: any }, locationName: string) {
+    const { file_sk_id, file_mcu_id, contract_initial, ...rest } = account;
+    const sanitizedAccount = sanitizePayload(rest);
+    
+    // 1. Insert ke tabel accounts
+    const { data, error } = await supabase
+      .from('accounts')
+      .insert([sanitizedAccount])
+      .select();
+    
+    if (error) throw error;
+    const newAccount = data[0] as Account;
+
+    // 2. Buat log & kontrak secara paralel
+    const promises = [
+      supabase.from('account_career_logs').insert([{
+        account_id: newAccount.id,
+        position: newAccount.position,
+        grade: newAccount.grade,
+        location_id: newAccount.location_id,
+        location_name: locationName,
+        schedule_id: newAccount.schedule_id,
+        file_sk_id: file_sk_id || null,
+        notes: 'Initial Career Record'
+      }]),
+      supabase.from('account_health_logs').insert([{
+        account_id: newAccount.id,
+        mcu_status: newAccount.mcu_status,
+        health_risk: newAccount.health_risk,
+        file_mcu_id: file_mcu_id || null,
+        notes: 'Initial Health Record'
+      }])
+    ];
+
+    if (contract_initial && contract_initial.contract_number) {
+      promises.push(supabase.from('account_contracts').insert([{
+        account_id: newAccount.id,
+        contract_number: contract_initial.contract_number,
+        contract_type: contract_initial.contract_type || account.employee_type,
+        start_date: contract_initial.start_date || account.start_date,
+        end_date: contract_initial.end_date || account.end_date,
+        file_id: contract_initial.file_id || null,
+        notes: 'Initial Contract Record'
+      }]));
+    }
+
+    await Promise.all(promises);
+    return newAccount;
   },
 
   async updateImageByNikOrName(identifier: string, type: 'photo' | 'ktp' | 'ijazah' | 'sk' | 'mcu' | 'kontrak', fileId: string) {

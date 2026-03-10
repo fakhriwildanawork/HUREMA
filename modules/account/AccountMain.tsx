@@ -330,6 +330,8 @@ const AccountMain: React.FC = () => {
 
             const res = await accountService.bulkCreate(formattedData);
             
+            setIsSaving(false); // Matikan loading segera setelah proses selesai
+
             let message = `${res.success} akun berhasil diimpor.`;
             if (res.failed > 0) {
               message += `\n${res.failed} akun gagal diimpor.`;
@@ -344,10 +346,10 @@ const AccountMain: React.FC = () => {
 
             fetchAccounts();
           } catch (error) {
+            setIsSaving(false);
             console.error(error);
             Swal.fire('Gagal', 'Terjadi kesalahan sistem saat impor', 'error');
           } finally {
-            setIsSaving(false);
             if (fileInputRef.current) fileInputRef.current.value = '';
           }
         } else {
