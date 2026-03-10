@@ -6,7 +6,7 @@ import {
   History, FileBadge, Award, Activity, ShieldAlert,
   Download, Upload
 } from 'lucide-react';
-import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
 import Swal from 'sweetalert2';
 import { accountService } from '../../services/accountService';
 import { Account, AccountInput } from '../../types';
@@ -92,35 +92,35 @@ const AccountMain: React.FC = () => {
       'NIK Internal', 'Jabatan', 'Golongan', 'Lokasi Penempatan', 
       'Jenis Karyawan', 'Tgl Mulai (YYYY-MM-DD)', 'Kode Akses', 'Password'
     ];
-    const csvContent = headers.join(',') + '\n';
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'template_impor_akun.csv');
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    
+    const worksheet = XLSX.utils.aoa_to_sheet([headers]);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Template");
+    
+    XLSX.writeFile(workbook, 'template_impor_akun.xlsx');
   };
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: async (results) => {
-        const data = results.data as any[];
-        if (data.length === 0) {
-          Swal.fire('Gagal', 'File CSV kosong atau tidak valid', 'error');
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const data = new Uint8Array(evt.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+        if (jsonData.length === 0) {
+          Swal.fire('Gagal', 'File Excel kosong atau tidak valid', 'error');
           return;
         }
 
         const confirm = await Swal.fire({
           title: 'Konfirmasi Impor',
-          text: `Apakah Anda yakin ingin mengimpor ${data.length} data akun?`,
+          text: `Apakah Anda yakin ingin mengimpor ${jsonData.length} data akun?`,
           icon: 'question',
           showCancelButton: true,
           confirmButtonColor: '#006E62',
@@ -131,7 +131,7 @@ const AccountMain: React.FC = () => {
         if (confirm.isConfirmed) {
           setIsSaving(true);
           try {
-            const formattedData: (AccountInput & { location_name?: string })[] = data.map(row => ({
+            const formattedData: (AccountInput & { location_name?: string })[] = jsonData.map((row: any) => ({
               full_name: row['Nama Lengkap'],
               nik_ktp: row['NIK KTP'],
               gender: row['Gender'] || 'Laki-laki',
@@ -196,8 +196,12 @@ const AccountMain: React.FC = () => {
         } else {
           if (fileInputRef.current) fileInputRef.current.value = '';
         }
+      } catch (error) {
+        Swal.fire('Gagal', 'Gagal membaca file Excel', 'error');
+        if (fileInputRef.current) fileInputRef.current.value = '';
       }
-    });
+    };
+    reader.readAsArrayBuffer(file);
   };
 
   const handleUpdate = async (id: string, input: Partial<AccountInput>) => {
