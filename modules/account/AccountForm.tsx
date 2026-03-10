@@ -617,14 +617,14 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
                     </div>
                  </div>
 
-                 <div className="p-3 bg-emerald-50/50 border border-emerald-100 rounded-lg space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="is_leave_accumulated">Aktifkan Akumulasi Cuti (Carry-over)</Label>
-                      <div className="relative inline-flex items-center cursor-pointer">
+                  <div className="p-3 bg-emerald-50/50 border border-emerald-100 rounded-lg space-y-3">
+                    <label htmlFor="is_leave_accumulated" className="flex items-center justify-between cursor-pointer group">
+                      <span className="text-[9px] font-bold text-gray-500 uppercase">Aktifkan Akumulasi Cuti (Carry-over)</span>
+                      <div className="relative inline-flex items-center">
                         <input id="is_leave_accumulated" type="checkbox" name="is_leave_accumulated" checked={formData.is_leave_accumulated} onChange={handleChange} className="sr-only peer" />
                         <div className="w-7 h-4 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-[#006E62]"></div>
                       </div>
-                    </div>
+                    </label>
                     
                     {formData.is_leave_accumulated && (
                       <div className="grid grid-cols-2 gap-2 animate-in slide-in-from-top-1 duration-200">

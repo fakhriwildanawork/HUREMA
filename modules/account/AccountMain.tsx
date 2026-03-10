@@ -7,6 +7,7 @@ import {
   Download, Upload
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import Swal from 'sweetalert2';
 import { accountService } from '../../services/accountService';
 import { locationService } from '../../services/locationService';
@@ -89,11 +90,17 @@ const AccountMain: React.FC = () => {
 
   const downloadTemplate = async () => {
     try {
+      setIsSaving(true);
       // Fetch data for reference sheets
       const [locations, schedules] = await Promise.all([
         locationService.getAll(),
         scheduleService.getAll()
       ]);
+
+      const workbook = new ExcelJS.Workbook();
+      const templateSheet = workbook.addWorksheet('Template');
+      const refSheet = workbook.addWorksheet('Lists');
+      refSheet.state = 'hidden';
 
       const headers = [
         'Nama Lengkap', 'NIK KTP', 'Gender', 'Agama', 'Tgl Lahir (YYYY-MM-DD)', 
@@ -108,25 +115,81 @@ const AccountMain: React.FC = () => {
         'Batasi Check-in Lembur (Ya/Tidak)', 'Batasi Check-out Lembur (Ya/Tidak)',
         'Kode Akses', 'Password', 'Status Medis / MCU', 'Risiko Kesehatan'
       ];
+
+      templateSheet.addRow(headers);
       
-      const workbook = XLSX.utils.book_new();
-      
-      // 1. Template Sheet
-      const worksheet = XLSX.utils.aoa_to_sheet([headers]);
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Template");
-      
-      // 2. Reference Sheets
-      const locData = locations.map(l => [l.name, l.address]);
-      const locSheet = XLSX.utils.aoa_to_sheet([['Nama Lokasi', 'Alamat'], ...locData]);
-      XLSX.utils.book_append_sheet(workbook, locSheet, "Referensi Lokasi");
-      
-      const schData = schedules.map(s => [s.name, s.type === 1 ? 'Office Hour' : s.type === 2 ? 'Shift' : 'Lainnya']);
-      const schSheet = XLSX.utils.aoa_to_sheet([['Nama Jadwal', 'Tipe'], ['Fleksibel', 'Virtual'], ['Shift Dinamis', 'Virtual'], ...schData]);
-      XLSX.utils.book_append_sheet(workbook, schSheet, "Referensi Jadwal");
-      
-      XLSX.writeFile(workbook, 'template_impor_akun.xlsx');
+      // Style headers
+      templateSheet.getRow(1).font = { bold: true };
+      templateSheet.getRow(1).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE0E0E0' }
+      };
+
+      // Prepare lists for dropdowns
+      const genderList = ['Laki-laki', 'Perempuan'];
+      const religionList = ['Islam', 'Kristen', 'Katolik', 'Hindu', 'Budha', 'Konghucu', 'Kepercayaan Lain'];
+      const maritalList = ['Belum Menikah', 'Menikah', 'Cerai Hidup', 'Cerai Mati'];
+      const empTypeList = ['Tetap', 'Kontrak', 'Harian', 'Magang'];
+      const healthRiskList = ['Tidak ada risiko kerja', 'Risiko kerja ringan', 'Risiko kerja sedang', 'Risiko kerja berat'];
+      const yesNoList = ['Ya', 'Tidak'];
+      const locList = locations.map(l => l.name);
+      const schList = ['Fleksibel', 'Shift Dinamis', ...schedules.map(s => s.name)];
+
+      // Write lists to hidden sheet
+      refSheet.getColumn(1).values = genderList;
+      refSheet.getColumn(2).values = religionList;
+      refSheet.getColumn(3).values = maritalList;
+      refSheet.getColumn(4).values = empTypeList;
+      refSheet.getColumn(5).values = healthRiskList;
+      refSheet.getColumn(6).values = yesNoList;
+      refSheet.getColumn(7).values = locList;
+      refSheet.getColumn(8).values = schList;
+
+      // Apply Data Validations (Dropdowns)
+      // We apply validation to 100 rows
+      for (let i = 2; i <= 101; i++) {
+        // Gender (Col 3)
+        templateSheet.getCell(`C${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [`Lists!$A$1:$A$${genderList.length}`] };
+        // Agama (Col 4)
+        templateSheet.getCell(`D${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [`Lists!$B$1:$B$${religionList.length}`] };
+        // Status Nikah (Col 9)
+        templateSheet.getCell(`I${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [`Lists!$C$1:$C$${maritalList.length}`] };
+        // Lokasi Penempatan (Col 14)
+        templateSheet.getCell(`N${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [`Lists!$G$1:$G$${locList.length}`] };
+        // Jenis Karyawan (Col 15)
+        templateSheet.getCell(`O${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [`Lists!$D$1:$D$${empTypeList.length}`] };
+        // Pilih Jadwal Kerja (Col 24)
+        templateSheet.getCell(`X${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [`Lists!$H$1:$H$${schList.length}`] };
+        // Akumulasi Cuti (Col 27)
+        templateSheet.getCell(`AA${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [`Lists!$F$1:$F$2`] };
+        // Radius Limits (Col 30-33)
+        templateSheet.getCell(`AD${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [`Lists!$F$1:$F$2`] };
+        templateSheet.getCell(`AE${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [`Lists!$F$1:$F$2`] };
+        templateSheet.getCell(`AF${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [`Lists!$F$1:$F$2`] };
+        templateSheet.getCell(`AG${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [`Lists!$F$1:$F$2`] };
+        // Risiko Kesehatan (Col 37)
+        templateSheet.getCell(`AK${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [`Lists!$E$1:$E$${healthRiskList.length}`] };
+      }
+
+      // Auto-size columns
+      templateSheet.columns.forEach(column => {
+        column.width = 20;
+      });
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = 'template_impor_akun.xlsx';
+      anchor.click();
+      window.URL.revokeObjectURL(url);
     } catch (error) {
+      console.error(error);
       Swal.fire('Gagal', 'Gagal menyiapkan template', 'error');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -137,11 +200,28 @@ const AccountMain: React.FC = () => {
     const reader = new FileReader();
     reader.onload = async (evt) => {
       try {
-        const data = new Uint8Array(evt.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[firstSheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        const buffer = evt.target?.result as ArrayBuffer;
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(buffer);
+        const worksheet = workbook.getWorksheet(1);
+        
+        if (!worksheet) return;
+
+        const jsonData: any[] = [];
+        const headers: string[] = [];
+        
+        worksheet.getRow(1).eachCell((cell, colNumber) => {
+          headers[colNumber] = cell.text;
+        });
+
+        worksheet.eachRow((row, rowNumber) => {
+          if (rowNumber === 1) return;
+          const rowData: any = {};
+          row.eachCell((cell, colNumber) => {
+            rowData[headers[colNumber]] = cell.value;
+          });
+          jsonData.push(rowData);
+        });
 
         if (jsonData.length === 0) {
           Swal.fire('Gagal', 'File Excel kosong atau tidak valid', 'error');
@@ -161,49 +241,58 @@ const AccountMain: React.FC = () => {
         if (confirm.isConfirmed) {
           setIsSaving(true);
           try {
-            const formattedData: (AccountInput & { location_name?: string, schedule_name?: string })[] = jsonData.map((row: any) => ({
-              full_name: row['Nama Lengkap'],
-              nik_ktp: row['NIK KTP'],
-              gender: row['Gender'] || 'Laki-laki',
-              religion: row['Agama'] || 'Islam',
-              dob: row['Tgl Lahir (YYYY-MM-DD)'],
-              address: row['Alamat'],
-              phone: row['No Telepon'],
-              email: row['Email'],
-              marital_status: row['Status Nikah'] || 'Belum Menikah',
-              dependents_count: parseInt(row['Tanggungan']) || 0,
-              emergency_contact_name: row['Nama Kontak Darurat'] || '',
-              emergency_contact_rel: row['Hubungan Kontak Darurat'] || '',
-              emergency_contact_phone: row['No HP Kontak Darurat'] || '',
-              last_education: row['Pendidikan Terakhir'] || 'Sarjana',
-              major: row['Jurusan'] || '',
-              education_end_date: row['Tgl Lulus (YYYY-MM-DD)'] || null,
-              internal_nik: row['NIK Internal'],
-              position: row['Jabatan'],
-              grade: row['Golongan'],
-              location_id: null,
-              location_name: row['Lokasi Penempatan'],
-              schedule_id: null,
-              schedule_name: row['Pilih Jadwal Kerja'],
-              employee_type: row['Jenis Karyawan'] || 'Tetap',
-              start_date: row['Tgl Mulai (YYYY-MM-DD)'],
-              end_date: row['Tgl Akhir (YYYY-MM-DD)'] || null,
-              schedule_type: row['Pilih Jadwal Kerja'] || 'Office Hour',
-              leave_quota: parseInt(row['Jatah Cuti Tahunan']) || 12,
-              is_leave_accumulated: row['Akumulasi Cuti (Ya/Tidak)'] === 'Ya',
-              max_carry_over_days: parseInt(row['Maksimal Carry-over']) || 0,
-              carry_over_quota: parseInt(row['Jatah Carry-over Saat Ini']) || 0,
-              maternity_leave_quota: parseInt(row['Jatah Cuti Melahirkan']) || 0,
-              is_presence_limited_checkin: row['Batasi Check-in Datang (Ya/Tidak)'] !== 'Tidak',
-              is_presence_limited_checkout: row['Batasi Check-out Pulang (Ya/Tidak)'] !== 'Tidak',
-              is_presence_limited_ot_in: row['Batasi Check-in Lembur (Ya/Tidak)'] !== 'Tidak',
-              is_presence_limited_ot_out: row['Batasi Check-out Lembur (Ya/Tidak)'] !== 'Tidak',
-              access_code: row['Kode Akses'],
-              password: row['Password'] || '123456',
-              role: 'user',
-              mcu_status: row['Status Medis / MCU'] || '',
-              health_risk: row['Risiko Kesehatan'] || ''
-            }));
+            const formattedData: (AccountInput & { location_name?: string, schedule_name?: string })[] = jsonData.map((row: any) => {
+              // Helper to handle ExcelJS cell values which might be objects
+              const getVal = (val: any) => {
+                if (val && typeof val === 'object' && 'result' in val) return val.result;
+                if (val && typeof val === 'object' && 'text' in val) return val.text;
+                return val;
+              };
+
+              return {
+                full_name: getVal(row['Nama Lengkap']),
+                nik_ktp: String(getVal(row['NIK KTP']) || ''),
+                gender: getVal(row['Gender']) || 'Laki-laki',
+                religion: getVal(row['Agama']) || 'Islam',
+                dob: getVal(row['Tgl Lahir (YYYY-MM-DD)']),
+                address: getVal(row['Alamat']),
+                phone: String(getVal(row['No Telepon']) || ''),
+                email: getVal(row['Email']),
+                marital_status: getVal(row['Status Nikah']) || 'Belum Menikah',
+                dependents_count: parseInt(getVal(row['Tanggungan'])) || 0,
+                emergency_contact_name: getVal(row['Nama Kontak Darurat']) || '',
+                emergency_contact_rel: getVal(row['Hubungan Kontak Darurat']) || '',
+                emergency_contact_phone: String(getVal(row['No HP Kontak Darurat']) || ''),
+                last_education: getVal(row['Pendidikan Terakhir']) || 'Sarjana',
+                major: getVal(row['Jurusan']) || '',
+                education_end_date: getVal(row['Tgl Lulus (YYYY-MM-DD)']) || null,
+                internal_nik: String(getVal(row['NIK Internal']) || ''),
+                position: getVal(row['Jabatan']),
+                grade: getVal(row['Golongan']),
+                location_id: null,
+                location_name: getVal(row['Lokasi Penempatan']),
+                schedule_id: null,
+                schedule_name: getVal(row['Pilih Jadwal Kerja']),
+                employee_type: getVal(row['Jenis Karyawan']) || 'Tetap',
+                start_date: getVal(row['Tgl Mulai (YYYY-MM-DD)']),
+                end_date: getVal(row['Tgl Akhir (YYYY-MM-DD)']) || null,
+                schedule_type: getVal(row['Pilih Jadwal Kerja']) || 'Office Hour',
+                leave_quota: parseInt(getVal(row['Jatah Cuti Tahunan'])) || 12,
+                is_leave_accumulated: getVal(row['Akumulasi Cuti (Ya/Tidak)']) === 'Ya',
+                max_carry_over_days: parseInt(getVal(row['Maksimal Carry-over'])) || 0,
+                carry_over_quota: parseInt(getVal(row['Jatah Carry-over Saat Ini'])) || 0,
+                maternity_leave_quota: parseInt(getVal(row['Jatah Cuti Melahirkan'])) || 0,
+                is_presence_limited_checkin: getVal(row['Batasi Check-in Datang (Ya/Tidak)']) !== 'Tidak',
+                is_presence_limited_checkout: getVal(row['Batasi Check-out Pulang (Ya/Tidak)']) !== 'Tidak',
+                is_presence_limited_ot_in: getVal(row['Batasi Check-in Lembur (Ya/Tidak)']) !== 'Tidak',
+                is_presence_limited_ot_out: getVal(row['Batasi Check-out Lembur (Ya/Tidak)']) !== 'Tidak',
+                access_code: String(getVal(row['Kode Akses']) || ''),
+                password: String(getVal(row['Password']) || '123456'),
+                role: 'user',
+                mcu_status: getVal(row['Status Medis / MCU']) || '',
+                health_risk: getVal(row['Risiko Kesehatan']) || ''
+              };
+            });
 
             const res = await accountService.bulkCreate(formattedData);
             
@@ -221,6 +310,7 @@ const AccountMain: React.FC = () => {
 
             fetchAccounts();
           } catch (error) {
+            console.error(error);
             Swal.fire('Gagal', 'Terjadi kesalahan sistem saat impor', 'error');
           } finally {
             setIsSaving(false);
@@ -230,6 +320,7 @@ const AccountMain: React.FC = () => {
           if (fileInputRef.current) fileInputRef.current.value = '';
         }
       } catch (error) {
+        console.error(error);
         Swal.fire('Gagal', 'Gagal membaca file Excel', 'error');
         if (fileInputRef.current) fileInputRef.current.value = '';
       }
