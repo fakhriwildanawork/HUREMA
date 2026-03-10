@@ -112,6 +112,7 @@ export interface Account {
   // Keamanan & Medis
   access_code: string;
   password?: string;
+  role: 'admin' | 'user';
   mcu_status: string;
   health_risk: string;
   

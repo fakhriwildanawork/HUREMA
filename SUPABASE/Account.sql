@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS accounts (
     -- Keamanan & Medis
     access_code TEXT,
     password TEXT,
+    role TEXT DEFAULT 'user' CHECK (role IN ('admin', 'user')),
     mcu_status TEXT,
     health_risk TEXT,
 
@@ -102,6 +103,11 @@ CREATE TRIGGER trg_update_account_search_all
 BEFORE INSERT OR UPDATE ON accounts
 FOR EACH ROW
 EXECUTE FUNCTION update_account_search_all();
+
+-- Update existing roles based on access_code logic
+UPDATE accounts 
+SET role = 'admin' 
+WHERE access_code LIKE 'SP%' OR access_code LIKE '%ADM%';
 
 -- RLS & POLICIES (With Idempotency Fix)
 ALTER TABLE accounts ENABLE ROW LEVEL SECURITY;
