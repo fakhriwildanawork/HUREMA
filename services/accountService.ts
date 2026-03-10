@@ -255,6 +255,56 @@ export const accountService = {
     return results;
   },
 
+  async updateImageByNikOrName(identifier: string, type: 'photo' | 'ktp' | 'ijazah', fileId: string) {
+    // Normalize identifier for name matching
+    const normalizedId = identifier.toLowerCase().replace(/[^a-z0-9]/g, '');
+    
+    // 1. Try matching by internal_nik first
+    const { data: byNik, error: nikError } = await supabase
+      .from('accounts')
+      .select('id, full_name')
+      .eq('internal_nik', identifier)
+      .maybeSingle();
+
+    if (byNik) {
+      const updateData: any = {};
+      if (type === 'photo') updateData.photo_google_id = fileId;
+      else if (type === 'ktp') updateData.ktp_google_id = fileId;
+      else if (type === 'ijazah') updateData.ijazah_google_id = fileId;
+
+      const { error } = await supabase.from('accounts').update(updateData).eq('id', byNik.id);
+      if (error) throw error;
+      return { success: true, name: byNik.full_name };
+    }
+
+    // 2. Try matching by full_name (normalized)
+    // We fetch all accounts and match locally to handle normalization
+    const { data: allAccounts, error: allErr } = await supabase.from('accounts').select('id, full_name');
+    if (allErr) throw allErr;
+
+    const matches = allAccounts?.filter(acc => 
+      acc.full_name.toLowerCase().replace(/[^a-z0-9]/g, '') === normalizedId
+    );
+
+    if (!matches || matches.length === 0) {
+      throw new Error(`Akun dengan Nama/NIK "${identifier}" tidak ditemukan.`);
+    }
+
+    if (matches.length > 1) {
+      throw new Error(`Nama "${identifier}" ditemukan lebih dari satu akun (${matches.length}). Gunakan NIK agar spesifik.`);
+    }
+
+    const target = matches[0];
+    const updateData: any = {};
+    if (type === 'photo') updateData.photo_google_id = fileId;
+    else if (type === 'ktp') updateData.ktp_google_id = fileId;
+    else if (type === 'ijazah') updateData.ijazah_google_id = fileId;
+
+    const { error } = await supabase.from('accounts').update(updateData).eq('id', target.id);
+    if (error) throw error;
+    return { success: true, name: target.full_name };
+  },
+
   // Manual Log Management
   async createCareerLog(logInput: CareerLogInput) {
     // Filtrasi: Pastikan hanya kolom yang ada di tabel account_career_logs yang dikirim

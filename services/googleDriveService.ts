@@ -7,12 +7,15 @@ class GoogleDriveService {
    */
   private uploadQueue: Promise<any> = Promise.resolve();
 
-  async uploadFile(file: File): Promise<string> {
+  async uploadFile(file: File, folderId?: string): Promise<string> {
     // Memasukkan proses upload ke dalam antrean (Promise Chain)
     const currentUpload = this.uploadQueue.then(async () => {
       try {
         const formData = new FormData();
         formData.append('file', file);
+        if (folderId) {
+          formData.append('folderId', folderId);
+        }
 
         const response = await fetch('/api/upload', {
           method: 'POST',

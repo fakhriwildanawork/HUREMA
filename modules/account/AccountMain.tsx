@@ -4,7 +4,7 @@ import {
   Plus, Search, Users, Grid, List as ListIcon, 
   ArrowLeft, UserCircle, UserCheck, UserX,
   History, FileBadge, Award, Activity, ShieldAlert,
-  Download, Upload
+  Download, Upload, Image as ImageIcon
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import ExcelJS from 'exceljs';
@@ -38,6 +38,7 @@ const AccountMain: React.FC = () => {
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const bulkImageInputRef = useRef<HTMLInputElement>(null);
 
   // Tab State Internal Modul Akun
   const [activeSubTab, setActiveSubTab] = useState<'data' | 'career' | 'contract' | 'cert' | 'health' | 'discipline'>('data');
@@ -328,6 +329,79 @@ const AccountMain: React.FC = () => {
     reader.readAsArrayBuffer(file);
   };
 
+  const handleBulkImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const confirm = await Swal.fire({
+      title: 'Konfirmasi Bulk Upload',
+      text: `Anda memilih ${files.length} file. Sistem akan mencocokkan file berdasarkan Nama atau NIK (Format: Nama_photo.jpg). Lanjutkan?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#006E62',
+      confirmButtonText: 'Ya, Unggah',
+      cancelButtonText: 'Batal'
+    });
+
+    if (!confirm.isConfirmed) {
+      if (bulkImageInputRef.current) bulkImageInputRef.current.value = '';
+      return;
+    }
+
+    setIsSaving(true);
+    const results = { success: 0, failed: 0, errors: [] as string[] };
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const fileName = file.name.split('.').slice(0, -1).join('.'); // Remove extension
+      
+      try {
+        // Parse filename: [Identifier]_[Type]
+        const parts = fileName.split('_');
+        if (parts.length < 2) {
+          throw new Error(`Format nama file tidak valid. Gunakan: Nama_photo.jpg`);
+        }
+
+        const typeStr = parts[parts.length - 1].toLowerCase();
+        const identifier = parts.slice(0, -1).join('_'); // Handle names with underscores
+
+        let type: 'photo' | 'ktp' | 'ijazah';
+        if (typeStr.includes('photo') || typeStr.includes('foto')) type = 'photo';
+        else if (typeStr.includes('ktp')) type = 'ktp';
+        else if (typeStr.includes('ijazah')) type = 'ijazah';
+        else throw new Error(`Tipe dokumen "${typeStr}" tidak dikenal. Gunakan: photo, ktp, atau ijazah.`);
+
+        // 1. Upload to Google Drive
+        const folderId = type === 'photo' ? 'photos' : type === 'ktp' ? 'ktp' : 'ijazah';
+        const driveFileId = await googleDriveService.uploadFile(file, folderId);
+
+        // 2. Update Database
+        const res = await accountService.updateImageByNikOrName(identifier, type, driveFileId);
+        results.success++;
+      } catch (err: any) {
+        results.failed++;
+        results.errors.push(`${file.name}: ${err.message}`);
+      }
+    }
+
+    setIsSaving(false);
+    if (bulkImageInputRef.current) bulkImageInputRef.current.value = '';
+
+    let message = `${results.success} file berhasil diunggah & dicocokkan.`;
+    if (results.failed > 0) {
+      message += `\n${results.failed} file gagal.`;
+    }
+
+    await Swal.fire({
+      title: results.failed === 0 ? 'Bulk Upload Berhasil' : 'Selesai dengan Catatan',
+      text: message,
+      icon: results.failed === 0 ? 'success' : 'warning',
+      footer: results.failed > 0 ? `<div style="max-height: 150px; overflow-y: auto; text-align: left; font-size: 10px; color: #ef4444; background: #fef2f2; padding: 8px; border-radius: 4px; border: 1px solid #fee2e2;">${results.errors.join('<br/>')}</div>` : null
+    });
+
+    fetchAccounts();
+  };
+
   const handleUpdate = async (id: string, input: Partial<AccountInput>) => {
     setIsSaving(true);
     try {
@@ -464,11 +538,27 @@ const AccountMain: React.FC = () => {
                   <Upload size={14} />
                   <span className="hidden sm:inline">Impor</span>
                 </button>
+                <button 
+                  onClick={() => bulkImageInputRef.current?.click()}
+                  className="flex items-center gap-1.5 text-gray-500 hover:text-[#006E62] px-2 py-1.5 text-[10px] font-bold uppercase transition-colors"
+                  title="Bulk Upload Foto/Dokumen"
+                >
+                  <ImageIcon size={14} />
+                  <span className="hidden sm:inline">Bulk Foto</span>
+                </button>
                 <input 
                   type="file" 
                   ref={fileInputRef} 
                   onChange={handleImport} 
-                  accept=".csv" 
+                  accept=".xlsx,.csv" 
+                  className="hidden" 
+                />
+                <input 
+                  type="file" 
+                  ref={bulkImageInputRef} 
+                  onChange={handleBulkImageUpload} 
+                  multiple 
+                  accept="image/*,application/pdf" 
                   className="hidden" 
                 />
               </div>
