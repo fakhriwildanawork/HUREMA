@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { ClipboardList, Search, Filter, Clock, CheckCircle2, XCircle, AlertCircle, Eye, Loader2, Calendar, User, ArrowRight } from 'lucide-react';
+import { authService } from '../../services/authService';
 import { dispensationService } from '../../services/dispensationService';
-import { DispensationRequest } from '../../types';
+import { DispensationRequest, AuthUser } from '../../types';
 import Swal from 'sweetalert2';
 import DispensationDetail from './components/DispensationDetail';
 
-const AdminDispensationMain: React.FC = () => {
+interface AdminDispensationMainProps {
+  user: AuthUser;
+}
+
+const AdminDispensationMain: React.FC<AdminDispensationMainProps> = ({ user }) => {
   const [requests, setRequests] = useState<DispensationRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');

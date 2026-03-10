@@ -7,8 +7,11 @@ import Swal from 'sweetalert2';
 import DispensationForm from './DispensationForm';
 import DispensationDetail from './components/DispensationDetail';
 
-const DispensationMain: React.FC = () => {
-  const user = authService.getCurrentUser();
+interface DispensationMainProps {
+  user: AuthUser;
+}
+
+const DispensationMain: React.FC<DispensationMainProps> = ({ user }) => {
   const [requests, setRequests] = useState<DispensationRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -17,10 +20,10 @@ const DispensationMain: React.FC = () => {
   const [editingRequest, setEditingRequest] = useState<DispensationRequest | null>(null);
 
   useEffect(() => {
-    if (user) {
+    if (user?.id) {
       fetchRequests();
     }
-  }, [user]);
+  }, [user?.id]);
 
   const fetchRequests = async () => {
     try {

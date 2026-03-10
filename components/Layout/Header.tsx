@@ -24,6 +24,9 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onMenuClick, user }) => {
       case 'kpi': return 'Key Performance Indicator';
       case 'key_activity': return 'Key Activities';
       case 'sales_report': return 'Sales Report & Geotagging';
+      case 'dispensation': return 'Dispensasi Presensi';
+      case 'admin_dispensation': return 'Antrean Dispensasi';
+      case 'master_app': return 'Master Aplikasi';
       default: return activeTab;
     }
   };

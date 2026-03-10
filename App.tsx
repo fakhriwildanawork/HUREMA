@@ -227,9 +227,9 @@ const App: React.FC = () => {
             ) : activeTab === 'compensation' ? (
               <CompensationMain />
             ) : activeTab === 'dispensation' ? (
-              <DispensationMain />
+              <DispensationMain user={user} />
             ) : activeTab === 'admin_dispensation' ? (
-              <AdminDispensationMain />
+              <AdminDispensationMain user={user} />
             ) : activeTab === 'master_app' ? (
               <MasterMain />
             ) : (

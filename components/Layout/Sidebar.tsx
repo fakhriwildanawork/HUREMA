@@ -20,6 +20,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed,
   const [isMasterOpen, setIsMasterOpen] = useState(true);
   const [isPerformanceOpen, setIsPerformanceOpen] = useState(false);
   const [isFinanceOpen, setIsFinanceOpen] = useState(false);
+  const [isPresenceOpen, setIsPresenceOpen] = useState(true);
   const [unreadReimbursements, setUnreadReimbursements] = useState(0);
   const [unreadCompensations, setUnreadCompensations] = useState(0);
   const [unreadDispensations, setUnreadDispensations] = useState(0);
@@ -214,13 +215,45 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed,
           )}
         </div>
 
+        {/* Presence & Dispensation Group */}
         <div className="mt-4">
-          <NavItem id="presence" icon={Fingerprint} label="Presensi Reguler" />
-          <NavItem id="overtime" icon={Timer} label="Presensi Lembur" />
-          <NavItem id="dispensation" icon={ClipboardList} label="Dispensasi Presensi" />
-          {user?.role === 'admin' && (
-            <NavItem id="admin_dispensation" icon={ClipboardList} label="Antrean Dispensasi" badge={unreadDispensations} />
+          <button 
+            onClick={() => setIsPresenceOpen(!isPresenceOpen)}
+            className={`flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-200 w-full mb-1 text-gray-600 hover:bg-gray-100`}
+            title={isCollapsed ? 'Presensi' : ''}
+          >
+            <div className="relative shrink-0">
+              <Fingerprint size={20} className="text-gray-400" />
+              {unreadDispensations > 0 && isCollapsed && (
+                <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border border-white"></div>
+              )}
+            </div>
+            {!isCollapsed && (
+              <div className="flex items-center justify-between flex-1 overflow-hidden">
+                <div className="flex items-center gap-2 truncate">
+                  <span className="font-medium text-sm">Presensi</span>
+                  {unreadDispensations > 0 && (
+                    <span className="bg-red-500 text-white text-[8px] font-bold px-1 rounded-full">NEW</span>
+                  )}
+                </div>
+                {isPresenceOpen ? <ChevronDown size={16} className="text-gray-300" /> : <ChevronRight size={16} className="text-gray-300" />}
+              </div>
+            )}
+          </button>
+          
+          {(isPresenceOpen || isCollapsed) && (
+            <div className={`mt-1 overflow-hidden transition-all duration-300 ${isCollapsed ? '' : 'max-h-96'}`}>
+              <NavItem id="presence" icon={Fingerprint} label="Presensi Reguler" indent />
+              <NavItem id="overtime" icon={Timer} label="Presensi Lembur" indent />
+              <NavItem id="dispensation" icon={ClipboardList} label="Dispensasi Presensi" indent />
+              {user?.role === 'admin' && (
+                <NavItem id="admin_dispensation" icon={ClipboardList} label="Antrean Dispensasi" indent badge={unreadDispensations} />
+              )}
+            </div>
           )}
+        </div>
+
+        <div className="mt-4">
           <NavItem id="leave" icon={Plane} label="Libur Mandiri" />
           <NavItem id="annual_leave" icon={Calendar} label="Cuti Tahunan" />
           <NavItem id="permission" icon={ClipboardList} label="Izin" />
