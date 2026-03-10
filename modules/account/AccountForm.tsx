@@ -33,7 +33,7 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
     position: initialData?.position || '',
     grade: initialData?.grade || '',
     location_id: initialData?.location_id || '',
-    schedule_id: (initialData as any)?.schedule_id || '',
+    schedule_id: (initialData as any)?.schedule_id || (initialData?.schedule_type === 'Fleksibel' ? 'FLEKSIBEL' : initialData?.schedule_type === 'Shift Dinamis' ? 'DINAMIS' : ''),
     employee_type: initialData?.employee_type || 'Tetap',
     start_date: initialData?.start_date || '',
     end_date: initialData?.end_date || '',
@@ -104,6 +104,9 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
          if (formData.location_id === initialData?.location_id) {
             if (initialData?.schedule_id && filtered.some(s => s.id === initialData.schedule_id)) {
                setFormData(prev => ({ ...prev, schedule_id: initialData.schedule_id }));
+            } else if (!initialData?.schedule_id) {
+               if (initialData?.schedule_type === 'Fleksibel') setFormData(prev => ({ ...prev, schedule_id: 'FLEKSIBEL' }));
+               else if (initialData?.schedule_type === 'Shift Dinamis') setFormData(prev => ({ ...prev, schedule_id: 'DINAMIS' }));
             }
          }
        });
