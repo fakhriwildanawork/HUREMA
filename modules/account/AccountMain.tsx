@@ -9,6 +9,8 @@ import {
 import * as XLSX from 'xlsx';
 import Swal from 'sweetalert2';
 import { accountService } from '../../services/accountService';
+import { locationService } from '../../services/locationService';
+import { scheduleService } from '../../services/scheduleService';
 import { Account, AccountInput } from '../../types';
 import AccountForm from './AccountForm';
 import AccountDetail from './AccountDetail';
@@ -85,19 +87,47 @@ const AccountMain: React.FC = () => {
     }
   };
 
-  const downloadTemplate = () => {
-    const headers = [
-      'Nama Lengkap', 'NIK KTP', 'Gender', 'Agama', 'Tgl Lahir (YYYY-MM-DD)', 
-      'Alamat', 'No Telepon', 'Email', 'Status Nikah', 'Tanggungan', 
-      'NIK Internal', 'Jabatan', 'Golongan', 'Lokasi Penempatan', 
-      'Jenis Karyawan', 'Tgl Mulai (YYYY-MM-DD)', 'Kode Akses', 'Password'
-    ];
-    
-    const worksheet = XLSX.utils.aoa_to_sheet([headers]);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Template");
-    
-    XLSX.writeFile(workbook, 'template_impor_akun.xlsx');
+  const downloadTemplate = async () => {
+    try {
+      // Fetch data for reference sheets
+      const [locations, schedules] = await Promise.all([
+        locationService.getAll(),
+        scheduleService.getAll()
+      ]);
+
+      const headers = [
+        'Nama Lengkap', 'NIK KTP', 'Gender', 'Agama', 'Tgl Lahir (YYYY-MM-DD)', 
+        'Alamat', 'No Telepon', 'Email', 'Status Nikah', 'Tanggungan', 
+        'NIK Internal', 'Jabatan', 'Golongan', 'Lokasi Penempatan', 
+        'Jenis Karyawan', 'Tgl Mulai (YYYY-MM-DD)', 'Tgl Akhir (YYYY-MM-DD)',
+        'Pendidikan Terakhir', 'Jurusan', 'Tgl Lulus (YYYY-MM-DD)',
+        'Nama Kontak Darurat', 'Hubungan Kontak Darurat', 'No HP Kontak Darurat',
+        'Pilih Jadwal Kerja', 'Jatah Cuti Tahunan', 'Jatah Cuti Melahirkan', 
+        'Akumulasi Cuti (Ya/Tidak)', 'Maksimal Carry-over', 'Jatah Carry-over Saat Ini',
+        'Batasi Check-in Datang (Ya/Tidak)', 'Batasi Check-out Pulang (Ya/Tidak)', 
+        'Batasi Check-in Lembur (Ya/Tidak)', 'Batasi Check-out Lembur (Ya/Tidak)',
+        'Kode Akses', 'Password', 'Status Medis / MCU', 'Risiko Kesehatan'
+      ];
+      
+      const workbook = XLSX.utils.book_new();
+      
+      // 1. Template Sheet
+      const worksheet = XLSX.utils.aoa_to_sheet([headers]);
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Template");
+      
+      // 2. Reference Sheets
+      const locData = locations.map(l => [l.name, l.address]);
+      const locSheet = XLSX.utils.aoa_to_sheet([['Nama Lokasi', 'Alamat'], ...locData]);
+      XLSX.utils.book_append_sheet(workbook, locSheet, "Referensi Lokasi");
+      
+      const schData = schedules.map(s => [s.name, s.type === 1 ? 'Office Hour' : s.type === 2 ? 'Shift' : 'Lainnya']);
+      const schSheet = XLSX.utils.aoa_to_sheet([['Nama Jadwal', 'Tipe'], ['Fleksibel', 'Virtual'], ['Shift Dinamis', 'Virtual'], ...schData]);
+      XLSX.utils.book_append_sheet(workbook, schSheet, "Referensi Jadwal");
+      
+      XLSX.writeFile(workbook, 'template_impor_akun.xlsx');
+    } catch (error) {
+      Swal.fire('Gagal', 'Gagal menyiapkan template', 'error');
+    }
   };
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -131,7 +161,7 @@ const AccountMain: React.FC = () => {
         if (confirm.isConfirmed) {
           setIsSaving(true);
           try {
-            const formattedData: (AccountInput & { location_name?: string })[] = jsonData.map((row: any) => ({
+            const formattedData: (AccountInput & { location_name?: string, schedule_name?: string })[] = jsonData.map((row: any) => ({
               full_name: row['Nama Lengkap'],
               nik_ktp: row['NIK KTP'],
               gender: row['Gender'] || 'Laki-laki',
@@ -142,34 +172,37 @@ const AccountMain: React.FC = () => {
               email: row['Email'],
               marital_status: row['Status Nikah'] || 'Belum Menikah',
               dependents_count: parseInt(row['Tanggungan']) || 0,
-              emergency_contact_name: '',
-              emergency_contact_rel: '',
-              emergency_contact_phone: '',
-              last_education: 'Sarjana',
-              major: '',
+              emergency_contact_name: row['Nama Kontak Darurat'] || '',
+              emergency_contact_rel: row['Hubungan Kontak Darurat'] || '',
+              emergency_contact_phone: row['No HP Kontak Darurat'] || '',
+              last_education: row['Pendidikan Terakhir'] || 'Sarjana',
+              major: row['Jurusan'] || '',
+              education_end_date: row['Tgl Lulus (YYYY-MM-DD)'] || null,
               internal_nik: row['NIK Internal'],
               position: row['Jabatan'],
               grade: row['Golongan'],
               location_id: null,
               location_name: row['Lokasi Penempatan'],
               schedule_id: null,
+              schedule_name: row['Pilih Jadwal Kerja'],
               employee_type: row['Jenis Karyawan'] || 'Tetap',
               start_date: row['Tgl Mulai (YYYY-MM-DD)'],
-              schedule_type: 'Office Hour',
-              leave_quota: 12,
-              is_leave_accumulated: false,
-              max_carry_over_days: 0,
-              carry_over_quota: 0,
-              maternity_leave_quota: 0,
-              is_presence_limited_checkin: true,
-              is_presence_limited_checkout: true,
-              is_presence_limited_ot_in: true,
-              is_presence_limited_ot_out: true,
+              end_date: row['Tgl Akhir (YYYY-MM-DD)'] || null,
+              schedule_type: row['Pilih Jadwal Kerja'] || 'Office Hour',
+              leave_quota: parseInt(row['Jatah Cuti Tahunan']) || 12,
+              is_leave_accumulated: row['Akumulasi Cuti (Ya/Tidak)'] === 'Ya',
+              max_carry_over_days: parseInt(row['Maksimal Carry-over']) || 0,
+              carry_over_quota: parseInt(row['Jatah Carry-over Saat Ini']) || 0,
+              maternity_leave_quota: parseInt(row['Jatah Cuti Melahirkan']) || 0,
+              is_presence_limited_checkin: row['Batasi Check-in Datang (Ya/Tidak)'] !== 'Tidak',
+              is_presence_limited_checkout: row['Batasi Check-out Pulang (Ya/Tidak)'] !== 'Tidak',
+              is_presence_limited_ot_in: row['Batasi Check-in Lembur (Ya/Tidak)'] !== 'Tidak',
+              is_presence_limited_ot_out: row['Batasi Check-out Lembur (Ya/Tidak)'] !== 'Tidak',
               access_code: row['Kode Akses'],
               password: row['Password'] || '123456',
               role: 'user',
-              mcu_status: '',
-              health_risk: ''
+              mcu_status: row['Status Medis / MCU'] || '',
+              health_risk: row['Risiko Kesehatan'] || ''
             }));
 
             const res = await accountService.bulkCreate(formattedData);
@@ -183,7 +216,7 @@ const AccountMain: React.FC = () => {
               title: res.failed === 0 ? 'Berhasil!' : 'Selesai dengan Catatan',
               text: message,
               icon: res.failed === 0 ? 'success' : 'warning',
-              footer: res.failed > 0 ? `<div style="max-height: 100px; overflow-y: auto; text-align: left; font-size: 10px; color: #ef4444;">${res.errors.join('<br/>')}</div>` : null
+              footer: res.failed > 0 ? `<div style="max-height: 150px; overflow-y: auto; text-align: left; font-size: 10px; color: #ef4444; background: #fef2f2; padding: 8px; border-radius: 4px; border: 1px solid #fee2e2;">${res.errors.join('<br/>')}</div>` : null
             });
 
             fetchAccounts();

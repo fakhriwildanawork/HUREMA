@@ -193,28 +193,54 @@ export const accountService = {
     return true;
   },
 
-  async bulkCreate(accounts: (AccountInput & { location_name?: string })[]) {
+  async bulkCreate(accounts: (AccountInput & { location_name?: string, schedule_name?: string })[]) {
     const results = {
       success: 0,
       failed: 0,
       errors: [] as string[]
     };
 
-    // Get all locations for mapping
-    const { data: locations } = await supabase.from('locations').select('id, name');
+    // Get all locations and schedules for mapping
+    const [{ data: locations }, { data: schedules }] = await Promise.all([
+      supabase.from('locations').select('id, name'),
+      supabase.from('schedules').select('id, name, type')
+    ]);
+
     const locationMap = new Map(locations?.map(l => [l.name.toLowerCase(), l.id]));
+    const scheduleMap = new Map(schedules?.map(s => [s.name.toLowerCase(), s]));
 
     for (const acc of accounts) {
       try {
-        const { location_name, ...rest } = acc;
+        const { location_name, schedule_name, ...rest } = acc;
         
-        // Map location name to ID if not provided
+        // 1. Map location name to ID
         if (!rest.location_id && location_name) {
-          rest.location_id = locationMap.get(location_name.toLowerCase()) || null;
+          const locId = locationMap.get(location_name.toLowerCase());
+          if (!locId) {
+            throw new Error(`Lokasi "${location_name}" tidak ditemukan di database. Silakan cek sheet Referensi Lokasi.`);
+          }
+          rest.location_id = locId;
+        } else if (!rest.location_id) {
+          throw new Error(`Kolom Lokasi Penempatan wajib diisi.`);
         }
 
-        if (!rest.location_id) {
-          throw new Error(`Lokasi "${location_name}" tidak ditemukan`);
+        // 2. Map schedule name to ID and Type
+        if (schedule_name) {
+          const lowerName = schedule_name.toLowerCase();
+          if (lowerName === 'fleksibel') {
+            rest.schedule_type = 'FLEKSIBEL';
+            rest.schedule_id = null;
+          } else if (lowerName === 'shift dinamis') {
+            rest.schedule_type = 'DINAMIS';
+            rest.schedule_id = null;
+          } else {
+            const sch = scheduleMap.get(lowerName);
+            if (!sch) {
+              throw new Error(`Jadwal "${schedule_name}" tidak ditemukan. Silakan cek sheet Referensi Jadwal.`);
+            }
+            rest.schedule_id = sch.id;
+            rest.schedule_type = sch.type === 1 ? 'Office Hour' : 'Shift';
+          }
         }
 
         // Use the existing create method to ensure logs and contracts are created

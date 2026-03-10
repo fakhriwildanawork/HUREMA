@@ -85,6 +85,7 @@ export interface Account {
   // Pendidikan
   last_education: string;
   major: string; // Jurusan
+  education_end_date?: string | null;
   diploma_google_id?: string | null;
   // Karier & Penempatan
   internal_nik: string;

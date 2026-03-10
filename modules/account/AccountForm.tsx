@@ -29,6 +29,7 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
     emergency_contact_phone: initialData?.emergency_contact_phone || '',
     last_education: initialData?.last_education || 'Sarjana',
     major: initialData?.major || '',
+    education_end_date: initialData?.education_end_date || '',
     internal_nik: initialData?.internal_nik || '',
     position: initialData?.position || '',
     grade: initialData?.grade || '',
@@ -536,6 +537,10 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
                     <input id="major" name="major" value={formData.major} onChange={handleChange} placeholder="cth: Teknik Sipil" className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" required />
                   </div>
                 </div>
+                <div className="space-y-1">
+                  <Label htmlFor="education_end_date">Tgl Lulus / Akhir Pendidikan</Label>
+                  <input id="education_end_date" type="date" name="education_end_date" value={formData.education_end_date} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
+                </div>
                 <div className="grid grid-cols-1 gap-3">
                    <label htmlFor="diploma_google_id" className="flex items-center gap-4 p-2 border border-dashed border-gray-300 rounded cursor-pointer hover:bg-gray-50 group transition-colors">
                       <div className="w-10 h-10 rounded bg-white flex items-center justify-center shrink-0 border border-gray-100 overflow-hidden">
@@ -672,7 +677,13 @@ const AccountForm: React.FC<AccountFormProps> = ({ onClose, onSubmit, initialDat
                  </div>
                  <div className="space-y-1">
                     <Label htmlFor="health_risk">Risiko Kesehatan</Label>
-                    <input id="health_risk" name="health_risk" value={formData.health_risk} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none" />
+                    <select id="health_risk" name="health_risk" value={formData.health_risk} onChange={handleChange} className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-[#006E62] outline-none">
+                      <option value="">-- Pilih Risiko --</option>
+                      <option value="Tidak ada risiko kerja">Tidak ada risiko kerja</option>
+                      <option value="Risiko kerja ringan">Risiko kerja ringan</option>
+                      <option value="Risiko kerja sedang">Risiko kerja sedang</option>
+                      <option value="Risiko kerja berat">Risiko kerja berat</option>
+                    </select>
                  </div>
                  {!initialData && (
                   <div className="space-y-1 p-2 bg-gray-50 rounded border border-gray-100 mt-2">
