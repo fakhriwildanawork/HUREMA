@@ -26,7 +26,6 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onMenuClick, user }) => {
       case 'sales_report': return 'Sales Report & Geotagging';
       case 'dispensation': return 'Dispensasi Presensi';
       case 'admin_dispensation': return 'Antrean Dispensasi';
-      case 'report': return 'Laporan & Analitik';
       case 'master_app': return 'Master Aplikasi';
       default: return activeTab;
     }
