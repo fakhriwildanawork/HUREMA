@@ -32,6 +32,7 @@ const EarlySalaryMain = lazy(() => import('./modules/finance/EarlySalaryModule')
 const CompensationMain = lazy(() => import('./modules/finance/CompensationMain'));
 const DispensationMain = lazy(() => import('./modules/dispensation/DispensationMain'));
 const AdminDispensationMain = lazy(() => import('./modules/dispensation/AdminDispensationMain'));
+const AttendanceReportMain = lazy(() => import('./modules/report/AttendanceReportMain'));
 const MasterMain = lazy(() => import('./modules/settings/MasterMain'));
 const Login = lazy(() => import('./modules/auth/Login'));
 
@@ -40,7 +41,7 @@ import { AuthUser } from './types';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'document' | 'settings' | 'presence' | 'overtime' | 'submission' | 'leave' | 'annual_leave' | 'permission' | 'maternity_leave' | 'master_app' | 'kpi' | 'key_activity' | 'sales_report' | 'feedback' | 'lapor' | 'rapat' | 'pengumuman' | 'salary_scheme' | 'salary_adjustment' | 'payroll' | 'my_payslip' | 'reimbursement' | 'early_salary' | 'compensation' | 'employee_of_the_period' | 'dispensation' | 'admin_dispensation'>('presence');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'document' | 'settings' | 'presence' | 'overtime' | 'submission' | 'leave' | 'annual_leave' | 'permission' | 'maternity_leave' | 'master_app' | 'kpi' | 'key_activity' | 'sales_report' | 'feedback' | 'lapor' | 'rapat' | 'pengumuman' | 'salary_scheme' | 'salary_adjustment' | 'payroll' | 'my_payslip' | 'reimbursement' | 'early_salary' | 'compensation' | 'employee_of_the_period' | 'dispensation' | 'admin_dispensation' | 'attendance_report'>('presence');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
@@ -230,6 +231,8 @@ const App: React.FC = () => {
               <DispensationMain user={user} />
             ) : activeTab === 'admin_dispensation' ? (
               <AdminDispensationMain user={user} />
+            ) : activeTab === 'attendance_report' ? (
+              <AttendanceReportMain />
             ) : activeTab === 'master_app' ? (
               <MasterMain />
             ) : (

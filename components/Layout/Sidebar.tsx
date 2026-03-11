@@ -21,6 +21,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed,
   const [isPerformanceOpen, setIsPerformanceOpen] = useState(false);
   const [isFinanceOpen, setIsFinanceOpen] = useState(false);
   const [isPresenceOpen, setIsPresenceOpen] = useState(true);
+  const [isReportOpen, setIsReportOpen] = useState(false);
   const [unreadReimbursements, setUnreadReimbursements] = useState(0);
   const [unreadCompensations, setUnreadCompensations] = useState(0);
   const [unreadDispensations, setUnreadDispensations] = useState(0);
@@ -211,6 +212,29 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed,
               {user?.role === 'admin' && (
                 <NavItem id="compensation" icon={Receipt} label="Kompensasi" indent badge={unreadCompensations} />
               )}
+            </div>
+          )}
+        </div>
+
+        {/* Laporan Menu Group */}
+        <div className="mt-4">
+          <button 
+            onClick={() => setIsReportOpen(!isReportOpen)}
+            className={`flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-200 w-full mb-1 text-gray-600 hover:bg-gray-100`}
+            title={isCollapsed ? 'Laporan' : ''}
+          >
+            <BarChart3 size={20} className="shrink-0 text-gray-400" />
+            {!isCollapsed && (
+              <div className="flex items-center justify-between flex-1 overflow-hidden">
+                <span className="font-medium text-sm truncate">Laporan</span>
+                {isReportOpen ? <ChevronDown size={16} className="text-gray-300" /> : <ChevronRight size={16} className="text-gray-300" />}
+              </div>
+            )}
+          </button>
+          
+          {(isReportOpen || isCollapsed) && (
+            <div className={`mt-1 overflow-hidden transition-all duration-300 ${isCollapsed ? '' : 'max-h-96'}`}>
+              <NavItem id="attendance_report" icon={Fingerprint} label="Laporan Kehadiran" indent />
             </div>
           )}
         </div>
