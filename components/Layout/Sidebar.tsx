@@ -114,6 +114,13 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isCollapsed,
       <nav className="flex-1 px-3 overflow-y-auto scrollbar-none">
         <NavItem id="dashboard" icon={LayoutDashboard} label="Beranda" />
         
+        {/* Report Menu Group */}
+        {user?.role === 'admin' && (
+          <div className="mt-4">
+            <NavItem id="report" icon={BarChart3} label="Laporan & Analitik" />
+          </div>
+        )}
+        
         {/* Master Menu Group */}
         <div className="mt-4">
           <button 

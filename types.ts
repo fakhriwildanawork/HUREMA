@@ -987,3 +987,55 @@ export interface EmployeeOfThePeriod {
 }
 
 export type EmployeeOfThePeriodInput = Omit<EmployeeOfThePeriod, 'id' | 'created_at' | 'updated_at' | 'accounts'>;
+
+// --- Report Types ---
+export interface AttendanceSummary {
+  accountId: string;
+  fullName: string;
+  nik: string;
+  totalDays: number;
+  present: number;
+  late: number;
+  lateMinutes: number;
+  earlyDeparture: number;
+  earlyDepartureMinutes: number;
+  absent: number;
+  leave: number;
+  maternityLeave: number;
+  permission: number;
+  holiday: number;
+  specialHoliday: number;
+  noClockOut: number;
+  dispensationCount: number;
+  attendanceRate: number;
+  dailyDetails: {
+    date: string;
+    status: 'PRESENT' | 'ABSENT' | 'LEAVE' | 'MATERNITY' | 'PERMISSION' | 'HOLIDAY' | 'SPECIAL_HOLIDAY' | 'WEEKEND';
+    isLate: boolean;
+    isEarlyDeparture: boolean;
+    isNoClockOut: boolean;
+  }[];
+}
+
+export interface OvertimeSummary {
+  accountId: string;
+  fullName: string;
+  nik: string;
+  totalOvertimeMinutes: number;
+  totalOvertimeHours: number;
+  overtimeCount: number;
+  estimatedCost: number;
+}
+
+export interface LeaveSummary {
+  accountId: string;
+  fullName: string;
+  nik: string;
+  totalQuota: number;
+  usedQuota: number;
+  remainingQuota: number;
+  carryOverQuota: number;
+  maternityQuota: number;
+  maternityUsed: number;
+  permissionCount: number;
+}
