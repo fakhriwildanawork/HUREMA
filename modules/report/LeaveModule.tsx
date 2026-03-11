@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { reportService } from '../../services/reportService';
 import { LeaveSummary } from '../../types';
 import { Search, Download, Plane, Heart, ClipboardList, User, PieChart as PieIcon, BarChart3 } from 'lucide-react';
-import StatCard from './report-components/ReportStatCard';
+import StatCard from './ReportStatCardComponent';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import * as XLSX from 'xlsx';
 
