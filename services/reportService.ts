@@ -15,12 +15,12 @@ export const reportService = {
       { data: maternityLeaves }
     ] = await Promise.all([
       supabase.from('accounts').select('id, full_name, internal_nik'),
-      supabase.from('attendances').select('*').gte('created_at', `${startDate}T00:00:00Z`).lte('created_at', `${endDate}T23:59:59Z`),
-      supabase.from('overtimes').select('*').gte('created_at', `${startDate}T00:00:00Z`).lte('created_at', `${endDate}T23:59:59Z`),
-      supabase.from('account_leave_requests').select('*').eq('status', 'approved').gte('start_date', startDate).lte('start_date', endDate),
-      supabase.from('account_annual_leaves').select('*').eq('status', 'approved').gte('start_date', startDate).lte('start_date', endDate),
-      supabase.from('account_permission_requests').select('*').eq('status', 'approved').gte('start_date', startDate).lte('start_date', endDate),
-      supabase.from('account_maternity_leaves').select('*').eq('status', 'approved').gte('start_date', startDate).lte('start_date', endDate)
+      supabase.from('attendances').select('*').gte('check_in', `${startDate}T00:00:00Z`).lte('check_in', `${endDate}T23:59:59Z`),
+      supabase.from('overtimes').select('*').gte('check_in', `${startDate}T00:00:00Z`).lte('check_in', `${endDate}T23:59:59Z`),
+      supabase.from('account_leave_requests').select('*').eq('status', 'approved').lte('start_date', endDate).gte('end_date', startDate),
+      supabase.from('account_annual_leaves').select('*').eq('status', 'approved').lte('start_date', endDate).gte('end_date', startDate),
+      supabase.from('account_permission_requests').select('*').eq('status', 'approved').lte('start_date', endDate).gte('end_date', startDate),
+      supabase.from('account_maternity_leaves').select('*').eq('status', 'approved').lte('start_date', endDate).gte('end_date', startDate)
     ]);
 
     return {

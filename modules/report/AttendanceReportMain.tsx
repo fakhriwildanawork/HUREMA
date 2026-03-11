@@ -51,6 +51,7 @@ const AttendanceReportMain: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [reportData, setReportData] = useState<any>(null);
   const [selectedEmployee, setSelectedEmployee] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const user = authService.getCurrentUser();
   const isAdmin = user?.role === 'admin';
@@ -75,6 +76,10 @@ const AttendanceReportMain: React.FC = () => {
     if (!reportData) return [];
 
     const { accounts, attendances, overtimes, leaves, annualLeaves, permissions, maternityLeaves } = reportData;
+    const totalDays = eachDayOfInterval({
+      start: parseISO(dateRange.start),
+      end: parseISO(dateRange.end)
+    }).length;
 
     return accounts.map((acc: any) => {
       const employeeAttendances = attendances.filter((a: any) => a.account_id === acc.id);
@@ -84,39 +89,69 @@ const AttendanceReportMain: React.FC = () => {
       const employeePermissions = permissions.filter((p: any) => p.account_id === acc.id);
       const employeeMaternityLeaves = maternityLeaves.filter((m: any) => m.account_id === acc.id);
 
+      const present = employeeAttendances.length;
+      const leave = employeeLeaves.length;
+      const annual_leave = employeeAnnualLeaves.length;
+      const permission = employeePermissions.length;
+      const maternity_leave = employeeMaternityLeaves.length;
+      
+      // Basic absent logic: total days - (present + leaves/permissions)
+      // Note: This is a simplification and doesn't account for weekends/holidays yet
+      const absent = Math.max(0, totalDays - (present + leave + annual_leave + permission + maternity_leave));
+
       return {
         id: acc.id,
         name: acc.full_name,
         nik: acc.internal_nik,
-        present: employeeAttendances.length,
+        present,
         overtime: employeeOvertimes.length,
         overtime_minutes: employeeOvertimes.reduce((sum: number, o: any) => sum + (o.duration_minutes || 0), 0),
-        leave: employeeLeaves.length,
-        annual_leave: employeeAnnualLeaves.length,
-        permission: employeePermissions.length,
-        maternity_leave: employeeMaternityLeaves.length,
-        absent: 0 // Placeholder, logic for absent depends on schedule
+        leave,
+        annual_leave,
+        permission,
+        maternity_leave,
+        absent
       };
     });
-  }, [reportData]);
+  }, [reportData, dateRange]);
+
+  const filteredData = useMemo(() => {
+    if (!searchTerm) return processedData;
+    const lowerSearch = searchTerm.toLowerCase();
+    return processedData.filter((emp: any) => 
+      emp.name.toLowerCase().includes(lowerSearch) || 
+      emp.nik.toLowerCase().includes(lowerSearch)
+    );
+  }, [processedData, searchTerm]);
 
   const overallStats = useMemo(() => {
     if (!processedData.length) return null;
 
-    const total = processedData.length;
     const present = processedData.reduce((sum, d) => sum + d.present, 0);
     const overtime = processedData.reduce((sum, d) => sum + d.overtime, 0);
     const leave = processedData.reduce((sum, d) => sum + d.leave + d.annual_leave + d.maternity_leave, 0);
     const permission = processedData.reduce((sum, d) => sum + d.permission, 0);
+    const absent = processedData.reduce((sum, d) => sum + d.absent, 0);
 
     return [
       { name: 'Hadir', value: present, color: '#006E62' },
       { name: 'Lembur', value: overtime, color: '#f59e0b' },
       { name: 'Cuti', value: leave, color: '#10b981' },
       { name: 'Izin', value: permission, color: '#6366f1' },
-      { name: 'Absen', value: 0, color: '#ef4444' }
+      { name: 'Absen', value: absent, color: '#ef4444' }
     ];
   }, [processedData]);
+
+  const attendancePercentage = useMemo(() => {
+    if (!processedData.length) return 0;
+    const totalPresent = processedData.reduce((sum, d) => sum + d.present, 0);
+    const totalPossible = processedData.length * eachDayOfInterval({
+      start: parseISO(dateRange.start),
+      end: parseISO(dateRange.end)
+    }).length;
+    
+    return totalPossible > 0 ? ((totalPresent / totalPossible) * 100).toFixed(1) : 0;
+  }, [processedData, dateRange]);
 
   const dailyTrend = useMemo(() => {
     if (!reportData) return [];
@@ -202,8 +237,8 @@ const AttendanceReportMain: React.FC = () => {
             </div>
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">% Kehadiran</span>
           </div>
-          <p className="text-3xl font-bold text-gray-800">98.5%</p>
-          <p className="text-xs text-emerald-500 mt-1 font-medium">↑ 2.1% dari bulan lalu</p>
+          <p className="text-3xl font-bold text-gray-800">{attendancePercentage}%</p>
+          <p className="text-xs text-emerald-500 mt-1 font-medium">Berdasarkan data presensi</p>
         </div>
 
         <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow group">
@@ -213,8 +248,8 @@ const AttendanceReportMain: React.FC = () => {
             </div>
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Ketidakhadiran</span>
           </div>
-          <p className="text-3xl font-bold text-gray-800">12</p>
-          <p className="text-xs text-rose-500 mt-1 font-medium">Izin & Cuti hari ini</p>
+          <p className="text-3xl font-bold text-gray-800">{processedData.reduce((sum, d) => sum + d.absent, 0)}</p>
+          <p className="text-xs text-rose-500 mt-1 font-medium">Total absen periode ini</p>
         </div>
       </div>
 
@@ -328,6 +363,8 @@ const AttendanceReportMain: React.FC = () => {
               <input 
                 type="text" 
                 placeholder="Cari karyawan..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9 pr-4 py-1.5 text-xs border border-gray-200 rounded-md outline-none focus:ring-2 focus:ring-[#006E62]/10"
               />
             </div>
@@ -349,7 +386,7 @@ const AttendanceReportMain: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {processedData.map((emp) => (
+              {filteredData.map((emp: any) => (
                 <tr key={emp.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors group">
                   <td className="py-4 px-6">
                     <div className="flex items-center gap-3">
@@ -486,16 +523,38 @@ const AttendanceReportMain: React.FC = () => {
               <div className="mb-8">
                 <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Pola Kehadiran (Heatmap)</h4>
                 <div className="grid grid-cols-7 gap-2">
-                  {Array.from({ length: 31 }).map((_, i) => (
-                    <div 
-                      key={i} 
-                      className={`aspect-square rounded-md flex items-center justify-center text-[10px] font-bold ${
-                        Math.random() > 0.2 ? 'bg-[#006E62] text-white' : 'bg-gray-100 text-gray-400'
-                      }`}
-                    >
-                      {i + 1}
-                    </div>
-                  ))}
+                  {eachDayOfInterval({
+                    start: parseISO(dateRange.start),
+                    end: parseISO(dateRange.end)
+                  }).map((day, i) => {
+                    const dateStr = format(day, 'yyyy-MM-dd');
+                    const isPresent = reportData?.attendances.some((a: any) => 
+                      a.account_id === selectedEmployee && a.check_in.startsWith(dateStr)
+                    );
+                    const isOnLeave = [
+                      ...reportData?.leaves,
+                      ...reportData?.annualLeaves,
+                      ...reportData?.permissions,
+                      ...reportData?.maternityLeaves
+                    ].some((l: any) => 
+                      l.account_id === selectedEmployee && 
+                      isWithinInterval(day, { start: parseISO(l.start_date), end: parseISO(l.end_date) })
+                    );
+
+                    let bgColor = 'bg-gray-100 text-gray-400';
+                    if (isPresent) bgColor = 'bg-[#006E62] text-white';
+                    else if (isOnLeave) bgColor = 'bg-amber-100 text-amber-600';
+
+                    return (
+                      <div 
+                        key={i} 
+                        className={`aspect-square rounded-md flex items-center justify-center text-[10px] font-bold ${bgColor}`}
+                        title={format(day, 'dd MMMM yyyy', { locale: id })}
+                      >
+                        {format(day, 'd')}
+                      </div>
+                    );
+                  })}
                 </div>
                 <div className="mt-4 flex items-center gap-4 text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
                   <div className="flex items-center gap-1">
@@ -503,8 +562,12 @@ const AttendanceReportMain: React.FC = () => {
                     <span>Hadir</span>
                   </div>
                   <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 bg-amber-100 rounded-sm"></div>
+                    <span>Cuti/Izin</span>
+                  </div>
+                  <div className="flex items-center gap-1">
                     <div className="w-3 h-3 bg-gray-100 rounded-sm"></div>
-                    <span>Tidak Hadir</span>
+                    <span>Absen</span>
                   </div>
                 </div>
               </div>
