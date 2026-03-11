@@ -9,7 +9,7 @@ import { format, subDays, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
 import * as XLSX from 'xlsx';
 
-const AttendanceReport: React.FC = () => {
+const AttendanceModule: React.FC = () => {
   const [startDate, setStartDate] = useState(format(subDays(new Date(), 30), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [data, setData] = useState<AttendanceSummary[]>([]);
@@ -297,4 +297,4 @@ const AttendanceReport: React.FC = () => {
   );
 };
 
-export default AttendanceReport;
+export default AttendanceModule;

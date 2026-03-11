@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Fingerprint, Timer, Plane, BarChart3, PieChart, TrendingUp, FileText } from 'lucide-react';
-import AttendanceReport from './AttendanceReport';
-import OvertimeReport from './OvertimeReport';
-import LeaveReport from './LeaveReport';
+import AttendanceModule from './AttendanceModule';
+import OvertimeModule from './OvertimeModule';
+import LeaveModule from './LeaveModule';
 
-const ReportDashboard: React.FC = () => {
+const ReportMainModule: React.FC = () => {
   const [activeSubTab, setActiveSubTab] = useState<'attendance' | 'overtime' | 'leave'>('attendance');
 
   const tabs = [
@@ -46,12 +46,12 @@ const ReportDashboard: React.FC = () => {
 
       {/* Content Area */}
       <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-        {activeSubTab === 'attendance' && <AttendanceReport />}
-        {activeSubTab === 'overtime' && <OvertimeReport />}
-        {activeSubTab === 'leave' && <LeaveReport />}
+        {activeSubTab === 'attendance' && <AttendanceModule />}
+        {activeSubTab === 'overtime' && <OvertimeModule />}
+        {activeSubTab === 'leave' && <LeaveModule />}
       </div>
     </div>
   );
 };
 
-export default ReportDashboard;
+export default ReportMainModule;
