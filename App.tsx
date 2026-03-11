@@ -32,7 +32,7 @@ const EarlySalaryMain = lazy(() => import('./modules/finance/EarlySalaryModule')
 const CompensationMain = lazy(() => import('./modules/finance/CompensationMain'));
 const DispensationMain = lazy(() => import('./modules/dispensation/DispensationMain'));
 const AdminDispensationMain = lazy(() => import('./modules/dispensation/AdminDispensationMain'));
-const ReportMain = lazy(() => import('./modules/report/ReportMain'));
+const ReportMain = lazy(() => import('@/modules/report/ReportMain'));
 const MasterMain = lazy(() => import('./modules/settings/MasterMain'));
 const Login = lazy(() => import('./modules/auth/Login'));
 
