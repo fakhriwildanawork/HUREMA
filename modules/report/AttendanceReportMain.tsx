@@ -16,7 +16,8 @@ import {
   Heart,
   ClipboardList,
   AlertCircle,
-  XCircle
+  XCircle,
+  Check
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -38,13 +39,17 @@ import {
 import { reportService } from '../../services/reportService';
 import { authService } from '../../services/authService';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
-import { format, addDays, isWithinInterval, parseISO, eachDayOfInterval, startOfMonth, endOfMonth, subDays } from 'date-fns';
+import { format, addDays, isWithinInterval, parseISO, eachDayOfInterval, startOfMonth, endOfMonth, subDays, differenceInDays, isAfter } from 'date-fns';
 import { id } from 'date-fns/locale';
 
 const COLORS = ['#006E62', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#ec4899', '#8b5cf6'];
 
 const AttendanceReportMain: React.FC = () => {
   const [dateRange, setDateRange] = useState({
+    start: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
+    end: format(new Date(), 'yyyy-MM-dd')
+  });
+  const [tempDateRange, setTempDateRange] = useState({
     start: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
     end: format(new Date(), 'yyyy-MM-dd')
   });
@@ -70,6 +75,31 @@ const AttendanceReportMain: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleApplyFilter = () => {
+    const start = parseISO(tempDateRange.start);
+    const end = parseISO(tempDateRange.end);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+
+    if (isAfter(start, today) || isAfter(end, today)) {
+      alert('Rentang tanggal tidak boleh melebihi tanggal sekarang');
+      return;
+    }
+
+    if (isAfter(start, end)) {
+      alert('Tanggal mulai tidak boleh melebihi tanggal selesai');
+      return;
+    }
+
+    const diff = differenceInDays(end, start);
+    if (diff > 93) {
+      alert('Rentang tanggal maksimal adalah 93 hari');
+      return;
+    }
+
+    setDateRange(tempDateRange);
   };
 
   const processedData = useMemo(() => {
@@ -186,17 +216,26 @@ const AttendanceReportMain: React.FC = () => {
             <Calendar size={16} className="text-[#006E62]" />
             <input 
               type="date" 
-              value={dateRange.start}
-              onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+              value={tempDateRange.start}
+              onChange={(e) => setTempDateRange(prev => ({ ...prev, start: e.target.value }))}
+              max={format(new Date(), 'yyyy-MM-dd')}
               className="text-xs font-bold outline-none bg-transparent"
             />
             <span className="text-gray-300 mx-1">-</span>
             <input 
               type="date" 
-              value={dateRange.end}
-              onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+              value={tempDateRange.end}
+              onChange={(e) => setTempDateRange(prev => ({ ...prev, end: e.target.value }))}
+              max={format(new Date(), 'yyyy-MM-dd')}
               className="text-xs font-bold outline-none bg-transparent"
             />
+            <button 
+              onClick={handleApplyFilter}
+              className="ml-2 p-1 bg-[#006E62] text-white rounded hover:bg-[#005a50] transition-colors"
+              title="Terapkan Filter"
+            >
+              <Check size={14} />
+            </button>
           </div>
           <button className="p-2 text-gray-400 hover:text-[#006E62] transition-colors">
             <Download size={18} />
