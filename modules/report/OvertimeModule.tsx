@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { reportService } from '../../services/reportService';
 import { OvertimeSummary } from '../../types';
 import { Search, Calendar, Download, Timer, User, Clock, DollarSign, BarChart3 } from 'lucide-react';
-import StatCard from './components/StatCard';
+import StatCard from './report-components/ReportStatCard';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
 import { format, subDays } from 'date-fns';
 import * as XLSX from 'xlsx';
