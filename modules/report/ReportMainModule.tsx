@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
-import { Fingerprint, Timer, Plane, BarChart3, PieChart, TrendingUp, FileText } from 'lucide-react';
+import { Fingerprint, Timer, Plane, BarChart3, PieChart, TrendingUp, FileText, Wallet } from 'lucide-react';
 import AttendanceModule from './AttendanceModule';
 import OvertimeModule from './OvertimeModule';
 import LeaveModule from './LeaveModule';
+import FinanceReportMain from './FinanceReportMain';
 
 const ReportMainModule: React.FC = () => {
-  const [activeSubTab, setActiveSubTab] = useState<'attendance' | 'overtime' | 'leave'>('attendance');
+  const [activeSubTab, setActiveSubTab] = useState<'attendance' | 'overtime' | 'leave' | 'finance'>('attendance');
 
   const tabs = [
     { id: 'attendance', label: 'Kehadiran Reguler', icon: Fingerprint, color: 'text-emerald-600', bg: 'bg-emerald-50' },
     { id: 'overtime', label: 'Lembur & Ekstra', icon: Timer, color: 'text-indigo-600', bg: 'bg-indigo-50' },
     { id: 'leave', label: 'Cuti & Izin', icon: Plane, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { id: 'finance', label: 'Finance', icon: Wallet, color: 'text-rose-600', bg: 'bg-rose-50' },
   ];
 
   return (
@@ -49,6 +51,7 @@ const ReportMainModule: React.FC = () => {
         {activeSubTab === 'attendance' && <AttendanceModule />}
         {activeSubTab === 'overtime' && <OvertimeModule />}
         {activeSubTab === 'leave' && <LeaveModule />}
+        {activeSubTab === 'finance' && <FinanceReportMain />}
       </div>
     </div>
   );

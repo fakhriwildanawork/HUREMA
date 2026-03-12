@@ -24,7 +24,7 @@ const AttendanceModule: React.FC = () => {
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      const report = await reportService.getAttendanceReport(startDate, endDate);
+      const report = await reportService.getAttendanceReportSummary(startDate, endDate);
       setData(report);
     } catch (error) {
       console.error(error);

@@ -1039,3 +1039,33 @@ export interface LeaveSummary {
   maternityUsed: number;
   permissionCount: number;
 }
+
+export interface PayrollSummary {
+  month: number;
+  year: number;
+  totalBasicSalary: number;
+  totalAllowances: number;
+  totalOvertime: number;
+  totalDeductions: number;
+  totalPph21: number;
+  totalBpjsKesehatan: number;
+  totalBpjsKetenagakerjaan: number;
+  totalTakeHomePay: number;
+  itemCount: number;
+  items: PayrollItem[];
+}
+
+export interface ExpenseSummary {
+  totalRequested: number;
+  totalApproved: number;
+  count: number;
+  categories: { [key: string]: number };
+  items: Reimbursement[];
+}
+
+export interface CompensationSummary {
+  totalSeverance: number;
+  totalPenalty: number;
+  count: number;
+  items: Compensation[];
+}
