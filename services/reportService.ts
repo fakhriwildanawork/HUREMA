@@ -199,27 +199,41 @@ export const reportService = {
     ] = await Promise.all([
       supabase
         .from('finance_payroll_items')
-        .select('*, payroll:finance_payrolls(*), account:accounts(full_name, internal_nik, position, grade)')
+        .select('*, payroll:finance_payrolls!inner(*), account:accounts(full_name, internal_nik, position, grade)')
         .gte('created_at', `${startDate}T00:00:00Z`)
-        .lte('created_at', `${endDate}T23:59:59Z`),
+        .lte('created_at', `${endDate}T23:59:59Z`)
+        .in('payroll.status', ['Approved', 'Paid']),
       supabase
         .from('finance_reimbursements')
         .select('*, account:accounts(full_name, internal_nik)')
         .gte('transaction_date', startDate)
-        .lte('transaction_date', endDate),
+        .lte('transaction_date', endDate)
+        .in('status', ['Approved', 'Partially Approved']),
       supabase
-        .from('compensations')
+        .from('account_compensation_logs')
         .select('*, account:accounts(full_name, internal_nik)')
         .gte('termination_date', startDate)
-        .lte('termination_date', endDate),
+        .lte('termination_date', endDate)
+        .eq('status', 'Completed'),
       this.getOvertimeReport(startDate, endDate)
     ]);
+
+    // Synchronize Overtime cost with Payroll if available
+    const syncedOvertimes = (overtimes || []).map(ot => {
+      const employeePayrollItems = (payrollItems || []).filter(p => p.account_id === ot.accountId);
+      const totalOvertimePay = employeePayrollItems.reduce((sum, p) => sum + (p.overtime_pay || 0), 0);
+      
+      if (totalOvertimePay > 0) {
+        return { ...ot, estimatedCost: totalOvertimePay };
+      }
+      return ot;
+    });
 
     return {
       payrollItems: payrollItems || [],
       reimbursements: reimbursements || [],
       compensations: compensations || [],
-      overtimes: overtimes || []
+      overtimes: syncedOvertimes
     };
   }
 };
