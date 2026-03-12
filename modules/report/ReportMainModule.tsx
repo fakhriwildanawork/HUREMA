@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Fingerprint, Timer, Plane, BarChart3, PieChart, TrendingUp, FileText, Wallet } from 'lucide-react';
 import AttendanceModule from './AttendanceModule';
 import OvertimeModule from './OvertimeModule';
@@ -11,6 +11,10 @@ interface ReportMainModuleProps {
 
 const ReportMainModule: React.FC<ReportMainModuleProps> = ({ initialTab = 'attendance' }) => {
   const [activeSubTab, setActiveSubTab] = useState<'attendance' | 'overtime' | 'leave' | 'finance'>(initialTab);
+
+  useEffect(() => {
+    setActiveSubTab(initialTab);
+  }, [initialTab]);
 
   const tabs = [
     { id: 'attendance', label: 'Kehadiran Reguler', icon: Fingerprint, color: 'text-emerald-600', bg: 'bg-emerald-50' },
