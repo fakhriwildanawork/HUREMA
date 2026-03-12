@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
-import { X, LayoutDashboard, Users, MapPin, CalendarClock, Files, Settings, Database, Fingerprint, Timer, ClipboardCheck, Plane, Calendar, ClipboardList, Heart, Target, CheckSquare, AlertTriangle, Video, Megaphone, Receipt, Trophy } from 'lucide-react';
+import { X, LayoutDashboard, Users, MapPin, CalendarClock, Files, Settings, Database, Fingerprint, Timer, ClipboardCheck, Plane, Calendar, ClipboardList, Heart, Target, CheckSquare, AlertTriangle, Video, Megaphone, Receipt, Trophy, BarChart3, Wallet } from 'lucide-react';
 import Sidebar from './components/Layout/Sidebar';
 import Header from './components/Layout/Header';
 
@@ -32,7 +32,7 @@ const EarlySalaryMain = lazy(() => import('./modules/finance/EarlySalaryModule')
 const CompensationMain = lazy(() => import('./modules/finance/CompensationMain'));
 const DispensationMain = lazy(() => import('./modules/dispensation/DispensationMain'));
 const AdminDispensationMain = lazy(() => import('./modules/dispensation/AdminDispensationMain'));
-const AttendanceReportMain = lazy(() => import('./modules/report/AttendanceReportMain'));
+const ReportMainModule = lazy(() => import('./modules/report/ReportMainModule'));
 const MasterMain = lazy(() => import('./modules/settings/MasterMain'));
 const Login = lazy(() => import('./modules/auth/Login'));
 
@@ -41,7 +41,7 @@ import { AuthUser } from './types';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'document' | 'settings' | 'presence' | 'overtime' | 'submission' | 'leave' | 'annual_leave' | 'permission' | 'maternity_leave' | 'master_app' | 'kpi' | 'key_activity' | 'sales_report' | 'feedback' | 'lapor' | 'rapat' | 'pengumuman' | 'salary_scheme' | 'salary_adjustment' | 'payroll' | 'my_payslip' | 'reimbursement' | 'early_salary' | 'compensation' | 'employee_of_the_period' | 'dispensation' | 'admin_dispensation' | 'attendance_report'>('presence');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'location' | 'account' | 'schedule' | 'document' | 'settings' | 'presence' | 'overtime' | 'submission' | 'leave' | 'annual_leave' | 'permission' | 'maternity_leave' | 'master_app' | 'kpi' | 'key_activity' | 'sales_report' | 'feedback' | 'lapor' | 'rapat' | 'pengumuman' | 'salary_scheme' | 'salary_adjustment' | 'payroll' | 'my_payslip' | 'reimbursement' | 'early_salary' | 'compensation' | 'employee_of_the_period' | 'dispensation' | 'admin_dispensation' | 'attendance_report' | 'finance_report'>('presence');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
@@ -158,6 +158,8 @@ const App: React.FC = () => {
               )}
               <NavItemMobile id="submission" icon={ClipboardCheck} label="Pengajuan" />
               <NavItemMobile id="document" icon={Files} label="Dokumen Digital" />
+              <NavItemMobile id="attendance_report" icon={BarChart3} label="Laporan Kehadiran" />
+              <NavItemMobile id="finance_report" icon={Wallet} label="Laporan Finance" />
               <NavItemMobile id="settings" icon={Settings} label="Pengaturan" />
             </div>
           </nav>
@@ -232,7 +234,9 @@ const App: React.FC = () => {
             ) : activeTab === 'admin_dispensation' ? (
               <AdminDispensationMain user={user} />
             ) : activeTab === 'attendance_report' ? (
-              <AttendanceReportMain />
+              <ReportMainModule initialTab="attendance" />
+            ) : activeTab === 'finance_report' ? (
+              <ReportMainModule initialTab="finance" />
             ) : activeTab === 'master_app' ? (
               <MasterMain />
             ) : (

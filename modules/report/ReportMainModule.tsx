@@ -5,8 +5,12 @@ import OvertimeModule from './OvertimeModule';
 import LeaveModule from './LeaveModule';
 import FinanceReportMain from './FinanceReportMain';
 
-const ReportMainModule: React.FC = () => {
-  const [activeSubTab, setActiveSubTab] = useState<'attendance' | 'overtime' | 'leave' | 'finance'>('attendance');
+interface ReportMainModuleProps {
+  initialTab?: 'attendance' | 'overtime' | 'leave' | 'finance';
+}
+
+const ReportMainModule: React.FC<ReportMainModuleProps> = ({ initialTab = 'attendance' }) => {
+  const [activeSubTab, setActiveSubTab] = useState<'attendance' | 'overtime' | 'leave' | 'finance'>(initialTab);
 
   const tabs = [
     { id: 'attendance', label: 'Kehadiran Reguler', icon: Fingerprint, color: 'text-emerald-600', bg: 'bg-emerald-50' },
