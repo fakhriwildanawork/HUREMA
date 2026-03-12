@@ -8,6 +8,7 @@ interface FinanceExpenseModuleProps {
   data: any[];
 }
 
+
 const FinanceExpenseModule: React.FC<FinanceExpenseModuleProps> = ({ data }) => {
   const totalRequested = data.reduce((sum, item) => sum + (item.amount_requested || 0), 0);
   const totalApproved = data.reduce((sum, item) => sum + (item.amount_approved || 0), 0);
