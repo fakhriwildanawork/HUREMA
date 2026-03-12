@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Wallet, Receipt, Percent, ShieldAlert, Calendar, Download, Filter, Search, ChevronRight } from 'lucide-react';
+import { Wallet, Receipt, Percent, ShieldAlert, Calendar, Download, Filter, Search, ChevronRight, Timer } from 'lucide-react';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { reportService } from '../../services/reportService';
@@ -7,9 +7,10 @@ import FinancePayrollModule from './FinancePayrollModule';
 import FinanceExpenseModule from './FinanceExpenseModule';
 import FinanceTaxModule from './FinanceTaxModule';
 import FinanceCompensationModule from './FinanceCompensationModule';
+import OvertimeModule from './OvertimeModule';
 
 const FinanceReportMain: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'payroll' | 'expense' | 'tax' | 'compensation'>('payroll');
+  const [activeTab, setActiveTab] = useState<'payroll' | 'overtime' | 'expense' | 'tax' | 'compensation'>('payroll');
   const [dateRange, setDateRange] = useState({
     start: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
     end: format(endOfMonth(new Date()), 'yyyy-MM-dd')
@@ -35,6 +36,7 @@ const FinanceReportMain: React.FC = () => {
 
   const tabs = [
     { id: 'payroll', label: 'Rekapitulasi Gaji', icon: Wallet, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { id: 'overtime', label: 'Lembur', icon: Timer, color: 'text-indigo-600', bg: 'bg-indigo-50' },
     { id: 'expense', label: 'Reimbursement & Klaim', icon: Receipt, color: 'text-blue-600', bg: 'bg-blue-50' },
     { id: 'tax', label: 'Pajak PPh 21 & BPJS', icon: Percent, color: 'text-rose-600', bg: 'bg-rose-50' },
     { id: 'compensation', label: 'Kompensasi', icon: ShieldAlert, color: 'text-amber-600', bg: 'bg-amber-50' },
@@ -42,6 +44,17 @@ const FinanceReportMain: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Header Section */}
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-10 h-10 bg-[#006E62] rounded-xl flex items-center justify-center text-white shadow-lg shadow-[#006E62]/20">
+            <Wallet size={24} />
+          </div>
+          <h1 className="text-2xl font-black text-gray-800 tracking-tight">Laporan Finance</h1>
+        </div>
+        <p className="text-sm text-gray-500 font-medium">Analisis data penggajian, lembur, reimbursement, pajak, dan kompensasi karyawan.</p>
+      </div>
+
       {/* Filter Section */}
       <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -102,6 +115,13 @@ const FinanceReportMain: React.FC = () => {
         ) : (
           <>
             {activeTab === 'payroll' && <FinancePayrollModule data={reportData?.payrollItems || []} />}
+            {activeTab === 'overtime' && (
+              <OvertimeModule 
+                initialStartDate={dateRange.start} 
+                initialEndDate={dateRange.end} 
+                initialData={reportData?.overtimes || []} 
+              />
+            )}
             {activeTab === 'expense' && <FinanceExpenseModule data={reportData?.reimbursements || []} />}
             {activeTab === 'tax' && <FinanceTaxModule data={reportData?.payrollItems || []} />}
             {activeTab === 'compensation' && <FinanceCompensationModule data={reportData?.compensations || []} />}

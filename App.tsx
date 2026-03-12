@@ -34,6 +34,7 @@ const DispensationMain = lazy(() => import('./modules/dispensation/DispensationM
 const AdminDispensationMain = lazy(() => import('./modules/dispensation/AdminDispensationMain'));
 const AttendanceReportMain = lazy(() => import('./modules/report/AttendanceReportMain'));
 const ReportMainModule = lazy(() => import('./modules/report/ReportMainModule'));
+const FinanceReportMain = lazy(() => import('./modules/report/FinanceReportMain'));
 const MasterMain = lazy(() => import('./modules/settings/MasterMain'));
 const Login = lazy(() => import('./modules/auth/Login'));
 
@@ -237,7 +238,7 @@ const App: React.FC = () => {
             ) : activeTab === 'attendance_report' ? (
               <AttendanceReportMain />
             ) : activeTab === 'finance_report' ? (
-              <ReportMainModule initialTab="finance" />
+              <FinanceReportMain />
             ) : activeTab === 'master_app' ? (
               <MasterMain />
             ) : (

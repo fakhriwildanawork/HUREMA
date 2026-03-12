@@ -7,16 +7,36 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
 import { format, subDays } from 'date-fns';
 import * as XLSX from 'xlsx';
 
-const OvertimeModule: React.FC = () => {
-  const [startDate, setStartDate] = useState(format(subDays(new Date(), 30), 'yyyy-MM-dd'));
-  const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [data, setData] = useState<OvertimeSummary[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+interface OvertimeModuleProps {
+  initialStartDate?: string;
+  initialEndDate?: string;
+  initialData?: OvertimeSummary[];
+}
+
+const OvertimeModule: React.FC<OvertimeModuleProps> = ({ 
+  initialStartDate, 
+  initialEndDate,
+  initialData 
+}) => {
+  const [startDate, setStartDate] = useState(initialStartDate || format(subDays(new Date(), 30), 'yyyy-MM-dd'));
+  const [endDate, setEndDate] = useState(initialEndDate || format(new Date(), 'yyyy-MM-dd'));
+  const [data, setData] = useState<OvertimeSummary[]>(initialData || []);
+  const [isLoading, setIsLoading] = useState(!initialData);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    fetchData();
-  }, [startDate, endDate]);
+    if (initialStartDate) setStartDate(initialStartDate);
+    if (initialEndDate) setEndDate(initialEndDate);
+  }, [initialStartDate, initialEndDate]);
+
+  useEffect(() => {
+    if (initialData) {
+      setData(initialData);
+      setIsLoading(false);
+    } else {
+      fetchData();
+    }
+  }, [startDate, endDate, initialData]);
 
   const fetchData = async () => {
     try {
@@ -66,22 +86,24 @@ const OvertimeModule: React.FC = () => {
       {/* Filters & Actions */}
       <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex flex-col sm:flex-row gap-3">
-          <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-xl border border-gray-100">
-            <Calendar size={16} className="text-gray-400" />
-            <input 
-              type="date" 
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="bg-transparent text-xs font-bold text-gray-600 outline-none"
-            />
-            <span className="text-gray-300">/</span>
-            <input 
-              type="date" 
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="bg-transparent text-xs font-bold text-gray-600 outline-none"
-            />
-          </div>
+          {!initialStartDate && (
+            <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-xl border border-gray-100">
+              <Calendar size={16} className="text-gray-400" />
+              <input 
+                type="date" 
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="bg-transparent text-xs font-bold text-gray-600 outline-none"
+              />
+              <span className="text-gray-300">/</span>
+              <input 
+                type="date" 
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="bg-transparent text-xs font-bold text-gray-600 outline-none"
+              />
+            </div>
+          )}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
             <input 

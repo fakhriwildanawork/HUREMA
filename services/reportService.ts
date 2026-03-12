@@ -194,7 +194,8 @@ export const reportService = {
     const [
       { data: payrollItems },
       { data: reimbursements },
-      { data: compensations }
+      { data: compensations },
+      { data: overtimes }
     ] = await Promise.all([
       supabase
         .from('finance_payroll_items')
@@ -210,13 +211,15 @@ export const reportService = {
         .from('compensations')
         .select('*, account:accounts(full_name, internal_nik)')
         .gte('termination_date', startDate)
-        .lte('termination_date', endDate)
+        .lte('termination_date', endDate),
+      this.getOvertimeReport(startDate, endDate)
     ]);
 
     return {
       payrollItems: payrollItems || [],
       reimbursements: reimbursements || [],
-      compensations: compensations || []
+      compensations: compensations || [],
+      overtimes: overtimes || []
     };
   }
 };
