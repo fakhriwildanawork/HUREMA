@@ -17,6 +17,7 @@ import {
 } from '../types';
 import { eachDayOfInterval, parseISO, format, isWithinInterval } from 'date-fns';
 
+
 export const reportService = {
   async getAttendanceReport(startDate: string, endDate: string) {
     const [
@@ -200,8 +201,8 @@ export const reportService = {
       supabase
         .from('finance_payroll_items')
         .select('*, payroll:finance_payrolls!inner(*), account:accounts(full_name, internal_nik, position, grade)')
-        .gte('created_at', `${startDate}T00:00:00Z`)
-        .lte('created_at', `${endDate}T23:59:59Z`)
+        .gte('payroll.start_date', startDate)
+        .lte('payroll.end_date', endDate)
         .in('payroll.status', ['Approved', 'Paid']),
       supabase
         .from('finance_reimbursements')
@@ -229,8 +230,18 @@ export const reportService = {
       return ot;
     });
 
+    // Synchronize Reimbursement with Payroll Items for Salary Recap
+    const enrichedPayrollItems = (payrollItems || []).map(item => {
+      const employeeReimbursements = (reimbursements || []).filter(r => r.account_id === item.account_id);
+      const totalReimbursement = employeeReimbursements.reduce((sum, r) => sum + (r.amount_approved || 0), 0);
+      return {
+        ...item,
+        reimbursement_pay: totalReimbursement
+      };
+    });
+
     return {
-      payrollItems: payrollItems || [],
+      payrollItems: enrichedPayrollItems,
       reimbursements: reimbursements || [],
       compensations: compensations || [],
       overtimes: syncedOvertimes

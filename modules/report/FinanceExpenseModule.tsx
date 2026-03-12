@@ -11,8 +11,8 @@ interface FinanceExpenseModuleProps {
 const FinanceExpenseModule: React.FC<FinanceExpenseModuleProps> = ({ data }) => {
   const totalRequested = data.reduce((sum, item) => sum + (item.amount_requested || 0), 0);
   const totalApproved = data.reduce((sum, item) => sum + (item.amount_approved || 0), 0);
-  const pendingCount = data.filter(item => item.status === 'Pending').length;
-  const approvedCount = data.filter(item => item.status === 'Approved' || item.status === 'Partially Approved').length;
+  const approvedCount = data.filter(item => item.status === 'Approved').length;
+  const partiallyApprovedCount = data.filter(item => item.status === 'Partially Approved').length;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -58,7 +58,7 @@ const FinanceExpenseModule: React.FC<FinanceExpenseModuleProps> = ({ data }) => 
           <p className="text-xl font-black text-gray-800">{formatCurrency(totalRequested)}</p>
           <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-blue-600">
             <Clock size={12} />
-            <span>{data.length} Pengajuan</span>
+            <span>{data.length} Transaksi</span>
           </div>
         </div>
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
@@ -66,20 +66,20 @@ const FinanceExpenseModule: React.FC<FinanceExpenseModuleProps> = ({ data }) => 
           <p className="text-xl font-black text-emerald-600">{formatCurrency(totalApproved)}</p>
           <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-emerald-600">
             <CheckCircle2 size={12} />
-            <span>{approvedCount} Disetujui</span>
+            <span>{approvedCount} Full Approved</span>
           </div>
         </div>
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Menunggu Persetujuan</p>
-          <p className="text-xl font-black text-amber-600">{pendingCount}</p>
-          <p className="text-[10px] text-gray-400 mt-1 uppercase font-bold tracking-tighter">Pengajuan Pending</p>
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Partial Approved</p>
+          <p className="text-xl font-black text-blue-600">{partiallyApprovedCount}</p>
+          <p className="text-[10px] text-gray-400 mt-1 uppercase font-bold tracking-tighter">Transaksi Disetujui Sebagian</p>
         </div>
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Rasio Persetujuan</p>
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Efisiensi Klaim</p>
           <p className="text-xl font-black text-indigo-600">
-            {data.length > 0 ? Math.round((approvedCount / data.length) * 100) : 0}%
+            {totalRequested > 0 ? Math.round((totalApproved / totalRequested) * 100) : 0}%
           </p>
-          <p className="text-[10px] text-gray-400 mt-1 uppercase font-bold tracking-tighter">Dari Total Pengajuan</p>
+          <p className="text-[10px] text-gray-400 mt-1 uppercase font-bold tracking-tighter">Rasio Disetujui vs Diajukan</p>
         </div>
       </div>
 

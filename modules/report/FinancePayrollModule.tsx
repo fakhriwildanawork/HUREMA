@@ -11,13 +11,14 @@ const FinancePayrollModule: React.FC<FinancePayrollModuleProps> = ({ data }) => 
   const totalAllowances = data.reduce((sum, item) => 
     sum + (item.position_allowance || 0) + (item.placement_allowance || 0) + (item.other_allowance || 0), 0);
   const totalOvertime = data.reduce((sum, item) => sum + (item.overtime_pay || 0), 0);
+  const totalReimbursement = data.reduce((sum, item) => sum + (item.reimbursement_pay || 0), 0);
   const totalDeductions = data.reduce((sum, item) => sum + (item.total_deduction || 0), 0);
-  const totalNetPay = data.reduce((sum, item) => sum + (item.take_home_pay || 0), 0);
+  const totalNetPay = data.reduce((sum, item) => sum + (item.take_home_pay || 0) + (item.reimbursement_pay || 0), 0);
 
   const stats = [
-    { label: 'Total Gaji Bersih', value: totalNetPay, icon: Wallet, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { label: 'Total Dibayarkan', value: totalNetPay, icon: Wallet, color: 'text-emerald-600', bg: 'bg-emerald-50' },
     { label: 'Total Gaji Pokok', value: totalBasicSalary, icon: TrendingUp, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { label: 'Total Tunjangan', value: totalAllowances, icon: ArrowUpRight, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+    { label: 'Total Reimbursement', value: totalReimbursement, icon: ArrowUpRight, color: 'text-indigo-600', bg: 'bg-indigo-50' },
     { label: 'Total Potongan', value: totalDeductions, icon: ArrowDownRight, color: 'text-rose-600', bg: 'bg-rose-50' },
   ];
 
@@ -38,8 +39,9 @@ const FinancePayrollModule: React.FC<FinancePayrollModuleProps> = ({ data }) => 
       'Tunjangan Penempatan': item.placement_allowance || 0,
       'Tunjangan Lainnya': item.other_allowance || 0,
       'Lembur': item.overtime_pay || 0,
+      'Reimbursement': item.reimbursement_pay || 0,
       'Potongan': item.total_deduction || 0,
-      'Gaji Bersih': item.take_home_pay
+      'Total Dibayarkan': (item.take_home_pay || 0) + (item.reimbursement_pay || 0)
     }));
 
     const ws = XLSX.utils.json_to_sheet(exportData);
@@ -85,8 +87,9 @@ const FinancePayrollModule: React.FC<FinancePayrollModuleProps> = ({ data }) => 
                 <th className="py-4 px-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Gaji Pokok</th>
                 <th className="py-4 px-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Tunjangan</th>
                 <th className="py-4 px-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Lembur</th>
+                <th className="py-4 px-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Reimbursement</th>
                 <th className="py-4 px-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Potongan</th>
-                <th className="py-4 px-6 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Gaji Bersih</th>
+                <th className="py-4 px-6 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Total Dibayarkan</th>
               </tr>
             </thead>
             <tbody>
@@ -119,12 +122,15 @@ const FinancePayrollModule: React.FC<FinancePayrollModuleProps> = ({ data }) => 
                     <td className="py-4 px-4 text-right text-xs font-medium text-blue-600">
                       {formatCurrency(item.overtime_pay || 0)}
                     </td>
+                    <td className="py-4 px-4 text-right text-xs font-medium text-indigo-600">
+                      {formatCurrency(item.reimbursement_pay || 0)}
+                    </td>
                     <td className="py-4 px-4 text-right text-xs font-medium text-rose-600">
                       {formatCurrency(item.total_deduction || 0)}
                     </td>
                     <td className="py-4 px-6 text-right">
                       <span className="text-xs font-black text-gray-800 bg-gray-100 px-3 py-1 rounded-lg">
-                        {formatCurrency(item.take_home_pay)}
+                        {formatCurrency((item.take_home_pay || 0) + (item.reimbursement_pay || 0))}
                       </span>
                     </td>
                   </tr>
