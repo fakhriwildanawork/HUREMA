@@ -133,6 +133,9 @@ const AttendanceReportMain: React.FC = () => {
         id: acc.id,
         name: acc.full_name,
         nik: acc.internal_nik,
+        position: acc.position,
+        grade: acc.grade,
+        location: acc.location?.name || '-',
         present,
         overtime: employeeOvertimes.length,
         overtime_minutes: employeeOvertimes.reduce((sum: number, o: any) => sum + (o.duration_minutes || 0), 0),
@@ -150,7 +153,10 @@ const AttendanceReportMain: React.FC = () => {
     const lowerSearch = searchTerm.toLowerCase();
     return processedData.filter((emp: any) => 
       emp.name.toLowerCase().includes(lowerSearch) || 
-      emp.nik.toLowerCase().includes(lowerSearch)
+      emp.nik.toLowerCase().includes(lowerSearch) ||
+      (emp.position && emp.position.toLowerCase().includes(lowerSearch)) ||
+      (emp.grade && emp.grade.toLowerCase().includes(lowerSearch)) ||
+      (emp.location && emp.location.toLowerCase().includes(lowerSearch))
     );
   }, [processedData, searchTerm]);
 
@@ -389,6 +395,77 @@ const AttendanceReportMain: React.FC = () => {
         </div>
       </div>
 
+      {/* Overtime & Leave Summary Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Overtime Report */}
+        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+          <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-6 flex items-center gap-2">
+            <Timer size={16} className="text-amber-500" />
+            Laporan Lembur
+          </h3>
+          <div className="space-y-4">
+            {processedData.sort((a, b) => b.overtime_minutes - a.overtime_minutes).slice(0, 5).map((emp, idx) => (
+              <div key={idx} className="flex items-center gap-4">
+                <div className="flex-1">
+                  <div className="flex justify-between mb-1">
+                    <span className="text-xs font-bold text-gray-700">{emp.name}</span>
+                    <span className="text-xs text-gray-400">{Math.floor(emp.overtime_minutes / 60)}h {emp.overtime_minutes % 60}m</span>
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-1.5">
+                    <div 
+                      className="bg-amber-500 h-1.5 rounded-full" 
+                      style={{ width: `${Math.min((emp.overtime_minutes / 600) * 100, 100)}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Leave & Permission Summary */}
+        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+          <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-6 flex items-center gap-2">
+            <Plane size={16} className="text-emerald-500" />
+            Laporan Cuti & Izin
+          </h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+              <div className="flex items-center gap-2 text-emerald-600 mb-2">
+                <Calendar size={16} />
+                <span className="text-[10px] font-bold uppercase tracking-wider">Cuti Tahunan</span>
+              </div>
+              <p className="text-2xl font-bold text-emerald-700">{processedData.reduce((sum, d) => sum + d.annual_leave, 0)}</p>
+              <p className="text-[10px] text-emerald-600/60 mt-1 uppercase font-bold">Total Hari</p>
+            </div>
+            <div className="p-4 bg-rose-50 rounded-xl border border-rose-100">
+              <div className="flex items-center gap-2 text-rose-600 mb-2">
+                <Heart size={16} />
+                <span className="text-[10px] font-bold uppercase tracking-wider">Melahirkan</span>
+              </div>
+              <p className="text-2xl font-bold text-rose-700">{processedData.reduce((sum, d) => sum + d.maternity_leave, 0)}</p>
+              <p className="text-[10px] text-rose-600/60 mt-1 uppercase font-bold">Total Hari</p>
+            </div>
+            <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
+              <div className="flex items-center gap-2 text-blue-600 mb-2">
+                <ClipboardList size={16} />
+                <span className="text-[10px] font-bold uppercase tracking-wider">Izin</span>
+              </div>
+              <p className="text-2xl font-bold text-blue-700">{processedData.reduce((sum, d) => sum + d.permission, 0)}</p>
+              <p className="text-[10px] text-blue-600/60 mt-1 uppercase font-bold">Total Hari</p>
+            </div>
+            <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+              <div className="flex items-center gap-2 text-indigo-600 mb-2">
+                <Plane size={16} />
+                <span className="text-[10px] font-bold uppercase tracking-wider">Libur Mandiri</span>
+              </div>
+              <p className="text-2xl font-bold text-indigo-700">{processedData.reduce((sum, d) => sum + d.leave, 0)}</p>
+              <p className="text-[10px] text-indigo-600/60 mt-1 uppercase font-bold">Total Hari</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Attendance Table */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-gray-50 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -466,82 +543,11 @@ const AttendanceReportMain: React.FC = () => {
         </div>
       </div>
 
-      {/* Overtime & Leave Summary Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Overtime Report */}
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-          <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-6 flex items-center gap-2">
-            <Timer size={16} className="text-amber-500" />
-            Laporan Lembur
-          </h3>
-          <div className="space-y-4">
-            {processedData.sort((a, b) => b.overtime_minutes - a.overtime_minutes).slice(0, 5).map((emp, idx) => (
-              <div key={idx} className="flex items-center gap-4">
-                <div className="flex-1">
-                  <div className="flex justify-between mb-1">
-                    <span className="text-xs font-bold text-gray-700">{emp.name}</span>
-                    <span className="text-xs text-gray-400">{Math.floor(emp.overtime_minutes / 60)}h {emp.overtime_minutes % 60}m</span>
-                  </div>
-                  <div className="w-full bg-gray-100 rounded-full h-1.5">
-                    <div 
-                      className="bg-amber-500 h-1.5 rounded-full" 
-                      style={{ width: `${Math.min((emp.overtime_minutes / 600) * 100, 100)}%` }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Leave & Permission Summary */}
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-          <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-6 flex items-center gap-2">
-            <Plane size={16} className="text-emerald-500" />
-            Laporan Cuti & Izin
-          </h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
-              <div className="flex items-center gap-2 text-emerald-600 mb-2">
-                <Calendar size={16} />
-                <span className="text-[10px] font-bold uppercase tracking-wider">Cuti Tahunan</span>
-              </div>
-              <p className="text-2xl font-bold text-emerald-700">{processedData.reduce((sum, d) => sum + d.annual_leave, 0)}</p>
-              <p className="text-[10px] text-emerald-600/60 mt-1 uppercase font-bold">Total Hari</p>
-            </div>
-            <div className="p-4 bg-rose-50 rounded-xl border border-rose-100">
-              <div className="flex items-center gap-2 text-rose-600 mb-2">
-                <Heart size={16} />
-                <span className="text-[10px] font-bold uppercase tracking-wider">Melahirkan</span>
-              </div>
-              <p className="text-2xl font-bold text-rose-700">{processedData.reduce((sum, d) => sum + d.maternity_leave, 0)}</p>
-              <p className="text-[10px] text-rose-600/60 mt-1 uppercase font-bold">Total Hari</p>
-            </div>
-            <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
-              <div className="flex items-center gap-2 text-blue-600 mb-2">
-                <ClipboardList size={16} />
-                <span className="text-[10px] font-bold uppercase tracking-wider">Izin</span>
-              </div>
-              <p className="text-2xl font-bold text-blue-700">{processedData.reduce((sum, d) => sum + d.permission, 0)}</p>
-              <p className="text-[10px] text-blue-600/60 mt-1 uppercase font-bold">Total Hari</p>
-            </div>
-            <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-100">
-              <div className="flex items-center gap-2 text-indigo-600 mb-2">
-                <Plane size={16} />
-                <span className="text-[10px] font-bold uppercase tracking-wider">Libur Mandiri</span>
-              </div>
-              <p className="text-2xl font-bold text-indigo-700">{processedData.reduce((sum, d) => sum + d.leave, 0)}</p>
-              <p className="text-[10px] text-indigo-600/60 mt-1 uppercase font-bold">Total Hari</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Employee Detail Modal (Heatmap Placeholder) */}
       {selectedEmployee && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+          <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-[#006E62] flex items-center justify-center text-white font-bold text-lg">
                   {processedData.find(e => e.id === selectedEmployee)?.name.charAt(0)}
@@ -558,7 +564,7 @@ const AttendanceReportMain: React.FC = () => {
                 <XCircle size={24} className="text-gray-400" />
               </button>
             </div>
-            <div className="p-8 overflow-y-auto">
+            <div className="p-8 overflow-y-auto flex-1">
               <div className="mb-8">
                 <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Pola Kehadiran (Heatmap)</h4>
                 <div className="grid grid-cols-7 gap-2">
