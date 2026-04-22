@@ -416,9 +416,18 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
       baseData.imageView = identifiers.imageView;
     }
 
-    // STEP 2: Enrich with AI Librarian
+    // STEP 2: Enrich with AI Librarian - Add freeze screen to prevent conflicts
     setExtractionStage('AI_ANALYSIS');
+    Swal.fire({
+      title: 'Analyzing Content...',
+      text: 'AI Librarian is extracting metadata...',
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
+      ...XEENAPS_SWAL_CONFIG
+    });
+
     const aiEnriched = await extractMetadataWithAI(extractedText, baseData, signal);
+    Swal.close();
     
     // YouTube Specific Logic Overrides
     const isYouTube = extractedText.includes("YOUTUBE_METADATA") || (baseData.url && (baseData.url.includes('youtube.com') || baseData.url.includes('youtu.be')));
@@ -541,12 +550,32 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
   };
 
   const handleSaveExtraction = () => {
+    // Freeze screen during synchronization as requested to prevent conflicts
+    Swal.fire({
+      title: 'Synchronizing...',
+      text: 'Integrating extracted data to form...',
+      allowOutsideClick: false,
+      timer: 800,
+      didOpen: () => Swal.showLoading(),
+      ...XEENAPS_SWAL_CONFIG
+    });
+
     setFormData(prev => ({ ...prev, extractedText: tempExtractedText }));
     setShowValidationModal(false);
     showXeenapsToast('success', 'Content saved for registration.');
   };
 
   const handleRejectExtraction = () => {
+    // Freeze screen during synchronization as requested to prevent conflicts
+    Swal.fire({
+      title: 'Discarding...',
+      text: 'Cleaning up transient data...',
+      allowOutsideClick: false,
+      timer: 800,
+      didOpen: () => Swal.showLoading(),
+      ...XEENAPS_SWAL_CONFIG
+    });
+
     setFormData(prev => ({ ...prev, extractedText: '' }));
     setShowValidationModal(false);
     showXeenapsToast('info', 'Metadata retained, content discarded.');
@@ -554,8 +583,8 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (extractionStage !== 'IDLE') {
-      showXeenapsToast('warning', 'Please wait until content analysis is finished.');
+    if (extractionStage !== 'IDLE' || showValidationModal) {
+      showXeenapsToast('warning', 'Please wait until content analysis is finalized and confirmed.');
       return;
     }
 
@@ -674,7 +703,7 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
   };
 
   const isExtracting = extractionStage !== 'IDLE';
-  const isFormDisabled = isExtracting || isSubmitting;
+  const isFormDisabled = isExtracting || isSubmitting || showValidationModal;
 
   return (
     <FormPageContainer>
