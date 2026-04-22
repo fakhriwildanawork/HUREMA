@@ -1,1071 +1,875 @@
-export interface Location {
+
+
+export enum SourceType {
+  LINK = 'LINK',
+  FILE = 'FILE',
+  NOTE = 'NOTE',
+  BOOK = 'BOOK',
+  VIDEO = 'VIDEO'
+}
+
+export enum FileFormat {
+  PDF = 'PDF',
+  DOCX = 'DOCX',
+  MD = 'MD',
+  MP4 = 'MP4',
+  URL = 'URL',
+  EPUB = 'EPUB',
+  PPTX = 'PPTX',
+  TXT = 'TXT',
+  XLSX = 'XLSX',
+  CSV = 'CSV',
+  DOC = 'DOC',
+  XLS = 'XLS',
+  PPT = 'PPT'
+}
+
+export enum LibraryType {
+  LITERATURE = 'Literature',
+  TASK = 'Task',
+  PERSONAL = 'Personal',
+  OTHER = 'Other'
+}
+
+export enum BloomsLevel {
+  C1_REMEMBER = 'C1 Remember',
+  C2_UNDERSTAND = 'C2 Understand',
+  C3_APPLY = 'C3 Apply',
+  C4_ANALYZE = 'C4 Analyze',
+  C5_EVALUATE = 'C5 Evaluate',
+  C6_CREATE = 'C6 Create'
+}
+
+export interface QuestionOption {
+  key: string; // e.g., 'A', 'B', 'C', 'D', 'E'
+  text: string;
+}
+
+export interface QuestionItem {
   id: string;
-  name: string;
-  location_type: string;
-  address: string;
-  city: string;
-  province: string;
-  zip_code: string;
-  phone: string;
-  latitude: number;
-  longitude: number;
-  radius: number;
-  description: string;
-  search_all: string;
-  image_google_id?: string | null;
-  created_at?: string;
-  updated_at?: string;
+  collectionId: string;
+  bloomLevel: BloomsLevel;
+  customLabel: string;
+  questionText: string;
+  options: QuestionOption[];
+  correctAnswer: string; // The key (A-E)
+  reasoningCorrect: string;
+  reasoningDistractors: Record<string, string>; // Key (A-E) -> Reason why it's wrong
+  verbatimReference: string; // Mandatory sentence from source text
+  language: string;
+  createdAt: string;
 }
 
-export interface LocationAdministration {
-  id: string;
-  location_id: string;
-  admin_date: string;
-  status: 'Milik Sendiri' | 'Sewa/Kontrak' | 'Kerjasama';
-  due_date?: string | null;
-  description?: string;
-  file_ids: string[]; // Array ID Google Drive
-  created_at?: string;
+export interface PubInfo {
+  journal?: string;
+  vol?: string;
+  issue?: string;
+  pages?: string;
 }
 
-export interface Schedule {
-  id: string;
-  name: string;
-  type: 1 | 2 | 3 | 4;
-  tolerance_minutes: number;
-  tolerance_checkin_minutes: number;
-  start_date?: string | null;
-  end_date?: string | null;
-  excluded_account_ids: string[];
-  created_at?: string;
-  updated_at?: string;
-  rules?: ScheduleRule[];
-  location_ids?: string[];
+export interface Identifiers {
+  doi?: string;
+  issn?: string;
+  isbn?: string;
+  pmid?: string;
+  arxiv?: string;
+  bibcode?: string;
 }
 
-export interface ScheduleRule {
-  id: string;
-  schedule_id: string;
-  day_of_week?: number;
-  check_in_time?: string | null;
-  check_out_time?: string | null;
-  is_holiday: boolean;
+export interface TagsData {
+  keywords: string[];
+  labels: string[];
 }
 
-export interface AuthUser {
-  id: string;
-  full_name: string;
-  internal_nik: string;
-  access_code: string;
-  role: 'admin' | 'user';
-  gender: 'Laki-laki' | 'Perempuan';
-  schedule_type: string;
-  photo_google_id?: string | null;
+export interface SupportingData {
+  references: string[];
+  videoUrl?: string;
 }
 
-export interface Account {
-  id: string;
-  // Identitas
-  full_name: string;
-  nik_ktp: string;
-  photo_google_id?: string | null;
-  ktp_google_id?: string | null;
-  gender: 'Laki-laki' | 'Perempuan';
-  religion: string;
-  dob: string | null;
-  // Kontak & Sosial
-  address: string;
-  phone: string;
-  email: string;
-  marital_status: string;
-  dependents_count: number;
-  emergency_contact_name: string;
-  emergency_contact_rel: string;
-  emergency_contact_phone: string;
-  // Pendidikan
-  last_education: string;
-  major: string; // Jurusan
-  diploma_google_id?: string | null;
-  // Karier & Penempatan
-  internal_nik: string;
-  position: string;
-  grade: string;
-  location_id: string | null; // Relasi ke Location (UUID)
-  schedule_id: string | null; // Relasi ke Schedule (UUID)
-  // FIX: Added location property to support joined data from Supabase
-  location?: any;
-  schedule?: Schedule;
-  employee_type: 'Tetap' | 'Kontrak' | 'Harian' | 'Magang';
-  start_date: string | null;
-  end_date?: string | null;
-  // Pengaturan Kerja & Presensi
-  schedule_type: string;
-  leave_quota: number;
-  is_leave_accumulated: boolean;
-  max_carry_over_days: number;
-  carry_over_quota: number;
-  maternity_leave_quota: number;
-  is_presence_limited_checkin: boolean;
-  is_presence_limited_checkout: boolean;
-  is_presence_limited_ot_in: boolean;
-  is_presence_limited_ot_out: boolean;
-  // Keamanan & Medis
-  access_code: string;
-  password?: string;
-  role: 'admin' | 'user';
-  mcu_status: string;
-  health_risk: string;
-  
-  created_at?: string;
-  updated_at?: string;
-  search_all?: string;
-}
-
-export interface Attendance {
-  id: string;
-  account_id: string;
-  check_in: string | null;
-  check_out: string | null;
-  in_latitude: number | null;
-  in_longitude: number | null;
-  out_latitude: number | null;
-  out_longitude: number | null;
-  in_photo_id: string | null;
-  out_photo_id: string | null;
-  in_address: string | null;
-  out_address: string | null;
-  late_minutes: number;
-  early_departure_minutes: number;
-  late_reason: string | null;
-  early_departure_reason: string | null;
-  status_in: string;
-  status_out: string;
-  work_duration: string | null;
-  created_at?: string;
-}
-
-export interface Overtime {
-  id: string;
-  account_id: string;
-  check_in: string | null;
-  check_out: string | null;
-  in_latitude: number | null;
-  in_longitude: number | null;
-  out_latitude: number | null;
-  out_longitude: number | null;
-  in_photo_id: string | null;
-  out_photo_id: string | null;
-  in_address: string | null;
-  out_address: string | null;
-  duration_minutes: number;
-  work_duration: string | null;
-  reason: string | null;
-  created_at?: string;
-}
-
-export interface CareerLog {
-  id: string;
-  account_id: string;
-  position: string;
-  grade: string;
-  location_id?: string | null;
-  location_name: string;
-  schedule_id?: string | null;
-  file_sk_id?: string | null;
-  notes?: string | null;
-  change_date: string;
-}
-
-export interface CareerLogExtended extends CareerLog {
-  account?: {
-    full_name: string;
-    internal_nik: string;
-  };
-}
-
-export interface HealthLog {
-  id: string;
-  account_id: string;
-  mcu_status: string;
-  health_risk: string;
-  file_mcu_id?: string | null;
-  notes?: string | null;
-  change_date: string;
-}
-
-export interface HealthLogExtended extends HealthLog {
-  account?: {
-    full_name: string;
-    internal_nik: string;
-  };
-}
-
-export interface AccountContract {
-  id: string;
-  account_id: string;
-  contract_number: string;
-  contract_type: string;
-  start_date: string;
-  end_date?: string | null;
-  file_id?: string | null;
-  notes?: string | null;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface AccountContractExtended extends AccountContract {
-  account?: {
-    full_name: string;
-    internal_nik: string;
-  };
-}
-
-export interface AccountCertification {
-  id: string;
-  account_id: string;
-  entry_date: string;
-  cert_type: string;
-  cert_name: string;
-  cert_date: string;
-  file_id?: string | null;
-  notes?: string | null;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface AccountCertificationExtended extends AccountCertification {
-  account?: {
-    full_name: string;
-    internal_nik: string;
-  };
-}
-
-export interface WarningLog {
-  id: string;
-  account_id: string;
-  warning_type: 'Teguran' | 'SP1' | 'SP2' | 'SP3';
-  reason: string;
-  issue_date: string;
-  file_id?: string | null;
-  created_at?: string;
-}
-
-export interface WarningLogExtended extends WarningLog {
-  account?: {
-    full_name: string;
-    internal_nik: string;
-  };
-}
-
-export interface TerminationLog {
-  id: string;
-  account_id: string;
-  termination_type: 'Pemecatan' | 'Resign';
-  termination_date: string;
-  reason: string;
-  severance_amount: number;
-  penalty_amount: number;
-  file_id?: string | null;
-  created_at?: string;
-}
-
-export interface TerminationLogExtended extends TerminationLog {
-  account?: {
-    full_name: string;
-    internal_nik: string;
-  };
-}
-
-export interface LeaveRequest {
-  id: string;
-  account_id: string;
-  start_date: string;
-  end_date: string;
-  description: string;
-  status: 'pending' | 'approved' | 'rejected';
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface LeaveRequestExtended extends LeaveRequest {
-  account?: {
-    full_name: string;
-    internal_nik: string;
-  };
-}
-
-export interface AnnualLeaveRequest {
-  id: string;
-  account_id: string;
-  start_date: string;
-  end_date: string;
-  description: string;
-  status: 'pending' | 'approved' | 'rejected' | 'negotiating' | 'cancelled';
-  file_id?: string | null;
-  negotiation_data: {
-    role: 'admin' | 'user';
-    start_date: string;
-    end_date: string;
-    reason: string;
-    timestamp: string;
-  }[];
-  current_negotiator_role: 'admin' | 'user';
-  created_at?: string;
-  updated_at?: string;
-  account?: {
-    full_name: string;
-    internal_nik: string;
-  };
-}
-
-export interface MaternityLeaveRequest {
-  id: string;
-  account_id: string;
-  start_date: string;
-  end_date: string;
-  description: string;
-  status: 'pending' | 'approved' | 'rejected' | 'negotiating' | 'cancelled';
-  file_id?: string | null;
-  negotiation_data: {
-    role: 'admin' | 'user';
-    start_date: string;
-    end_date: string;
-    reason: string;
-    timestamp: string;
-  }[];
-  current_negotiator_role: 'admin' | 'user';
-  created_at?: string;
-  updated_at?: string;
-  account?: {
-    full_name: string;
-    internal_nik: string;
-  };
-}
-
-export interface PermissionRequest {
-  id: string;
-  account_id: string;
-  permission_type: string;
-  start_date: string;
-  end_date: string;
-  description: string;
-  status: 'pending' | 'approved' | 'rejected' | 'negotiating' | 'cancelled';
-  file_id?: string | null;
-  negotiation_data: {
-    role: 'admin' | 'user';
-    start_date: string;
-    end_date: string;
-    reason: string;
-    timestamp: string;
-  }[];
-  current_negotiator_role: 'admin' | 'user';
-  created_at?: string;
-  updated_at?: string;
-  account?: {
-    full_name: string;
-    internal_nik: string;
-  };
-}
-
-export interface DigitalDocument {
-  id: string;
-  name: string;
-  doc_type: string;
-  file_id: string;
-  description?: string;
-  created_at?: string;
-  updated_at?: string;
-  allowed_account_ids?: string[];
-}
-
-export type SubmissionStatus = 'Pending' | 'Disetujui' | 'Ditolak' | 'Dibatalkan';
-
-export interface Submission {
-  id: string;
-  account_id: string;
-  type: 'Lembur' | 'Cuti' | 'Izin' | 'Koreksi Absen' | string;
-  status: SubmissionStatus;
-  submission_data: any; // Flexible JSON Data
-  description: string;
-  verifier_id?: string | null;
-  verified_at?: string | null;
-  verification_notes?: string | null;
-  file_id?: string | null;
-  created_at?: string;
-  updated_at?: string;
-  // Join properties
-  account?: {
-    full_name: string;
-    internal_nik: string;
-  };
-}
-
-export interface AppSetting {
-  key: string;
-  value: any;
-  description?: string;
-  updated_at?: string;
-}
-
-export type LocationInput = Omit<Location, 'id' | 'created_at' | 'updated_at' | 'search_all'>;
-export type LocationAdminInput = Omit<LocationAdministration, 'id' | 'created_at'>;
-export type AccountInput = Omit<Account, 'id' | 'created_at' | 'updated_at' | 'search_all' | 'location'>;
-export type CareerLogInput = Omit<CareerLog, 'id'>;
-export type HealthLogInput = Omit<HealthLog, 'id'>;
-export type AccountContractInput = Omit<AccountContract, 'id' | 'created_at' | 'updated_at'>;
-export type AccountContractInputExtended = AccountContractInput;
-export type AccountCertificationInput = Omit<AccountCertification, 'id' | 'created_at' | 'updated_at'>;
-export type WarningLogInput = Omit<WarningLog, 'id' | 'created_at'>;
-export type TerminationLogInput = Omit<TerminationLog, 'id' | 'created_at'>;
-export type LeaveRequestInput = Omit<LeaveRequest, 'id' | 'created_at' | 'updated_at' | 'status'>;
-export type AnnualLeaveRequestInput = {
-  account_id: string;
-  start_date: string;
-  end_date: string;
-  description: string;
-  file_id?: string | null;
-};
-
-export type PermissionRequestInput = {
-  account_id: string;
-  permission_type: string;
-  start_date: string;
-  end_date: string;
-  description: string;
-  file_id?: string | null;
-};
-
-export type MaternityLeaveRequestInput = {
-  account_id: string;
-  start_date: string;
-  end_date: string;
-  description: string;
-  file_id?: string | null;
-};
-export type DocumentInput = Omit<DigitalDocument, 'id' | 'created_at' | 'updated_at' | 'allowed_account_ids'> & {
-  allowed_account_ids: string[];
-};
-export type SubmissionInput = Omit<Submission, 'id' | 'created_at' | 'updated_at' | 'status' | 'verifier_id' | 'verified_at' | 'verification_notes' | 'account'>;
-
-export type ScheduleInput = Omit<Schedule, 'id' | 'created_at' | 'updated_at' | 'rules' | 'location_ids'> & {
-  rules: Omit<ScheduleRule, 'id' | 'schedule_id'>[];
-  location_ids: string[];
-};
-
-export interface GoogleDriveFile {
-  id: string;
-  name: string;
-  mimeType: string;
-}
-
-export type AttendanceInput = Omit<Attendance, 'id' | 'created_at'>;
-export type OvertimeInput = Omit<Overtime, 'id' | 'created_at'>;
-
-export interface KPI {
-  id: string;
-  account_id: string;
-  title: string;
-  description: string;
-  weight: number;
-  start_date: string;
-  deadline: string;
-  status: 'Active' | 'Pause' | 'Unverified' | 'Verified' | 'Unreported';
-  supporting_links: string[];
-  report_data?: {
-    description: string;
-    file_ids: string[];
-    links: string[];
-    self_assessment: number;
-    reported_at: string;
-  } | null;
-  verification_data?: {
-    score: number;
-    notes: string;
-    verified_at: string;
-    verifier_id: string;
-  } | null;
-  created_at?: string;
-  updated_at?: string;
-  account?: {
-    full_name: string;
-    internal_nik: string;
-  };
-}
-
-export type KPIInput = Omit<KPI, 'id' | 'created_at' | 'updated_at' | 'status' | 'report_data' | 'verification_data' | 'account'>;
-
-export interface KeyActivity {
+export interface LibraryItem {
   id: string;
   title: string;
-  description: string;
-  weight: number;
-  start_date: string;
-  end_date: string;
-  status: 'Active' | 'Pause' | 'Completed';
-  recurrence_type: 'Once' | 'Daily' | 'Weekly' | 'Monthly' | 'EndOfMonth';
-  recurrence_rule: {
-    days_of_week?: number[];
-    dates_of_month?: number[];
-  } | null;
-  supporting_links: string[];
-  created_at?: string;
-  updated_at?: string;
-  assignments?: KeyActivityAssignment[];
-}
-
-export interface KeyActivityAssignment {
-  id: string;
-  activity_id: string;
-  account_id: string;
-  account?: {
-    full_name: string;
-    internal_nik: string;
-  };
-}
-
-export interface KeyActivityReport {
-  id: string;
-  activity_id: string;
-  account_id: string;
-  due_date: string;
-  reported_at: string;
-  description: string;
-  file_ids: string[];
-  links: string[];
-  status: 'Unverified' | 'Verified';
-  verification_data?: {
-    score: number;
-    notes: string;
-    verified_at: string;
-    verifier_id: string;
-  } | null;
-  created_at?: string;
-  updated_at?: string;
-  account?: {
-    full_name: string;
-    internal_nik: string;
-  };
-  activity?: KeyActivity;
-}
-
-export interface SalesReport {
-  id: string;
-  account_id: string;
-  customer_name: string;
-  activity_type: 'Cold Call' | 'Site Survey' | 'Product Demo' | 'Offering' | 'Negotiation' | 'Closing' | 'Maintenance';
-  description: string;
-  latitude: number;
-  longitude: number;
-  address?: string;
-  photo_urls: string[];
-  file_ids: string[];
-  reported_at: string;
-  created_at?: string;
-  updated_at?: string;
-  account?: {
-    full_name: string;
-    internal_nik: string;
-  };
-}
-
-export type SalesReportInput = Omit<SalesReport, 'id' | 'created_at' | 'updated_at' | 'account' | 'reported_at'>;
-
-export type KeyActivityInput = Omit<KeyActivity, 'id' | 'created_at' | 'updated_at' | 'status' | 'assignments'> & {
-  assigned_account_ids: string[];
-};
-
-export type KeyActivityReportInput = Omit<KeyActivityReport, 'id' | 'created_at' | 'updated_at' | 'status' | 'verification_data' | 'account' | 'activity' | 'reported_at'>;
-
-export interface Feedback {
-  id: string;
-  account_id: string;
-  category: 'Gaji' | 'Fasilitas' | 'Hubungan Kerja' | 'Lainnya' | string;
-  priority: 'Low' | 'Medium' | 'High';
-  is_anonymous: boolean;
-  description: string;
-  attachments: string[]; // Array of file IDs
-  links: string[]; // Array of URLs
-  status: 'Unread' | 'Read';
-  created_at: string;
-  updated_at?: string;
-  account?: {
-    full_name: string;
-    internal_nik: string;
-  };
-}
-
-export type FeedbackInput = Omit<Feedback, 'id' | 'created_at' | 'updated_at' | 'status' | 'account'>;
-
-export interface Whistleblowing {
-  id: string;
-  account_id: string;
-  category: 'Pencurian' | 'Perusakan' | 'Bullying' | 'Fraud' | 'Pelanggaran SOP' | 'Lainnya' | string;
-  description: string;
-  reported_account_ids: string[]; // Array of account IDs being reported
-  attachments: string[]; // Array of file IDs
-  links: string[]; // Array of URLs
-  status: 'Unread' | 'Read';
-  created_at: string;
-  updated_at?: string;
-  account?: {
-    full_name: string;
-    internal_nik: string;
-  };
-  reported_accounts?: {
-    id: string;
-    full_name: string;
-    internal_nik: string;
-  }[];
-}
-
-export type WhistleblowingInput = Omit<Whistleblowing, 'id' | 'created_at' | 'updated_at' | 'status' | 'account' | 'reported_accounts'>;
-
-export interface MeetingNote {
-  id: string;
-  meeting_id: string;
-  content: string;
-  attachments: string[];
-  links: string[];
-  created_at: string;
-  updated_at?: string;
-}
-
-export interface Announcement {
-  id: string;
-  title: string;
-  content: string;
-  category: 'Urgent' | 'Info' | 'Event' | 'Policy';
-  target_type: 'All' | 'Department' | 'Individual';
-  target_ids: string[]; // Department names or User IDs
-  publish_start: string;
-  publish_end: string;
-  attachments: string[];
-  created_by: string;
-  created_at: string;
-  updated_at: string;
-  creator?: { full_name: string };
-  is_read?: boolean;
-  read_count?: number;
-}
-
-export interface AnnouncementRead {
-  id: string;
-  announcement_id: string;
-  user_id: string;
-  read_at: string;
-}
-
-export interface Meeting {
-  id: string;
-  title: string;
-  description: string;
-  scheduled_at: string;
-  started_at?: string;
-  ended_at?: string;
-  location_type: 'Online' | 'Offline';
-  location_detail: string; // URL for online, address for offline
-  latitude?: number;
-  longitude?: number;
-  participant_ids: string[];
-  notulen_ids: string[];
-  minutes_content?: string;
-  attachments: string[]; // Array of file IDs
-  links: string[]; // Array of URLs
-  status: 'Scheduled' | 'In Progress' | 'Completed' | 'Cancelled';
-  created_by: string;
-  created_at: string;
-  updated_at?: string;
-  creator?: {
-    full_name: string;
-  };
-  participants?: {
-    id: string;
-    full_name: string;
-    internal_nik: string;
-  }[];
-  notulens?: {
-    id: string;
-    full_name: string;
-    internal_nik: string;
-  }[];
-  notes?: MeetingNote[];
-}
-
-export type MeetingInput = Omit<Meeting, 'id' | 'created_at' | 'updated_at' | 'creator' | 'participants' | 'notulens' | 'notes'>;
-
-export interface SalaryScheme {
-  id: string;
-  name: string;
-  description: string | null;
-  type: 'Harian' | 'Bulanan';
-  basic_salary: number;
-  position_allowance: number;
-  placement_allowance: number;
-  other_allowance: number;
-  overtime_rate_per_hour: number;
-  late_deduction_per_minute: number;
-  early_leave_deduction_per_minute: number;
-  no_clock_out_deduction_per_day: number;
-  absent_deduction_per_day: number;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export type SalarySchemeInput = Omit<SalaryScheme, 'id' | 'created_at' | 'updated_at'>;
-
-export interface SalaryAssignment {
-  id: string;
-  scheme_id: string;
-  account_id: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface SalaryAssignmentExtended extends SalaryAssignment {
-  account?: {
-    full_name: string;
-    internal_nik: string;
-    position: string;
-    grade: string;
-    location_id: string;
-  };
-  scheme?: SalaryScheme;
-}
-
-export interface SalaryAdjustment {
-  id: string;
-  account_id: string;
-  type: 'Addition' | 'Deduction';
-  amount: number;
-  month: number;
-  year: number;
-  description: string;
-  created_at: string;
-  updated_at: string;
-  account?: {
-    full_name: string;
-    internal_nik: string;
-  };
-}
-
-export type SalaryAdjustmentInput = Omit<SalaryAdjustment, 'id' | 'created_at' | 'updated_at' | 'account'>;
-
-export interface PayrollStatus {
-  id: string;
-  month: number;
-  year: number;
-  status: 'Draft' | 'Approved' | 'Paid';
-  updated_at: string;
-}
-
-export interface Payroll {
-  id: string;
-  month: number;
-  year: number;
-  start_date: string;
-  end_date: string;
-  status: 'Draft' | 'Pending' | 'Approved' | 'Paid';
-  verifier_id?: string;
-  verified_at?: string;
-  verification_notes?: string;
-  created_by?: string;
-  updated_by?: string;
-  created_at: string;
-  updated_at: string;
-  verifier?: {
-    full_name: string;
-  };
-  creator?: {
-    full_name: string;
-  };
-  updater?: {
-    full_name: string;
-  };
-}
-
-export interface PayrollItem {
-  id: string;
-  payroll_id: string;
-  account_id: string;
-  
-  salary_type: 'Harian' | 'Bulanan';
-  
-  basic_salary: number;
-  basic_salary_notes?: string;
-  
-  position_allowance: number;
-  position_allowance_notes?: string;
-  
-  placement_allowance: number;
-  placement_allowance_notes?: string;
-  
-  other_allowance: number;
-  other_allowance_notes?: string;
-  
-  overtime_pay: number;
-  overtime_pay_notes?: string;
-  
-  other_additions: number;
-  other_additions_notes?: string;
-  
-  late_deduction: number;
-  late_deduction_notes?: string;
-  
-  early_leave_deduction: number;
-  early_leave_deduction_notes?: string;
-  
-  absent_deduction: number;
-  absent_deduction_notes?: string;
-  
-  other_deductions: number;
-  other_deductions_notes?: string;
-  
-  bpjs_kesehatan: number;
-  bpjs_ketenagakerjaan: number;
-  pph21: number;
-  
-  total_income: number;
-  total_deduction: number;
-  take_home_pay: number;
-  
-  created_at: string;
-  updated_at: string;
-  payroll?: Payroll;
-  account?: {
-    full_name: string;
-    internal_nik: string;
-    position: string;
-    department: string;
-    location: string;
-    grade?: string;
-  };
-}
-
-export type DispensationIssueType = 'LATE' | 'EARLY_LEAVE' | 'NO_CLOCK_OUT' | 'ABSENT';
-export type DispensationIssueStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
-
-export interface DispensationIssue {
-  type: DispensationIssueType;
-  status: DispensationIssueStatus;
-  admin_notes?: string;
-}
-
-export interface DispensationRequest {
-  id: string;
-  account_id: string;
-  presence_id: string | null;
-  date: string;
-  issues: DispensationIssue[];
-  reason: string;
-  file_id: string | null;
-  is_read: boolean;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'PARTIAL';
-  created_at: string;
-  updated_at?: string;
-  account?: {
-    full_name: string;
-    internal_nik: string;
-  };
-}
-
-export type DispensationRequestInput = Omit<DispensationRequest, 'id' | 'created_at' | 'updated_at' | 'status' | 'is_read' | 'account'>;
-
-export interface PayrollSettings {
-  id: string;
-  company_name: string;
-  company_address?: string;
-  company_phone?: string;
-  company_email?: string;
-  company_website?: string;
-  company_logo_url?: string;
-  updated_at: string;
-}
-
-export type ReimbursementStatus = 'Pending' | 'Approved' | 'Partially Approved' | 'Rejected';
-export type ReimbursementCategory = 'Operasional' | 'Akomodasi' | 'Inventaris' | 'Lainnya';
-
-export interface Reimbursement {
-  id: string;
-  account_id: string;
-  transaction_date: string;
+  type: LibraryType;
   category: string;
+  topic: string;
+  subTopic: string;
+  authors: string[]; 
+  publisher: string;
+  year: string;
+  fullDate?: string;
+  pubInfo: PubInfo;
+  identifiers: Identifiers;
+  journalName?: string;
+  volume?: string;
+  issue?: string;
+  pages?: string;
+  doi?: string;
+  issn?: string;
+  isbn?: string;
+  pmid?: string;
+  arxivId?: string;
+  bibcode?: string;
+  source: SourceType;
+  format: FileFormat;
+  url?: string;
+  fileId?: string;
+  imageView?: string;
+  youtubeId?: string;
+  tags: TagsData;
+  abstract?: string;
+  mainInfo?: string; 
+  summary?: string;
+  strength?: string;
+  weakness?: string;
+  researchMethodology?: string;
+  unfamiliarTerminology?: string;
+  quickTipsForYou?: string;
+  supportingReferences?: SupportingData; 
+  inTextHarvard?: string;
+  bibHarvard?: string;
+  extractedJsonId?: string;
+  insightJsonId?: string;
+  storageNodeUrl?: string;
+  isFavorite?: boolean;
+  isBookmarked?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// --- SHARBOX MODULE TYPES ---
+
+export enum SharboxStatus {
+  UNCLAIMED = 'UNCLAIMED',
+  CLAIMED = 'CLAIMED',
+  SENT = 'SENT'
+}
+
+export interface SharboxItem extends LibraryItem {
+  id: string; // Transaction ID
+  senderName?: string;
+  senderPhotoUrl?: string;
+  senderAffiliation?: string;
+  senderUniqueAppId?: string;
+  senderEmail?: string;
+  senderPhone?: string;
+  senderSocialMedia?: string;
+  receiverName?: string;
+  receiverPhotoUrl?: string;
+  receiverUniqueAppId?: string;
+  receiverEmail?: string;
+  receiverPhone?: string;
+  receiverSocialMedia?: string;
+  message?: string;
+  timestamp: string;
+  status: SharboxStatus;
+  id_item: string; // Original library ID
+  isRead?: boolean;
+}
+
+// --- NOTEBOOK MODULE TYPES ---
+
+export interface NoteAttachment {
+  type: 'LINK' | 'FILE';
+  label: string;
+  url?: string;
+  fileId?: string;
+  nodeUrl?: string;
+  mimeType?: string;
+}
+
+export interface NoteItem {
+  id: string;
+  collectionId: string; // Opsional: relasi ke library
+  collectionTitle?: string; // New: Persistent collection title for backend search
+  label: string;
+  noteJsonId: string; // ID file sharding di Drive
+  storageNodeUrl: string;
+  searchIndex?: string; // New: Concatenated text (desc + attachments) for backend search
+  isFavorite: boolean;
+  isUsed: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NoteContent {
+  description: string; // Isi teks catatan (HTML/Rich Text)
+  attachments: NoteAttachment[];
+}
+
+// --- LITERATURE REVIEW MODULE TYPES ---
+
+export interface ReviewMatrixRow {
+  collectionId: string;
+  title: string;
+  answer: string;
+  verbatim: string;
+}
+
+export interface ReviewContent {
+  matrix: ReviewMatrixRow[];
+  finalSynthesis: string;
+}
+
+export interface ReviewItem {
+  id: string;
+  label: string;
+  centralQuestion: string;
+  reviewJsonId: string;
+  storageNodeUrl: string;
+  isFavorite: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// --- ACTIVITIES TYPES ---
+
+export enum ActivityType {
+  SEMINAR = 'Seminar',
+  WORKSHOP = 'Workshop',
+  TRAINING = 'Training',
+  AWARD = 'Award',
+  CERTIFICATION = 'Certification',
+  PROJECT = 'Project',
+  OTHER = 'Other'
+}
+
+export enum ActivityLevel {
+  INTERNATIONAL = 'International',
+  NATIONAL = 'National',
+  REGIONAL = 'Regional',
+  LOCAL = 'Local',
+  INSTITUTIONAL = 'Institutional'
+}
+
+export enum ActivityRole {
+  PARTICIPANT = 'Participant',
+  SPEAKER = 'Speaker',
+  MODERATOR = 'Moderator',
+  COMMITTEE = 'Committee',
+  AWARDEE = 'Awardee'
+}
+
+export interface ActivityVaultItem {
+  type: 'FILE' | 'LINK';
+  fileId?: string;
+  url?: string;
+  label: string;
+  mimeType?: string;
+  nodeUrl?: string; // New field for per-item sharding
+}
+
+export interface ActivityItem {
+  id: string;
+  type: ActivityType;
+  eventName: string;
+  organizer: string;
+  location: string;
+  level: ActivityLevel;
+  startDate: string;
+  endDate: string;
+  role: ActivityRole;
   description: string;
-  amount_requested: number;
-  amount_approved: number | null;
-  proof_file_id: string | null;
-  payment_method: 'Cash' | 'Transfer';
-  target_type: 'Bank' | 'E-Wallet' | null;
-  target_name: string | null;
-  account_number: string | null;
-  account_holder: string | null;
-  status: ReimbursementStatus;
-  is_read: boolean;
-  admin_notes: string | null;
-  payment_proof_id: string | null;
-  verifier_id: string | null;
-  verified_at: string | null;
-  created_at: string;
-  updated_at: string;
-  // Join properties
-  account?: {
-    full_name: string;
-    internal_nik: string;
-  };
+  notes: string;
+  certificateNumber: string;
+  credit: string;
+  link: string;
+  isFavorite: boolean;
+  vaultJsonId: string; // Deprecated but kept for type safety
+  vault_items?: ActivityVaultItem[]; // New Direct Registry
+  storageNodeUrl: string;
+  certificateFileId?: string;
+  certificateNodeUrl?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export type ReimbursementInput = Omit<Reimbursement, 'id' | 'account_id' | 'status' | 'is_read' | 'amount_approved' | 'admin_notes' | 'payment_proof_id' | 'verifier_id' | 'verified_at' | 'created_at' | 'updated_at' | 'account'>;
+// --- TEACHING MODULE TYPES ---
 
-export type EarlySalaryStatus = 'Pending' | 'Approved' | 'Paid' | 'Rejected';
+export enum TeachingRole {
+  MANDIRI = 'Independent',
+  TEAM_TEACHING = 'Team Teaching',
+  COORDINATOR = 'Coordinator'
+}
 
-export interface EarlySalaryRequest {
+export enum SessionMode {
+  OFFLINE = 'Offline',
+  ONLINE = 'Online',
+  HYBRID = 'Hybrid'
+}
+
+export enum EducationLevel {
+  DIPLOMA = 'Diploma',
+  S1 = 'Bachelor',
+  S2 = 'Master',
+  S3 = 'Doctoral',
+  PROFESI = 'Professional'
+}
+
+export enum CourseType {
+  WAJIB_PRODI = 'Major Course',
+  WAJIB_NASIONAL = 'National Course',
+  WAJIB_INSTUTIUSI = 'Institutional Course',
+  PILIHAN = 'Elective Course'
+}
+
+export enum AssignmentType {
+  QUIZ = 'Quiz',
+  INDIVIDUAL_TASK = 'Individual Task',
+  GROUP_PROJECT = 'Group Project',
+  NONE = 'None'
+}
+
+export enum SessionStatus {
+  PLANNED = 'Planned',
+  COMPLETED = 'Completed',
+  CANCELLED = 'Cancelled',
+  RESCHEDULED = 'Rescheduled',
+  SUBSTITUTED = 'Substituted'
+}
+
+export interface TeachingVaultItem {
+  type: 'FILE' | 'LINK';
+  fileId?: string;
+  url?: string;
+  label: string;
+  mimeType?: string;
+  nodeUrl?: string;
+}
+
+export interface ExternalLinkItem {
+  label: string;
+  url: string;
+}
+
+export interface TeachingItem {
+  // Logic Identity
   id: string;
-  account_id: string;
-  month: number;
-  year: number;
-  amount: number;
-  reason: string;
-  status: EarlySalaryStatus;
-  payment_proof_id: string | null;
-  rejection_reason: string | null;
-  verifier_id: string | null;
-  verified_at: string | null;
-  created_at: string;
-  updated_at: string;
-  // Join properties
-  account?: {
-    full_name: string;
-    internal_nik: string;
-  };
+  label: string; 
+  
+  // Phase 1: Planning (Schedule)
+  teachingDate: string;
+  startTime: string;
+  endTime: string;
+  institution: string;
+  faculty: string;
+  program: string;
+  academicYear: string;
+  semester: string;
+  classGroup: string;
+  meetingNo: number;
+  mode: SessionMode;
+  plannedStudents: number;
+  location: string;
+  eventColor?: string;
+  skReference?: string;
+
+  // Phase 2: Preparing (Substance)
+  courseTitle: string;
+  courseCode: string;
+  learningOutcomes: string;
+  method: string;
+  theoryCredits: number;
+  practicalCredits: number;
+  courseType: CourseType;
+  educationLevel: EducationLevel;
+  topic: string;
+  role: TeachingRole;
+  referenceLinks: { id: string; title: string }[]; // Updated
+  presentationId: { id: string; title: string }[]; // Updated
+  questionBankId: { id: string; label: string; questionText: string }[]; // Updated
+  attachmentLink: ExternalLinkItem[]; // Manual Links
+  syllabusLink?: string;
+  lectureNotesLink?: string;
+
+  // Phase 3: Reporting
+  actualStartTime?: string;
+  actualEndTime?: string;
+  teachingDuration?: string; // Computed
+  totalStudentsPresent?: number;
+  attendancePercentage?: number; // Computed
+  attendanceListLink?: string;
+  problems?: string;
+  reflection?: string;
+  assignmentType: AssignmentType;
+  assessmentCriteria: string;
+
+  // System
+  vaultJsonId: string; // Deprecated
+  vault_items?: TeachingVaultItem[]; // New Direct Registry
+  storageNodeUrl: string;
+  status: SessionStatus;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export type EarlySalaryRequestInput = Omit<EarlySalaryRequest, 'id' | 'account_id' | 'status' | 'payment_proof_id' | 'rejection_reason' | 'verifier_id' | 'verified_at' | 'created_at' | 'updated_at' | 'account'>;
+// --- RESEARCH PROJECT RESEARCH PROJECT TYPES ---
 
-export type CompensationStatus = 'Pending' | 'Completed';
+export enum ResearchStatus {
+  DRAFT = 'Draft',
+  FINALIZED = 'Finalized',
+  UTILIZED = 'Utilized'
+}
 
-export interface Compensation {
+export interface ResearchProject {
   id: string;
-  account_id: string;
-  termination_type: 'Resign' | 'Pemecatan';
-  termination_date: string;
-  amount: number;
-  type: 'Severance' | 'Penalty';
-  reason: string;
-  status: CompensationStatus;
-  is_read: boolean;
-  transaction_date?: string | null;
-  processed_amount?: number | null;
-  notes?: string | null;
-  proof_file_id?: string | null;
-  created_at: string;
-  updated_at: string;
-  // Join properties
-  account?: {
-    full_name: string;
-    internal_nik: string;
-  };
+  projectName: string;
+  language: string;
+  status: ResearchStatus;
+  isFavorite: boolean;
+  isUsed?: boolean;
+  proposedTitle: string;
+  noveltyNarrative: string;
+  futureDirections: string; // JSON string array
+  createdAt: string;
+  updatedAt: string;
 }
 
-export type CompensationInput = Omit<Compensation, 'id' | 'status' | 'is_read' | 'transaction_date' | 'processed_amount' | 'notes' | 'proof_file_id' | 'created_at' | 'updated_at' | 'account'>;
+export interface ResearchSource extends GapAnalysisRow {
+  projectId: string;
+  isAnalyzing?: boolean; 
+  isFavorite?: boolean;
+  isUsed?: boolean;
+}
 
-export interface EmployeeOfThePeriod {
+// --- TRACER MODULE TYPES ---
+
+export enum TracerStatus {
+  IN_PROGRESS = 'In Progress',
+  COMPLETED = 'Completed',
+  ON_HOLD = 'On Hold',
+  CANCELLED = 'Cancelled'
+}
+
+export interface TracerProject {
   id: string;
-  account_ids: string[];
-  month: number;
+  title: string;
+  label: string;
+  topic: string;
+  problemStatement: string;
+  researchGap: string;
+  researchQuestion: string;
+  methodology: string;
+  population: string;
+  keywords: string[];
+  category: string;
+  authors: string[];
+  startDate: string;
+  estEndDate: string;
+  status: TracerStatus;
+  progress: number; // 0 - 100
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TracerLogAttachment {
+  type: 'FILE' | 'LINK';
+  label: string;
+  url?: string;
+  fileId?: string;
+  nodeUrl?: string;
+  mimeType?: string;
+}
+
+export interface TracerLogContent {
+  description: string;
+  attachments: TracerLogAttachment[];
+}
+
+export interface TracerLog {
+  id: string;
+  projectId: string;
+  date: string;
+  title: string;
+  logJsonId: string; // Sharding ID
+  storageNodeUrl: string;
+  description?: string; // New Direct
+  vault_items?: TracerLogAttachment[]; // New Direct
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TracerTodo {
+  id: string;
+  projectId: string;
+  title: string;
+  description: string;
+  startDate: string;
+  deadline: string;
+  linkLabel: string;
+  linkUrl: string;
+  isDone: boolean;
+  completedDate: string;
+  completionRemarks: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TracerSavedQuote {
+  id: string;
+  originalText: string;
+  enhancedText: string;
+  lang: string;
+  createdAt: string;
+}
+
+export interface TracerReferenceContent {
+  quotes: TracerSavedQuote[];
+}
+
+export interface TracerReference {
+  id: string;
+  projectId: string;
+  collectionId: string; // Links to LibraryItem
+  contentJsonId: string; // Sharding ID for quotes
+  storageNodeUrl: string; // Sharding node URL
+  quotes?: TracerSavedQuote[]; // New Direct
+  createdAt: string;
+}
+
+export interface TracerQuote {
+  originalText: string;
+  contextFound: string;
+  enhancedText: string;
+  citation: string;
+}
+
+// --- NEW TRACER FINANCE TYPES ---
+
+export interface TracerFinanceAttachment {
+  type: 'FILE' | 'LINK';
+  label: string;
+  url?: string;
+  fileId?: string;
+  nodeUrl?: string;
+  mimeType?: string;
+}
+
+export interface TracerFinanceContent {
+  attachments: TracerFinanceAttachment[];
+}
+
+export interface TracerFinanceItem {
+  id: string;
+  projectId: string;
+  date: string; // ISO String (DD/MM/YY HH:MM format in UI)
+  credit: number;
+  debit: number;
+  balance: number;
+  description: string;
+  attachmentsJsonId: string;
+  storageNodeUrl: string;
+  attachments?: TracerFinanceAttachment[]; // New Direct
+  createdAt: string;
+  updatedAt: string;
+}
+
+// --- BRAINSTORMING TYPES ---
+
+export interface BrainstormingItem {
+  id: string;
+  label: string;
+  roughIdea: string;
+  proposedTitle: string;
+  problemStatement: string;
+  researchGap: string;
+  researchQuestion: string;
+  methodology: string;
+  population: string;
+  keywords: string[];
+  pillars: string[];
+  proposedAbstract: string;
+  externalRefs: string[]; // Persistent results from OpenAlex
+  internalRefs: string[]; // Persistent IDs from Internal Library
+  isFavorite: boolean;
+  isUsed: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// --- PUBLICATION TYPES ---
+
+export enum PublicationStatus {
+  DRAFT = 'Draft',
+  SUBMITTED = 'Submitted',
+  UNDER_REVIEW = 'Under Review',
+  REVISION = 'Revision',
+  ACCEPTED = 'Accepted',
+  PUBLISHED = 'Published',
+  REJECTED = 'Rejected'
+}
+
+export interface PublicationItem {
+  id: string;
+  title: string;
+  authors: string[];
+  type: string; // Journal, Conference, Book, etc.
+  status: PublicationStatus;
+  publisherName: string;
+  researchDomain: string;
+  affiliation: string;
+  indexing: string;
+  quartile: string;
+  doi: string;
+  issn_isbn: string;
+  volume: string;
+  issue: string;
+  pages: string;
+  year: string;
+  submissionDate: string;
+  acceptanceDate: string;
+  publicationDate: string;
+  brainstormingId?: string;
+  libraryId?: string;
+  manuscriptLink: string;
+  abstract: string;
+  keywords: string[];
+  remarks: string;
+  isFavorite: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// --- LITERATURE SEARCH TYPES ---
+
+export interface LiteratureArticle {
+  paperId: string;
+  title: string;
+  authors: { name: string }[];
   year: number;
-  reason: string | null;
-  created_at: string;
-  updated_at: string;
-  created_by?: string;
-  // Join properties
-  accounts?: {
-    id: string;
-    full_name: string;
-    internal_nik: string;
-    photo_google_id?: string | null;
-    position: string;
-  }[];
+  doi: string;
+  isbn?: string;
+  url: string;
+  venue: string;
+  citationCount: number;
+  abstract: string;
 }
 
-export type EmployeeOfThePeriodInput = Omit<EmployeeOfThePeriod, 'id' | 'created_at' | 'updated_at' | 'accounts'>;
+export interface ArchivedArticleItem {
+  id: string;
+  title: string;
+  citationHarvard: string;
+  doi: string;
+  url: string;
+  info: string;
+  label: string;
+  isFavorite: boolean;
+  createdAt: string;
+}
 
-// --- Report Types ---
-export interface AttendanceSummary {
-  accountId: string;
+export interface ArchivedBookItem {
+  id: string;
+  title: string;
+  citationHarvard: string;
+  isbn: string;
+  url: string;
+  info: string;
+  label: string;
+  isFavorite: boolean;
+  createdAt: string;
+}
+
+// --- NEW PRESENTATION TYPES ---
+
+export enum PresentationTemplate {
+  MODERN = 'Modern Minimalist',
+  CORPORATE = 'Corporate Professional',
+  CREATIVE = 'Creative Dynamic',
+  ACADEMIC = 'Academic Clean'
+}
+
+export interface PresentationThemeConfig {
+  primaryColor: string;
+  secondaryColor: string;
+  fontFamily: string;
+  headingFont: string;
+}
+
+export interface PresentationItem {
+  id: string;
+  collectionIds: string[]; 
+  gSlidesId: string;
+  title: string;
+  presenters: string[]; 
+  templateName: PresentationTemplate;
+  themeConfig: PresentationThemeConfig;
+  slidesCount: number;
+  storageNodeUrl?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// --- NEW RESEARCH GAP TYPES ---
+
+export interface GapAnalysisRow {
+  id: string;
+  sourceId: string;
+  title: string;
+  findings: string;
+  methodology: string;
+  limitations: string;
+  createdAt: string;
+}
+
+export interface NoveltySynthesis {
+  narrative: string;
+  proposedTitle: string;
+  futureDirections: string[];
+}
+
+// --- PROFILE TYPES ---
+
+export interface UserProfile {
   fullName: string;
-  nik: string;
-  totalDays: number;
-  present: number;
-  late: number;
-  lateMinutes: number;
-  earlyDeparture: number;
-  earlyDepartureMinutes: number;
-  absent: number;
-  leave: number;
-  maternityLeave: number;
-  permission: number;
-  holiday: number;
-  specialHoliday: number;
-  noClockOut: number;
-  dispensationCount: number;
-  attendanceRate: number;
-  dailyDetails: {
-    date: string;
-    status: 'PRESENT' | 'ABSENT' | 'LEAVE' | 'MATERNITY' | 'PERMISSION' | 'HOLIDAY' | 'SPECIAL_HOLIDAY' | 'WEEKEND';
-    isLate: boolean;
-    isEarlyDeparture: boolean;
-    isNoClockOut: boolean;
-  }[];
+  photoUrl: string;
+  photoFileId: string;
+  photoNodeUrl: string;
+  birthDate: string;
+  address: string;
+  email: string;
+  phone: string;
+  sintaId: string;
+  scopusId: string;
+  wosId: string;
+  googleScholarId: string;
+  jobTitle: string;
+  affiliation: string;
+  uniqueAppId: string;
+  socialMedia: string;
 }
 
-export interface OvertimeSummary {
-  accountId: string;
-  fullName: string;
-  nik: string;
-  totalOvertimeMinutes: number;
-  totalOvertimeHours: number;
-  overtimeCount: number;
-  estimatedCost: number;
+export interface EducationEntry {
+  id: string;
+  level: string; // Flexible string (Dropdown + manual)
+  institution: string;
+  major: string;
+  degree: string;
+  startYear: string;
+  endYear: string;
 }
 
-export interface LeaveSummary {
-  accountId: string;
-  fullName: string;
-  nik: string;
-  totalQuota: number;
-  usedQuota: number;
-  remainingQuota: number;
-  carryOverQuota: number;
-  maternityQuota: number;
-  maternityUsed: number;
-  permissionCount: number;
+export interface CareerEntry {
+  id: string;
+  company: string;
+  position: string;
+  type: string;
+  startDate: string;
+  endDate: string;
+  location: string;
+  description: string;
 }
 
-export interface PayrollSummary {
-  month: number;
-  year: number;
-  totalBasicSalary: number;
-  totalAllowances: number;
-  totalOvertime: number;
-  totalDeductions: number;
-  totalPph21: number;
-  totalBpjsKesehatan: number;
-  totalBpjsKetenagakerjaan: number;
-  totalTakeHomePay: number;
-  itemCount: number;
-  items: PayrollItem[];
+// --- CV ARCHITECT TYPES ---
+
+export enum CVTemplateType {
+  MODERN_ACADEMIC = 'Template A',
+  EXECUTIVE_BLUE = 'Template B',
+  INSTITUTIONAL_CLASSIC = 'Template C'
 }
 
-export interface ExpenseSummary {
-  totalRequested: number;
-  totalApproved: number;
-  count: number;
-  categories: { [key: string]: number };
-  items: Reimbursement[];
+export interface CVDocument {
+  id: string;
+  title: string;
+  template: CVTemplateType;
+  fileId: string; // PDF in Drive
+  storageNodeUrl: string;
+  selectedEducationIds: string[];
+  selectedCareerIds: string[];
+  selectedPublicationIds: string[];
+  selectedActivityIds: string[];
+  includePhoto: boolean;
+  aiSummary: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface CompensationSummary {
-  totalSeverance: number;
-  totalPenalty: number;
-  count: number;
-  items: Compensation[];
+// --- COLLEAGUE MODULE TYPES ---
+
+export interface ColleagueItem {
+  id: string;
+  name: string; // Mandatory
+  uniqueAppId: string; // Mandatory
+  affiliation?: string;
+  email?: string;
+  phone?: string;
+  socialMedia?: string;
+  photoUrl?: string;
+  photoFileId?: string;
+  photoNodeUrl?: string;
+  isFavorite: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// --- CONSULTATION MODULE TYPES ---
+
+export interface ConsultationItem {
+  id: string;
+  collectionId: string;
+  question: string;
+  answerJsonId: string;
+  nodeUrl: string;
+  isFavorite: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConsultationAnswerContent {
+  answer: string;
+  reasoning?: string;
+}
+
+// --- COLLABORATION MODULE TYPES ---
+
+export interface CollaborationItem {
+  id: string; // derived from No
+  status: string;
+  category: string;
+  collaboratorName: string;
+  startDate: string;
+  duration: string;
+  endDate: string;
+  title: string;
+  campaign: string;
+  keyword: string;
+  images: string[];
+  ctaLink: string;
+}
+
+// --- TUTORIAL MODULE TYPES ---
+export interface TutorialItem {
+  id: string;
+  category: string;
+  title: string;
+  link: string;
+}
+
+// --- VIP ADS TYPES ---
+export interface VipAdItem {
+  imageUrl: string;
+  ctaLink: string;
+}
+
+export interface GASResponse<T> {
+  status: 'success' | 'error';
+  data?: T;
+  message?: string;
+}
+
+export interface ExtractionResult extends Partial<LibraryItem> {
+  fullText?: string;
+  chunks?: string[];
+  aiSnippet?: string;
+}
+
+export type ViewState = 'LIBRARY' | 'ADD_ITEM' | 'SETTINGS' | 'AI_CHAT' | 'BRAINSTORMING';
+
+declare global {
+  interface AIStudio {
+    hasSelectedApiKey: () => Promise<boolean>;
+    openSelectKey: () => Promise<void>;
+  }
+
+  interface Window {
+    aistudio?: AIStudio;
+  }
 }

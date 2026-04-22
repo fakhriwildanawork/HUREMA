@@ -1,8 +1,5 @@
 {
-  "name": "HUREMA",
-  "description": "Sistem Manajemen Sumber Daya Terpadu dengan fitur Presensi, Cuti, Izin, dan Manajemen Performa (KPI) berbasis Supabase dan Google Drive.",
-  "requestFramePermissions": [
-    "camera",
-    "geolocation"
-  ]
+  "name": "Xeenaps MASTER V1",
+  "description": "A modern Personal Knowledge Management application with AI integration, multi-source library management, and glassmorphism UI design.",
+  "requestFramePermissions": []
 }
