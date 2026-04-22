@@ -589,6 +589,32 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
     }
 
     setIsSubmitting(true);
+
+    // SAFETY NET: Fetch Supporting References if missing
+    let finalSupportingReferences = formData.supportingReferences;
+    if (!finalSupportingReferences && formData.keywords && formData.keywords.length > 0) {
+      Swal.fire({ title: 'Finding References...', text: 'Securing video and journal recommendations...', allowOutsideClick: false, didOpen: () => Swal.showLoading(), ...XEENAPS_SWAL_CONFIG });
+      try {
+        const refRes = await fetch(GAS_WEB_APP_URL, {
+          method: 'POST',
+          body: JSON.stringify({ 
+            action: 'getSupportingReferences', 
+            keywords: formData.keywords 
+          })
+        });
+        const refData = await refRes.json();
+        if (refData.status === 'success' && refData.data) {
+          finalSupportingReferences = {
+            references: refData.data.references || [],
+            videoUrl: refData.data.videoUrl || ""
+          };
+          setFormData(prev => ({ ...prev, supportingReferences: finalSupportingReferences }));
+        }
+      } catch (e) {
+        console.warn("Fallback fetch failed", e);
+      }
+    }
+
     Swal.fire({ title: 'Registering Item...', text: 'Larger data may take longer time...', allowOutsideClick: false, didOpen: () => Swal.showLoading(), ...XEENAPS_SWAL_CONFIG });
     try {
       let detectedFormat = FileFormat.PDF;
@@ -618,7 +644,7 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
         tags: { keywords: formData.keywords || [], labels: formData.labels || [] }, 
         insightJsonId: '', 
         mainInfo: formData.mainInfo,
-        supportingReferences: formData.supportingReferences
+        supportingReferences: finalSupportingReferences
       };
 
       const fieldsToRemove = ['addMethod', 'extractedText', 'chunks', 'journalName', 'volume', 'issue', 'pages', 'doi', 'issn', 'isbn', 'pmid', 'arxivId', 'bibcode', 'keywords', 'labels'];
@@ -643,7 +669,7 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
           insightJsonId: result.insightJsonId || newItem.insightJsonId,
           storageNodeUrl: result.nodeUrl || newItem.storageNodeUrl,
           fileId: result.fileId || newItem.fileId,
-          supportingReferences: formData.supportingReferences
+          supportingReferences: finalSupportingReferences
         };
 
         const dbSuccess = await upsertLibraryItemToSupabase(patchedItem);

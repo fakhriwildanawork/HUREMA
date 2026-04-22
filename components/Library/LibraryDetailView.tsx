@@ -1151,7 +1151,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                 </div>
 
                 <div className="bg-[#004A74] p-8 rounded-[3rem] text-white space-y-6 flex flex-col">
-                  <h3 className="text-[9px] font-black uppercase tracking-widest text-white/40 flex items-center gap-2"><VideoCameraIcon className="w-4 h-4" /> Video RecommendationInsights</h3>
+                  <h3 className="text-[9px] font-black uppercase tracking-widest text-white/40 flex items-center gap-2"><VideoCameraIcon className="w-4 h-4" /> Video Recommendation</h3>
                   <div className="flex-1 flex flex-col justify-center">
                     {currentItem.youtubeId || supportingData.videoUrl ? (
                       <div className="aspect-video rounded-[2rem] overflow-hidden bg-black shadow-2xl border-4 border-white/10">
@@ -1160,11 +1160,11 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                     ) : (
                       <div className="aspect-video rounded-[2rem] bg-white/5 border-2 border-dashed border-white/10 flex flex-col items-center justify-center space-y-4">
                         <VideoCameraIcon className="w-12 h-12 text-white/10" />
-                        <p className="text-[9px] font-black text-white/20 uppercase tracking-[0.2em]">Visual node unavailable</p>
+                        <p className="text-[9px] font-black text-white/20 uppercase tracking-[0.2em]">Video unavailable</p>
                       </div>
                     )}
                   </div>
-                  <p className="text-[10px] text-[#FED400]/80 font-bold italic text-center px-4">"Multimedia triangulation anchors knowledge 40% faster than text alone."</p>
+                  <p className="text-[10px] text-[#FED400]/80 font-bold italic text-center px-4">"Please check the recommended videos, as they might not be perfectly relevant"</p>
                 </div>
               </section>
             </div>
