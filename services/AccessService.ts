@@ -1,8 +1,11 @@
-import { supabase } from './supabaseClient';
+import { getSupabase } from './supabaseClient';
 
 export const verifyAccessPassword = async (password: string): Promise<boolean> => {
+  const client = getSupabase();
+  if (!client) return false;
+
   try {
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('access')
       .select('password')
       .eq('password', password)
