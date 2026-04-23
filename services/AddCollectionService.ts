@@ -115,11 +115,12 @@ export const extractMetadataWithAI = async (textSnippet: string, existingData: P
       // SYNC GUARD: Fetch Supporting References as part of the PRIMARY workflow
       if (merged.keywords && merged.keywords.length > 0) {
         try {
+          const searchTerms = [merged.title, ...merged.keywords].filter(Boolean);
           const refRes = await fetch(GAS_WEB_APP_URL, {
             method: 'POST',
             body: JSON.stringify({ 
               action: 'getSupportingReferences', 
-              keywords: merged.keywords 
+              keywords: searchTerms 
             }),
             signal
           });

@@ -590,16 +590,19 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
 
     setIsSubmitting(true);
 
-    // SAFETY NET: Fetch Supporting References if missing
+    // SAFETY NET: Fetch Supporting References if missing or empty
     let finalSupportingReferences = formData.supportingReferences;
-    if (!finalSupportingReferences && formData.keywords && formData.keywords.length > 0) {
+    const hasRefs = finalSupportingReferences && finalSupportingReferences.references && finalSupportingReferences.references.length > 0;
+
+    if (!hasRefs && formData.keywords && formData.keywords.length > 0) {
       Swal.fire({ title: 'Finding References...', text: 'Securing video and journal recommendations...', allowOutsideClick: false, didOpen: () => Swal.showLoading(), ...XEENAPS_SWAL_CONFIG });
       try {
+        const searchTerms = [formData.title, ...formData.keywords].filter(Boolean);
         const refRes = await fetch(GAS_WEB_APP_URL, {
           method: 'POST',
           body: JSON.stringify({ 
             action: 'getSupportingReferences', 
-            keywords: formData.keywords 
+            keywords: searchTerms 
           })
         });
         const refData = await refRes.json();

@@ -46,6 +46,7 @@ import {
   Target, 
   BookOpenCheck, 
   Presentation,
+  MonitorPlay,
   ListTodo,
   NotebookPen,
   Grip,
@@ -429,6 +430,18 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
   const [isContentManagerOpen, setIsContentManagerOpen] = useState(false);
   const [dummySearch, setDummySearch] = useState('');
   
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isMenuOpen && menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMenuOpen]);
+
   const [isBookmarked, setIsBookmarked] = useState(!!item.isBookmarked);
   const [isFavorite, setIsFavorite] = useState(!!item.isFavorite);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -849,7 +862,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                 <MiniTooltip text={isFavorite ? "Remove from Favorites" : "Add to Favorites"} />
               </div>
               
-              <div className="relative">
+              <div className="relative" ref={menuRef}>
                 <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 text-[#004A74] hover:bg-gray-50 rounded-xl transition-all"><EllipsisVerticalIcon className="w-5 h-5 stroke-[2.5]" /></button>
                 {isMenuOpen && (
                   <div className="absolute right-0 mt-2 w-56 bg-white rounded-[2rem] shadow-2xl border border-gray-100 p-2 z-[90] animate-in fade-in zoom-in-95">
@@ -1151,7 +1164,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                 </div>
 
                 <div className="bg-[#004A74] p-8 rounded-[3rem] text-white space-y-6 flex flex-col">
-                  <h3 className="text-[9px] font-black uppercase tracking-widest text-white/40 flex items-center gap-2"><VideoCameraIcon className="w-4 h-4" /> Video Recommendation</h3>
+                  <h3 className="text-[9px] font-black uppercase tracking-widest text-white/40 flex items-center gap-2"><MonitorPlay className="w-4 h-4" /> Video Recommendation</h3>
                   <div className="flex-1 flex flex-col justify-center">
                     {currentItem.youtubeId || supportingData.videoUrl ? (
                       <div className="aspect-video rounded-[2rem] overflow-hidden bg-black shadow-2xl border-4 border-white/10">
@@ -1164,7 +1177,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                       </div>
                     )}
                   </div>
-                  <p className="text-[10px] text-[#FED400]/80 font-bold italic text-center px-4">"Please check the recommended videos, as they might not be perfectly relevant"</p>
+                  <p className="text-[10px] text-[#FED400]/80 font-bold italic text-center px-4">"Please check the recommended video, as it might not be perfectly relevant"</p>
                 </div>
               </section>
             </div>
