@@ -84,7 +84,7 @@ export const GlobalSavingOverlay: React.FC<{ isVisible: boolean }> = ({ isVisibl
            alt="Saving" 
         />
         <p className="text-sm font-black text-[#004A74] uppercase tracking-widest animate-pulse">
-           Saving your latest data...
+           Please wait...
         </p>
     </div>
   );
