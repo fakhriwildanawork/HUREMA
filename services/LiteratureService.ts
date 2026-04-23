@@ -177,3 +177,58 @@ export const deleteArchivedBook = async (id: string): Promise<boolean> => {
 export const toggleFavoriteBook = async (id: string, status: boolean): Promise<boolean> => {
   return await upsertArchivedBookToSupabase({ id, isFavorite: status });
 };
+
+/**
+ * XEENAPS PKM - LOCAL LITERATURE SERVICE (Supporting References)
+ * Resolves fetching blocker by taking requests offline from Google Apps Script to the client device.
+ * Priority: OpenAlex -> CrossRef
+ */
+export const getSupportingReferencesFrontend = async (keywords: string[]): Promise<string[]> => {
+  if (!keywords || keywords.length === 0) return [];
+  const query = encodeURIComponent(keywords.join(' '));
+  let results: string[] = [];
+
+  try {
+    // Priority 1: OpenAlex (Polite Pool - Max 3 Items for Speed)
+    const oaRes = await fetch(`https://api.openalex.org/works?search=${query}&per_page=3`, {
+      headers: { "Accept": "application/json" }
+    });
+    if (oaRes.ok) {
+      const oaData = await oaRes.json();
+      if (oaData.results && oaData.results.length > 0) {
+        results = oaData.results.map((item: any) => {
+          const title = item.display_name || 'Untitled';
+          const authors = (item.authorships || []).map((a: any) => a.author?.display_name).join(', ') || 'Unknown';
+          const year = item.publication_year || 'N.d.';
+          const url = item.doi || item.ids?.openalex || '#';
+          return `<p><b>${title}</b>. ${authors} (${year}). <a href='${url}' target='_blank'>${url}</a></p>`;
+        });
+        return results;
+      }
+    }
+  } catch (e) {
+    console.warn("OpenAlex fetch failed:", e);
+  }
+
+  try {
+    // Priority 2: CrossRef (Fallback)
+    const crRes = await fetch(`https://api.crossref.org/works?query=${query}&rows=3`);
+    if (crRes.ok) {
+      const crData = await crRes.json();
+      if (crData.message && crData.message.items && crData.message.items.length > 0) {
+        results = crData.message.items.map((item: any) => {
+          const title = item.title?.[0] || 'Untitled';
+          const authors = (item.author || []).map((a: any) => `${a.given || ''} ${a.family || ''}`.trim()).join(', ') || 'Unknown';
+          const year = item.issued?.['date-parts']?.[0]?.[0] || 'N.d.';
+          const url = item.URL || (item.DOI ? `https://doi.org/${item.DOI}` : '#');
+          return `<p><b>${title}</b>. ${authors} (${year}). <a href='${url}' target='_blank'>${url}</a></p>`;
+        });
+        return results;
+      }
+    }
+  } catch (e) {
+    console.warn("CrossRef fetch failed:", e);
+  }
+
+  return results; // Returns empty array if both fail
+};

@@ -99,12 +99,21 @@ export const shareToColleague = async (
     // CORRECTION: Fetch Sender Profile from Supabase to ensure accurate identity
     const senderProfile = await fetchProfileFromSupabase();
 
+    // UNMASK targetUniqueAppId:
+    // User stores masking logic as 3 random prefix characters + actual ID + 3 random suffix characters.
+    // Length depends on the original ID, but if it has prefixes, we strip them.
+    // The native Google Spreadhseet ID is usually 44 characters. Let's just blindly strip 3 from start and 3 from end
+    // as per user's explicit directive for this personal application implementation.
+    const cleanTargetUniqueAppId = targetUniqueAppId.length > 6 
+      ? targetUniqueAppId.substring(3, targetUniqueAppId.length - 3) 
+      : targetUniqueAppId;
+
     // 1. Transport via GAS (To Receiver's Sheet)
     const res = await fetch(GAS_WEB_APP_URL, {
       method: 'POST',
       body: JSON.stringify({ 
         action: 'sendToSharbox', 
-        targetUniqueAppId, 
+        targetUniqueAppId: cleanTargetUniqueAppId, 
         receiverName, 
         receiverPhotoUrl,
         message,

@@ -1,6 +1,7 @@
 import { LibraryItem } from "../types";
 import { callAiProxy } from "./gasService";
 import { GAS_WEB_APP_URL } from "../constants";
+import { getSupportingReferencesFrontend } from "./LiteratureService";
 
 /**
  * AddCollectionService - Metadata Extraction via AI Proxy (GROQ).
@@ -115,22 +116,43 @@ export const extractMetadataWithAI = async (textSnippet: string, existingData: P
       // SYNC GUARD: Fetch Supporting References as part of the PRIMARY workflow
       if (merged.keywords && merged.keywords.length > 0) {
         try {
-          const searchTerms = [merged.title, ...merged.keywords].filter(Boolean);
-          const refRes = await fetch(GAS_WEB_APP_URL, {
+          // FIX: Normalize keywords to prevent String Shattering syndrome
+          const normalizedKeywords = Array.isArray(merged.keywords)
+            ? merged.keywords
+            : typeof merged.keywords === 'string'
+              ? (merged.keywords as string).split(',').map((k: string) => k.trim()).filter(Boolean)
+              : [];
+              
+          const searchTerms = [merged.title, ...normalizedKeywords].filter(Boolean);
+          
+          const fetchRefPromise = getSupportingReferencesFrontend(searchTerms);
+          const fetchGasPromise = fetch(GAS_WEB_APP_URL, {
             method: 'POST',
+            mode: 'cors',
+            redirect: 'follow',
             body: JSON.stringify({ 
               action: 'getSupportingReferences', 
               keywords: searchTerms 
             }),
             signal
-          });
-          const refData = await refRes.json();
-          if (refData.status === 'success' && refData.data) {
-            merged.supportingReferences = {
-              references: refData.data.references || [],
-              videoUrl: refData.data.videoUrl || ""
-            };
+          }).then(res => res.json());
+
+          const [refResult, gasResult] = await Promise.allSettled([fetchRefPromise, fetchGasPromise]);
+          
+          let finalRefs: string[] = [];
+          let finalVideoUrl = "";
+
+          if (refResult.status === 'fulfilled') {
+            finalRefs = refResult.value;
           }
+          if (gasResult.status === 'fulfilled' && gasResult.value?.data) {
+            finalVideoUrl = gasResult.value.data.videoUrl || "";
+          }
+
+          merged.supportingReferences = {
+            references: finalRefs,
+            videoUrl: finalVideoUrl
+          };
         } catch (e) {
           console.warn("Supporting data fetch failed, continuing with partial metadata:", e);
         }

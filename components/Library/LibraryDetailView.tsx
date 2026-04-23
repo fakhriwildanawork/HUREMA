@@ -45,12 +45,17 @@ import {
   Share2, 
   Target, 
   BookOpenCheck, 
+  Recycle, 
+  Trash, 
   Presentation,
+  MonitorPlay,
   ListTodo,
   NotebookPen,
   Grip,
   FileCode
 } from 'lucide-react';
+import Swal from 'sweetalert2';
+import { XEENAPS_SWAL_CONFIG } from '../../utils/swalUtils';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
 // Fix: Removed non-existent saveLibraryItem and imported Supabase services
@@ -511,6 +516,79 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
     e.stopPropagation();
     navigator.clipboard.writeText(text);
     showXeenapsToast('success', 'Reference Copied!');
+  };
+
+  const handleReplaceVideo = async () => {
+    const swalRes = await Swal.fire({
+      ...XEENAPS_SWAL_CONFIG,
+      title: "Replace Video",
+      text: "Paste a YouTube URL to replace the current recommendation",
+      input: "url",
+      inputPlaceholder: "https://www.youtube.com/watch?v=...",
+      showCancelButton: true,
+      confirmButtonText: "Replace",
+    });
+
+    if (swalRes.isConfirmed && swalRes.value) {
+      const url = swalRes.value as string;
+      const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+      if (match && match[1]) {
+        const videoId = match[1];
+        const embedUrl = `https://www.youtube.com/embed/${videoId}`;
+        const updatedRef = { ...supportingData, videoUrl: embedUrl };
+        const updatedItem = {
+          ...currentItem,
+          supportingReferences: updatedRef
+        };
+        
+        showXeenapsToast('info', 'Updating video...');
+        setCurrentItem(updatedItem);
+        if (onUpdateOptimistic) onUpdateOptimistic(updatedItem);
+
+        try {
+          await upsertLibraryItemToSupabase(updatedItem);
+          showXeenapsToast('success', 'Video Replaced');
+        } catch (e) {
+          showXeenapsToast('error', 'Failed to save video');
+          setCurrentItem(currentItem);
+          if (onUpdateOptimistic) onUpdateOptimistic(currentItem);
+        }
+      } else {
+        showXeenapsToast('error', 'Invalid YouTube URL');
+      }
+    }
+  };
+
+  const handleDeleteVideo = async () => {
+    const swalRes = await Swal.fire({
+      ...XEENAPS_SWAL_CONFIG,
+      title: "Remove Video?",
+      text: "Are you sure you want to remove the video recommendation?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Remove",
+    });
+    
+    if (swalRes.isConfirmed) {
+      const updatedRef = { ...supportingData, videoUrl: "" };
+      const updatedItem = {
+        ...currentItem,
+        supportingReferences: updatedRef
+      };
+
+      showXeenapsToast('info', 'Removing video...');
+      setCurrentItem(updatedItem);
+      if (onUpdateOptimistic) onUpdateOptimistic(updatedItem);
+
+      try {
+        await upsertLibraryItemToSupabase(updatedItem);
+        showXeenapsToast('success', 'Video Removed');
+      } catch (e) {
+        showXeenapsToast('error', 'Failed to save');
+        setCurrentItem(currentItem);
+        if (onUpdateOptimistic) onUpdateOptimistic(currentItem);
+      }
+    }
   };
 
   const handleToggleAction = async (property: 'isBookmarked' | 'isFavorite') => {
@@ -1163,7 +1241,19 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                 </div>
 
                 <div className="bg-[#004A74] p-8 rounded-[3rem] text-white space-y-6 flex flex-col">
-                  <h3 className="text-[9px] font-black uppercase tracking-widest text-white/40 flex items-center gap-2"><VideoCameraIcon className="w-4 h-4" /> Video Recommendation</h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-[9px] font-black uppercase tracking-widest text-white/40 flex items-center gap-2"><MonitorPlay className="w-4 h-4" /> Video Recommendation</h3>
+                    {(currentItem.youtubeId || supportingData.videoUrl) && (
+                      <div className="flex items-center gap-2">
+                        <button onClick={handleReplaceVideo} className="p-1.5 text-white/40 hover:text-white hover:bg-white/10 rounded-lg transition-all" title="Replace Video">
+                          <ArrowPathIcon className="w-4 h-4 stroke-[2.5]" />
+                        </button>
+                        <button onClick={handleDeleteVideo} className="p-1.5 text-white/40 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all" title="Remove Video">
+                          <TrashIcon className="w-4 h-4 stroke-[2.5]" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   <div className="flex-1 flex flex-col justify-center">
                     {currentItem.youtubeId || supportingData.videoUrl ? (
                       <div className="aspect-video rounded-[2rem] overflow-hidden bg-black shadow-2xl border-4 border-white/10">
@@ -1176,7 +1266,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                       </div>
                     )}
                   </div>
-                  <p className="text-[10px] text-[#FED400]/80 font-bold italic text-center px-4">"Please check the recommended videos, as they might not be perfectly relevant"</p>
+                  <p className="text-[10px] text-[#FED400]/80 font-bold italic text-center px-4">"Please check the recommended video, as it might not be perfectly relevant"</p>
                 </div>
               </section>
             </div>

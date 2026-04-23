@@ -7,6 +7,7 @@ import { processLibraryFileInCloud, uploadAndStoreFile, extractFromUrl, callIden
 import { upsertLibraryItemToSupabase } from '../../services/LibrarySupabaseService';
 import { extractMetadataWithAI } from '../../services/AddCollectionService';
 import { GAS_WEB_APP_URL } from '../../constants';
+import { getSupportingReferencesFrontend } from '../../services/LiteratureService';
 import { useAsyncWorkflow } from '../../hooks/useAsyncWorkflow';
 import { 
   CheckIcon, 
@@ -597,22 +598,36 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
     if (!hasRefs && formData.keywords && formData.keywords.length > 0) {
       Swal.fire({ title: 'Finding References...', text: 'Securing video and journal recommendations...', allowOutsideClick: false, didOpen: () => Swal.showLoading(), ...XEENAPS_SWAL_CONFIG });
       try {
-        const searchTerms = [formData.title, ...formData.keywords].filter(Boolean);
-        const refRes = await fetch(GAS_WEB_APP_URL, {
+        // FIX: Normalize keywords to prevent String Shattering syndrome
+        const normalizedKeywords = Array.isArray(formData.keywords)
+          ? formData.keywords
+          : typeof formData.keywords === 'string'
+            ? (formData.keywords as string).split(',').map((k: string) => k.trim()).filter(Boolean)
+            : [];
+            
+        const searchTerms = [formData.title, ...normalizedKeywords].filter(Boolean);
+        
+        const fetchRefPromise = getSupportingReferencesFrontend(searchTerms);
+        const fetchGasPromise = fetch(GAS_WEB_APP_URL, {
           method: 'POST',
+          mode: 'cors',
+          redirect: 'follow',
           body: JSON.stringify({ 
             action: 'getSupportingReferences', 
             keywords: searchTerms 
           })
-        });
-        const refData = await refRes.json();
-        if (refData.status === 'success' && refData.data) {
-          finalSupportingReferences = {
-            references: refData.data.references || [],
-            videoUrl: refData.data.videoUrl || ""
-          };
-          setFormData(prev => ({ ...prev, supportingReferences: finalSupportingReferences }));
-        }
+        }).then(res => res.json());
+
+        const [refResult, gasResult] = await Promise.allSettled([fetchRefPromise, fetchGasPromise]);
+
+        const newRefs = refResult.status === 'fulfilled' ? refResult.value : [];
+        const newVideoUrl = gasResult.status === 'fulfilled' && gasResult.value?.data ? gasResult.value.data.videoUrl : "";
+
+        finalSupportingReferences = {
+          references: newRefs,
+          videoUrl: newVideoUrl || ""
+        };
+        setFormData(prev => ({ ...prev, supportingReferences: finalSupportingReferences }));
       } catch (e) {
         console.warn("Fallback fetch failed", e);
       }

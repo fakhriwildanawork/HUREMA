@@ -13,6 +13,7 @@ import {
   translateBrainstormingFields,
   deleteBrainstorming
 } from '../../../services/BrainstormingService';
+import { GlobalSavingOverlay } from '../../Common/LoadingComponents';
 import { 
   ArrowLeft, 
   Sparkles, 
@@ -161,6 +162,7 @@ const BrainstormingDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ librar
         keywords: ensureArray(result.keywords)
       };
       setItem(updated);
+      await handleSave(updated);
       showXeenapsToast('success', 'Synthesis Complete (10 Pillars)');
     }
     setIsBusy(false);
@@ -177,6 +179,7 @@ const BrainstormingDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ librar
     if (abs) {
       const updated = { ...item, proposedAbstract: abs };
       setItem(updated);
+      await handleSave(updated);
       showXeenapsToast('success', 'Abstract Ready');
     }
     setIsBusy(false);
@@ -198,7 +201,7 @@ const BrainstormingDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ librar
     if (data && data.length > 0) {
       const updatedItem = { ...item!, externalRefs: ensureArray(data) };
       setItem(updatedItem);
-      handleSave(updatedItem);
+      await handleSave(updatedItem);
       showXeenapsToast('success', 'External Benchmarks Synchronized');
     } else {
       // Don't overwrite existing refs with empty array if search fails
@@ -231,7 +234,7 @@ const BrainstormingDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ librar
     // SAVE IDs FOR PERSISTENCE
     const updatedItem = { ...item!, internalRefs: ensureArray(validData.map(lib => lib.id)) };
     setItem(updatedItem);
-    handleSave(updatedItem);
+    await handleSave(updatedItem);
     
     setIsFetchingInternal(false);
   };
@@ -258,11 +261,13 @@ const BrainstormingDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ librar
     showXeenapsToast('info', 'Translating framework...');
     const translated = await translateBrainstormingFields(item, langCode);
     if (translated) {
-      setItem({ 
+      const updated = {
         ...item, 
         ...translated,
         pillars: ensureArray(translated.pillars) 
-      });
+      }
+      setItem(updated);
+      await handleSave(updated);
       showXeenapsToast('success', 'Translation Applied');
     }
     setIsBusy(false);
@@ -336,6 +341,8 @@ const BrainstormingDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ librar
 
   return (
     <div className="flex-1 flex flex-col h-full bg-[#f8fafc] overflow-hidden relative">
+      <GlobalSavingOverlay isVisible={isBusy || isFetchingExternal || isFetchingInternal} />
+      
       {/* Internal Collection Overlay */}
       {selectedInternalItem && (
         <LibraryDetailView 

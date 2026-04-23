@@ -134,7 +134,7 @@ const QuoteNowModal: React.FC<QuoteNowModalProps> = ({ item, onClose, onSave }) 
              <div className="space-y-10 animate-in zoom-in-95">
                 <div className="text-center space-y-4">
                    <h2 className="text-2xl font-black text-[#004A74] uppercase tracking-tight">Define Your Search Context</h2>
-                   <p className="text-xs font-medium text-gray-500 max-w-md mx-auto leading-relaxed">Describe the context you are looking for. AI will locate 3 distinct quotes and architect academic enhancements for each.</p>
+                   <p className="text-xs font-medium text-gray-500 max-w-md mx-auto leading-relaxed">Describe the context you are looking for. AI will locate various distinct quotes and architect academic enhancements for each.</p>
                 </div>
                 <div className="relative group">
                    <MessageSquare className="absolute left-6 top-8 w-6 h-6 text-gray-200 group-focus-within:text-[#FED400] transition-colors" />
@@ -155,7 +155,7 @@ const QuoteNowModal: React.FC<QuoteNowModalProps> = ({ item, onClose, onSave }) 
                 </div>
                 <div className="space-y-2">
                    <h3 className="text-2xl font-black text-[#004A74] uppercase tracking-tighter">Scanning Source</h3>
-                   <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Identifying and enhancing top 3 contextual verbatim matches...</p>
+                   <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Identifying and enhancing contextual verbatim matches...</p>
                 </div>
              </div>
            )}
