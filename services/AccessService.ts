@@ -8,16 +8,17 @@ export const verifyAccessPassword = async (password: string): Promise<boolean> =
     const { data, error } = await client
       .from('access')
       .select('password')
-      .eq('password', password)
-      .single();
+      .eq('uuid', 'admin-01')
+      .maybeSingle();
 
-    if (error) {
+    if (error || !data) {
        return false;
     }
 
-    return data !== null;
+    return data.password === password;
   } catch (err) {
-    console.error("Error verifying access:", err);
+    // Avoid logging sensitive information
+    console.error("Access verification logic encountered an issue.");
     return false;
   }
 };
