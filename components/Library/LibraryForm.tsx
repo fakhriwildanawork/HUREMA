@@ -515,39 +515,43 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
     }
   };
 
-  // FILE Workflow - Same as before but triggers modal
+  // STAGING FILE: Wait for manual trigger
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       setFile(selectedFile);
-      resetMetadataFields(true);
-      workflow.execute(
-        async (signal) => {
-          setExtractionStage('READING');
-          const reader = new FileReader();
-          const base64Data = await new Promise<string>((resolve) => {
-            reader.onload = () => resolve((reader.result as string).split(',')[1]);
-            reader.readAsDataURL(selectedFile);
-          });
-          const response = await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'extractOnly', fileData: base64Data, fileName: selectedFile.name, mimeType: selectedFile.type }), signal });
-          const result = await response.json();
-          if (result.status === 'success' && result.extractedText) {
-            const ids = { 
-              doi: result.detectedDoi, 
-              isbn: result.detectedIsbn, 
-              issn: result.detectedIssn, 
-              pmid: result.detectedPmid, 
-              arxivId: result.detectedArxiv 
-            };
-            await runExtractionWorkflow(result.extractedText, chunkifyText(result.extractedText), ids, {}, signal);
-          } else if (result.status === 'error') {
-            throw new Error(result.message);
-          }
-        },
-        () => setExtractionStage('IDLE'),
-        handleExtractionError
-      );
     }
+  };
+
+  const handleManualFileAnalysis = async () => {
+    if (!file) return;
+    resetMetadataFields(true);
+    workflow.execute(
+      async (signal) => {
+        setExtractionStage('READING');
+        const reader = new FileReader();
+        const base64Data = await new Promise<string>((resolve) => {
+          reader.onload = () => resolve((reader.result as string).split(',')[1]);
+          reader.readAsDataURL(file);
+        });
+        const response = await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'extractOnly', fileData: base64Data, fileName: file.name, mimeType: file.type }), signal });
+        const result = await response.json();
+        if (result.status === 'success' && result.extractedText) {
+          const ids = { 
+            doi: result.detectedDoi, 
+            isbn: result.detectedIsbn, 
+            issn: result.detectedIssn, 
+            pmid: result.detectedPmid, 
+            arxivId: result.detectedArxiv 
+          };
+          await runExtractionWorkflow(result.extractedText, chunkifyText(result.extractedText), ids, {}, signal);
+        } else if (result.status === 'error') {
+          throw new Error(result.message);
+        }
+      },
+      () => setExtractionStage('IDLE'),
+      handleExtractionError
+    );
   };
 
   const handleSaveExtraction = () => {
@@ -870,20 +874,35 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
               </FormField>
             ) : (
               <FormField label="File Attachment" required error={!file}>
-                <label className={`relative flex flex-col items-center justify-center w-full h-40 bg-gray-50 border-2 border-dashed ${!file ? 'border-red-300' : 'border-gray-200'} rounded-[2rem] cursor-pointer group ${isFormDisabled ? 'opacity-70 pointer-events-none' : ''}`}>
-                  {isExtracting ? (
-                    <div className="flex flex-col items-center px-4 text-center">
-                      <ArrowPathIcon className="w-8 h-8 text-[#004A74] animate-spin mb-3" />
-                      <p className="text-[10px] font-black text-[#004A74] uppercase tracking-widest">Processing Content...</p>
-                    </div>
-                  ) : (
-                    <>
-                      <CloudArrowUpIcon className="w-8 h-8 text-gray-300 group-hover:text-[#004A74] mb-2" />
-                      <p className="text-sm text-gray-500 text-center px-6">{file ? <span className="font-bold text-[#004A74]">{file.name}</span> : "Drop your files here"}</p>
-                    </>
+                <div className="relative group w-full">
+                  <label className={`relative flex flex-col items-center justify-center w-full h-40 bg-gray-50 border-2 border-dashed ${!file ? 'border-red-300' : 'border-gray-200'} rounded-[2rem] cursor-pointer group ${isFormDisabled ? 'opacity-70 pointer-events-none' : ''}`}>
+                    {isExtracting ? (
+                      <div className="flex flex-col items-center px-4 text-center">
+                        <ArrowPathIcon className="w-8 h-8 text-[#004A74] animate-spin mb-3" />
+                        <p className="text-[10px] font-black text-[#004A74] uppercase tracking-widest">Processing Content...</p>
+                      </div>
+                    ) : (
+                      <>
+                        <CloudArrowUpIcon className="w-8 h-8 text-gray-300 group-hover:text-[#004A74] mb-2" />
+                        <p className="text-sm text-gray-500 text-center px-6">{file ? <span className="font-bold text-[#004A74]">{file.name}</span> : "Drop your files here"}</p>
+                      </>
+                    )}
+                    <input type="file" className="hidden" onChange={handleFileChange} disabled={isFormDisabled} />
+                  </label>
+                  
+                  {/* Integrated Action Button */}
+                  {file && !isExtracting && (
+                    <button 
+                      type="button"
+                      onClick={handleManualFileAnalysis}
+                      disabled={isFormDisabled}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-emerald-500 hover:scale-110 transition-transform animate-in fade-in zoom-in"
+                      title="Analyze Content"
+                    >
+                        <CheckCircleSolidIcon className="w-10 h-10 drop-shadow-md" />
+                    </button>
                   )}
-                  <input type="file" className="hidden" onChange={handleFileChange} disabled={isFormDisabled} />
-                </label>
+                </div>
               </FormField>
             )}
             {isExtracting && (

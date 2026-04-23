@@ -201,7 +201,7 @@ export const getSupportingReferencesFrontend = async (keywords: string[]): Promi
           const authors = (item.authorships || []).map((a: any) => a.author?.display_name).join(', ') || 'Unknown';
           const year = item.publication_year || 'N.d.';
           const url = item.doi || item.ids?.openalex || '#';
-          return `<p><b>${title}</b>. ${authors} (${year}). <a href='${url}' target='_blank'>${url}</a></p>`;
+          return `<p><b>${title}</b>. ${authors} (${year}). <a href="${url}" target="_blank">${url}</a></p>`;
         });
         return results;
       }
@@ -221,7 +221,7 @@ export const getSupportingReferencesFrontend = async (keywords: string[]): Promi
           const authors = (item.author || []).map((a: any) => `${a.given || ''} ${a.family || ''}`.trim()).join(', ') || 'Unknown';
           const year = item.issued?.['date-parts']?.[0]?.[0] || 'N.d.';
           const url = item.URL || (item.DOI ? `https://doi.org/${item.DOI}` : '#');
-          return `<p><b>${title}</b>. ${authors} (${year}). <a href='${url}' target='_blank'>${url}</a></p>`;
+          return `<p><b>${title}</b>. ${authors} (${year}). <a href="${url}" target="_blank">${url}</a></p>`;
         });
         return results;
       }
