@@ -270,7 +270,19 @@ const UserProfileView: React.FC = () => {
 
   const handleUniqueIdUpdate = (newId: string) => {
     if (!localProfile) return;
-    handleFieldUpdate('uniqueAppId', newId);
+
+    let finalId = newId.trim();
+    // UNMASK/MASK LOGIC: Native Google Spreadsheet IDs are exactly 44 characters.
+    // If the user pastes exactly 44 characters, we automatically mask it by adding
+    // 3 random prefix characters and 3 random suffix characters.
+    if (finalId.length === 44) {
+      const gPrefix = Math.random().toString(36).substring(2, 5).toUpperCase();
+      const gSuffix = Math.random().toString(36).substring(2, 5).toUpperCase();
+      finalId = `${gPrefix}${finalId}${gSuffix}`;
+      showXeenapsToast('success', 'Spreadsheet ID format detected & securely masked!');
+    }
+
+    handleFieldUpdate('uniqueAppId', finalId);
   };
 
   if (isLoading) {
