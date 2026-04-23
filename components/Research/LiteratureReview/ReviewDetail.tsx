@@ -192,8 +192,7 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
     const placeholders: ReviewMatrixRow[] = selectedLibs.map(lib => ({
       collectionId: lib.id,
       title: lib.title,
-      answer: '',
-      verbatim: ''
+      answer: ''
     }));
     
     setAnalyzingIds(prev => [...prev, ...selectedLibs.map(l => l.id)]);
@@ -213,8 +212,7 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
           const completedRow = {
             collectionId: lib.id,
             title: lib.title,
-            answer: result.answer,
-            verbatim: result.verbatim
+            answer: result.answer
           };
           
           setContent(prev => ({
@@ -433,8 +431,7 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
                      <thead>
                         <tr className="bg-gray-50/50 border-b border-gray-100">
                            <th className="p-6 text-[9px] font-black uppercase tracking-widest text-gray-400 w-[20%]">Source Identity</th>
-                           <th className="p-6 text-[9px] font-black uppercase tracking-widest text-gray-400 w-[40%]">Analysis Result</th>
-                           <th className="p-6 text-[9px] font-black uppercase tracking-widest text-gray-400 w-[30%]">Verbatim Evidence</th>
+                           <th className="p-6 text-[9px] font-black uppercase tracking-widest text-gray-400 w-[70%]">Analysis Result</th>
                            <th className="p-6 text-[9px] font-black uppercase tracking-widest text-gray-400 w-[10%] text-center">Action</th>
                         </tr>
                      </thead>
@@ -445,13 +442,12 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
                              <tr key={i}>
                                <td className="p-6"><div className="h-4 w-32 skeleton rounded-lg"/></td>
                                <td className="p-6"><div className="space-y-2"><div className="h-4 w-full skeleton rounded-lg"/><div className="h-4 w-3/4 skeleton rounded-lg"/></div></td>
-                               <td className="p-6"><div className="h-12 w-full skeleton rounded-2xl"/></td>
                                <td className="p-6"><div className="h-8 w-8 skeleton rounded-lg mx-auto"/></td>
                              </tr>
                            ))
                         ) : content.matrix.length === 0 ? (
                            <tr>
-                              <td colSpan={4} className="py-24 text-center opacity-30">
+                              <td colSpan={3} className="py-24 text-center opacity-30">
                                  <BookOpen size={48} className="mx-auto mb-4 text-[#004A74]" />
                                  <p className="text-[10px] font-black uppercase tracking-widest">Comparative Matrix is empty</p>
                               </td>
@@ -494,15 +490,7 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
                                       </div>
                                    )}
                                 </td>
-                                <td className="p-6 align-top">
-                                   {isAnalyzing ? (
-                                      <div className="h-12 w-full skeleton rounded-2xl" />
-                                   ) : row.verbatim ? (
-                                      <div className="p-4 bg-[#004A74]/5 border border-[#004A74]/10 rounded-2xl text-[10px] font-bold italic text-[#004A74]/70 leading-relaxed">
-                                         "{row.verbatim}"
-                                      </div>
-                                   ) : <span className="text-[9px] text-gray-300 italic">No evidence extracted.</span>}
-                                </td>
+
                                 <td className="p-6 text-center align-top">
                                    <div className="flex flex-col gap-2">
                                       <div className="relative">

@@ -202,7 +202,6 @@ export interface ReviewMatrixRow {
   collectionId: string;
   title: string;
   answer: string;
-  verbatim: string;
 }
 
 export interface ReviewContent {
