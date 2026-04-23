@@ -1222,7 +1222,10 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                     {isLoading && !isSyncing ? [...Array(2)].map((_, i) => <div key={i} className="h-20 w-full skeleton rounded-3xl" />) : (
                       supportingData.references?.length > 0 ? supportingData.references.map((ref: string, idx: number) => {
                         const urlMatch = ref.match(/https?:\/\/[^\s<]+/);
-                        const url = urlMatch ? urlMatch[0].replace(/[.,;)]+$/, '') : null;
+                        let url = urlMatch ? urlMatch[0].replace(/[.,;)]+$/, '') : null;
+                        if (url) {
+                          url = url.replace(/['"]/g, ''); // Fix: Clean URL from trailing quotes
+                        }
                         return (
                           <div key={idx} className="bg-white p-5 rounded-3xl border border-gray-100 flex flex-col gap-3 transition-all hover:bg-[#004A74]/5 group">
                             <div className="flex gap-3">
