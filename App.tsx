@@ -30,6 +30,7 @@ import ReviewDetail from './components/Research/LiteratureReview/ReviewDetail';
 import DashboardMain from './components/Dashboard/DashboardMain';
 import ReloadPrompt from './components/Layout/ReloadPrompt';
 import VipAdModal from './components/Layout/VipAdModal';
+import LoginView from './components/Auth/LoginView';
 
 // Placeholder for the upcoming modules
 const ActivityMain = React.lazy(() => import('./components/Activities/ActivityMain'));
@@ -54,7 +55,7 @@ const ScrollToTop = () => {
   return null;
 };
 
-const App: React.FC = () => {
+const XeenapsApp: React.FC = () => {
   const [items, setItems] = useState<LibraryItem[]>([]);
   const [teachingItems, setTeachingItems] = useState<TeachingItem[]>([]);
   const [activityItems, setActivityItems] = useState<ActivityItem[]>([]);
@@ -382,6 +383,25 @@ const App: React.FC = () => {
       </div>
     </Router>
   );
+};
+
+const App: React.FC = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
+    () => localStorage.getItem('xeenaps_access_token') === 'true'
+  );
+
+  if (!isAuthenticated) {
+    return (
+      <Router>
+        <Routes>
+          <Route path="/login" element={<LoginView onLogin={() => setIsAuthenticated(true)} />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </Router>
+    );
+  }
+
+  return <XeenapsApp />;
 };
 
 export default App;
