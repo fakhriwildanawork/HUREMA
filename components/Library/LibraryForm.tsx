@@ -842,7 +842,7 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
                           className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-emerald-500 hover:scale-110 transition-transform animate-in fade-in zoom-in"
                           title="Analyze Content"
                         >
-                           <SparklesIcon className="w-8 h-8" />
+                           <SparklesIcon className="w-8 h-8 bg-emerald-500 text-white rounded-full p-1.5 animate-pulse" />
                         </button>
                       )}
                    </div>
@@ -866,7 +866,7 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
                           className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-emerald-500 hover:scale-110 transition-transform animate-in fade-in zoom-in"
                           title="Lookup & Analyze"
                         >
-                           <SparklesIcon className="w-8 h-8" />
+                           <SparklesIcon className="w-8 h-8 bg-emerald-500 text-white rounded-full p-1.5 animate-pulse" />
                         </button>
                       )}
                    </div>
@@ -899,7 +899,7 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
                       className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-emerald-500 hover:scale-110 transition-transform animate-in fade-in zoom-in"
                       title="Analyze Content"
                     >
-                        <SparklesIcon className="w-10 h-10 drop-shadow-md" />
+                        <SparklesIcon className="w-8 h-8 bg-emerald-500 text-white rounded-full p-1.5 animate-pulse" />
                     </button>
                   )}
                 </div>
