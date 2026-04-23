@@ -31,8 +31,7 @@ import {
   Award,
   Youtube,
   FileText,
-  Book,
-  LogOut
+  Book
 } from 'lucide-react';
 import { BRAND_ASSETS, SPREADSHEET_CONFIG } from '../../assets';
 import Swal from 'sweetalert2';
@@ -480,32 +479,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
       <div className="shrink-0 flex flex-col">
         <div className="border-t border-white/20 mx-4" />
         <div className="px-2 pt-2 mb-4 lg:mb-6 space-y-0.5">
-          <button 
-            onClick={() => {
-              Swal.fire({
-                ...XEENAPS_SWAL_CONFIG,
-                title: 'Lock App?',
-                text: 'Are you sure you want to lock the app and log out?',
-                showCancelButton: true,
-                confirmButtonText: 'Yes, lock it',
-                cancelButtonText: 'Cancel'
-              }).then((result) => {
-                if (result.isConfirmed) {
-                  localStorage.removeItem('xeenaps_access_token');
-                  window.location.reload();
-                }
-              });
-            }}
-            className="w-full group flex items-center p-2 md:p-2.5 rounded-xl transition-all duration-300 transform active:scale-95 text-white/90 hover:bg-white/10 hover:text-red-400 outline-none"
-          >
-            <div className="shrink-0 flex items-center justify-center w-7 md:w-8 group-hover:scale-110 transition-transform duration-300">
-               <LogOut size={18} strokeWidth={2} className="lg:w-5 lg:h-5" />
-            </div>
-            <div className={`ml-2 overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0'}`}>
-              <span className="text-xs md:text-sm font-bold whitespace-nowrap text-red-400">Lock App</span>
-            </div>
-          </button>
-          
           <button 
             onClick={handleExploreClick}
             className="w-full group flex items-center p-2 md:p-2.5 rounded-xl transition-all duration-300 transform active:scale-95 text-white/90 hover:bg-white/10 hover:text-[#FED400] outline-none"

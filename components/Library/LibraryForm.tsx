@@ -597,18 +597,9 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
     if (!hasRefs && formData.keywords && formData.keywords.length > 0) {
       Swal.fire({ title: 'Finding References...', text: 'Securing video and journal recommendations...', allowOutsideClick: false, didOpen: () => Swal.showLoading(), ...XEENAPS_SWAL_CONFIG });
       try {
-        // FIX: Normalize keywords to prevent String Shattering syndrome
-        const normalizedKeywords = Array.isArray(formData.keywords)
-          ? formData.keywords
-          : typeof formData.keywords === 'string'
-            ? (formData.keywords as string).split(',').map((k: string) => k.trim()).filter(Boolean)
-            : [];
-            
-        const searchTerms = [formData.title, ...normalizedKeywords].filter(Boolean);
+        const searchTerms = [formData.title, ...formData.keywords].filter(Boolean);
         const refRes = await fetch(GAS_WEB_APP_URL, {
           method: 'POST',
-          mode: 'cors',
-          redirect: 'follow',
           body: JSON.stringify({ 
             action: 'getSupportingReferences', 
             keywords: searchTerms 

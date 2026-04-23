@@ -115,18 +115,9 @@ export const extractMetadataWithAI = async (textSnippet: string, existingData: P
       // SYNC GUARD: Fetch Supporting References as part of the PRIMARY workflow
       if (merged.keywords && merged.keywords.length > 0) {
         try {
-          // FIX: Normalize keywords to prevent String Shattering syndrome
-          const normalizedKeywords = Array.isArray(merged.keywords)
-            ? merged.keywords
-            : typeof merged.keywords === 'string'
-              ? (merged.keywords as string).split(',').map((k: string) => k.trim()).filter(Boolean)
-              : [];
-              
-          const searchTerms = [merged.title, ...normalizedKeywords].filter(Boolean);
+          const searchTerms = [merged.title, ...merged.keywords].filter(Boolean);
           const refRes = await fetch(GAS_WEB_APP_URL, {
             method: 'POST',
-            mode: 'cors',
-            redirect: 'follow',
             body: JSON.stringify({ 
               action: 'getSupportingReferences', 
               keywords: searchTerms 

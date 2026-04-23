@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { 
   Chart as ChartJS, 
   CategoryScale, 
@@ -68,7 +68,6 @@ const DashboardMain: React.FC<DashboardMainProps> = ({
   publicationItems 
 }) => {
   const navigate = useNavigate();
-  const [isCumulative, setIsCumulative] = useState(true);
 
   // --- AGGREGATION LOGIC ---
 
@@ -105,19 +104,13 @@ const DashboardMain: React.FC<DashboardMainProps> = ({
           }).length;
         });
 
-        // Cumulative Growth vs Monthly Fluctuations
+        // Cumulative Growth
         let total = 0;
-        const resultData = counts.map(c => {
-          if (isCumulative) {
-            total += c;
-            return total;
-          }
-          return c;
-        });
+        const cumulative = counts.map(c => total += c);
 
         return {
           label: ds.label,
-          data: resultData,
+          data: cumulative,
           borderColor: ds.color,
           backgroundColor: `${ds.color}20`,
           tension: 0.4,
@@ -127,7 +120,7 @@ const DashboardMain: React.FC<DashboardMainProps> = ({
         };
       })
     };
-  }, [libraryItems, isCumulative]);
+  }, [libraryItems]);
 
   // Block B: Distribution
   const categoryDistribution = useMemo(() => {
@@ -217,34 +210,10 @@ const DashboardMain: React.FC<DashboardMainProps> = ({
       {/* BLOK A: LIBRARY GROWTH */}
       <section className="bg-white border border-gray-100 rounded-[3rem] p-8 md:p-12 shadow-sm relative overflow-hidden group">
          <div className="flex items-center justify-between mb-10 relative z-10">
-            <div className="space-y-3">
+            <div className="space-y-1">
                <h3 className="text-xl font-black text-[#004A74] flex items-center gap-3">
                   LIBRARY GROWTH
                </h3>
-
-               {/* TOGGLE SWITCH */}
-               <div className="flex items-center gap-2">
-                 <button
-                   onClick={() => setIsCumulative(true)}
-                   className={`px-3 py-1.5 text-[10px] md:text-xs font-black uppercase rounded-full transition-all ${
-                     isCumulative 
-                       ? 'bg-[#004A74] text-white shadow-sm' 
-                       : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
-                   }`}
-                 >
-                   Cumulative
-                 </button>
-                 <button
-                   onClick={() => setIsCumulative(false)}
-                   className={`px-3 py-1.5 text-[10px] md:text-xs font-black uppercase rounded-full transition-all ${
-                     !isCumulative 
-                       ? 'bg-[#FED400] text-[#004A74] shadow-sm' 
-                       : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
-                   }`}
-                 >
-                   Monthly
-                 </button>
-               </div>
             </div>
             <div className="flex flex-wrap justify-end gap-x-4 gap-y-2 max-w-[200px] md:max-w-none">
                <div className="flex items-center gap-2">
