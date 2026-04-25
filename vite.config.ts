@@ -12,7 +12,7 @@ export default defineConfig({
       manifest: {
         name: 'Xeenaps',
         short_name: 'Xeenaps',
-        description: 'A modern Personal Knowledge Management application',
+        description: 'A modern Smart Knowledge Ecosystem application',
         theme_color: '#FFFFFF',
         background_color: '#FFFFFF',
         display: 'standalone',

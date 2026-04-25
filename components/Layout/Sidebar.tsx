@@ -34,7 +34,7 @@ import {
   Book,
   LogOut
 } from 'lucide-react';
-import { BRAND_ASSETS, SPREADSHEET_CONFIG } from '../../assets';
+import { BRAND_ASSETS, SPREADSHEET_CONFIG, APP_VERSION } from '../../assets';
 import Swal from 'sweetalert2';
 import { XEENAPS_SWAL_CONFIG } from '../../utils/swalUtils';
 
@@ -199,9 +199,20 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
         >
           <img 
             src={BRAND_ASSETS.LOGO_FULL} 
-            className="w-full h-auto object-contain"
+            className="w-full h-auto object-contain mb-2"
             alt="Xeenaps Full"
           />
+        </div>
+
+        {/* Version Info (Attached inside the logo area at the bottom) */}
+        <div 
+          className={`absolute bottom-1 lg:bottom-2 left-0 right-0 flex justify-center transition-all duration-700 ease-in-out transform ${
+            isExpanded 
+              ? 'opacity-100 translate-y-0' 
+              : 'opacity-0 translate-y-4 pointer-events-none'
+          }`}
+        >
+          <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">{APP_VERSION}</span>
         </div>
       </div>
 
@@ -481,6 +492,22 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
         <div className="border-t border-white/20 mx-4" />
         <div className="px-2 pt-2 mb-4 lg:mb-6 space-y-0.5">
           <button 
+            onClick={handleExploreClick}
+            className="w-full group flex items-center p-2 md:p-2.5 rounded-xl transition-all duration-300 transform active:scale-95 text-white/90 hover:bg-white/10 hover:text-[#FED400] outline-none"
+          >
+            <div className="shrink-0 flex items-center justify-center w-7 md:w-8 group-hover:scale-110 transition-transform duration-300">
+              <img 
+                src={BRAND_ASSETS.MAINDI_LOGO} 
+                className="w-5 lg:w-6 h-5 lg:h-6 object-contain" 
+                alt="Maindi" 
+              />
+            </div>
+            <div className={`ml-2 overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0'}`}>
+              <span className="text-xs md:text-sm font-bold whitespace-nowrap">Explore Maindi</span>
+            </div>
+          </button>
+
+          <button 
             onClick={() => {
               Swal.fire({
                 ...XEENAPS_SWAL_CONFIG,
@@ -503,22 +530,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
             </div>
             <div className={`ml-2 overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0'}`}>
               <span className="text-xs md:text-sm font-bold whitespace-nowrap text-red-400">Lock App</span>
-            </div>
-          </button>
-          
-          <button 
-            onClick={handleExploreClick}
-            className="w-full group flex items-center p-2 md:p-2.5 rounded-xl transition-all duration-300 transform active:scale-95 text-white/90 hover:bg-white/10 hover:text-[#FED400] outline-none"
-          >
-            <div className="shrink-0 flex items-center justify-center w-7 md:w-8 group-hover:scale-110 transition-transform duration-300">
-              <img 
-                src={BRAND_ASSETS.MAINDI_LOGO} 
-                className="w-5 lg:w-6 h-5 lg:h-6 object-contain" 
-                alt="Maindi" 
-              />
-            </div>
-            <div className={`ml-2 overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0'}`}>
-              <span className="text-xs md:text-sm font-bold whitespace-nowrap">Explore Maindi</span>
             </div>
           </button>
         </div>

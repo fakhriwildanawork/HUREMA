@@ -8,6 +8,8 @@ export const BRAND_ASSETS = {
   USER_DEFAULT: "https://lh3.googleusercontent.com/d/1wYTtwTX8m7X273W5f-oAR__fZj9bZsAS",
 };
 
+export const APP_VERSION = "Version 1.0";
+
 export const SPREADSHEET_CONFIG = {
   TUTORIAL_CSV: 'https://docs.google.com/spreadsheets/d/1YHxDvqpxqNzb0n__z2_uKyOCZOfQl6WbeymR6xYOTx8/export?format=csv&gid=0',
   EXPLORE_MAINDI_CSV: 'https://docs.google.com/spreadsheets/d/1HYNx5hJn_0uM3aKlrjfaeTFYkkUDune6rdUuTxWfOQg/export?format=csv&gid=0',
