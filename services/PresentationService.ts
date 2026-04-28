@@ -140,44 +140,94 @@ export const createPresentationWorkflow = async (
     const langKey = config.language.toLowerCase();
     const referenceTitle = referenceTitleMap[langKey] || "REFERENCES";
 
-    const blueprintPrompt = `ACT AS A SENIOR TECHNICAL STRATEGIST.
-    TASK: CREATE A ${aiContentSlidesCount}-SLIDE DEEP ANALYSIS DECK IN ${config.language} BY CROSS-ANALYZING ALL PROVIDED SOURCES.
-    --- USER STRATEGIC GOAL ---
-    ${config.context || "A unified synthesis and technical deep-dive of these collections."}
-    --- MANDATORY JSON RULES ---
-    1. RETURN ROOT OBJECT WITH "slides" (Array) AND "citations" (Array).
-    2. DATA MAPPING RULES:
-       - 1_CARD: "data" must be a STRING.
-       - 2_COL: "data" must { "left": "...", "right": "..." }.
-       - 3_COL, 2X2, STACKING: "data" must be an Array: { "h": "...", "b": "..." }.
-    3. CITATIONS: Generate Harvard list ONLY using provided 'COLLECTION METADATA'.
-    4. NO CONVERSATION. ONLY RAW JSON.
-    5. LANGUAGE: ${config.language}.
-    COLLECTION METADATA:
-    ${items.map(it => `- TITLE: ${it.title} | AUTHORS: ${it.authors.join(', ')} | YEAR: ${it.year} | PUB: ${it.publisher}`).join('\n')}
-    SOURCE CONTEXT:
-    ${contextSnippet}
-    SCHEMA_TEMPLATE:
-    {
-      "slides": [ { "layoutType": "1_CARD", "title": "...", "data": "Main analysis text" } ],
-      "citations": ["Surname, I. (Year) 'Title'. Journal."]
-    }`;
+    // BATCH PROCESSING TO PREVENT 60s TIMEOUT ON GAS
+    const BATCH_SIZE = 4;
+    const numBatches = Math.ceil(aiContentSlidesCount / BATCH_SIZE);
+    
+    let allSlides: any[] = [];
+    let allCitations: string[] = [];
 
-    const aiResText = await callAiProxy('gemini', blueprintPrompt);
-    if (!aiResText) throw new Error("AI Synthesis Interrupt.");
+    for (let batchIdx = 0; batchIdx < numBatches; batchIdx++) {
+      const isLastBatch = batchIdx === numBatches - 1;
+      const startSlide = batchIdx * BATCH_SIZE + 1;
+      const slidesInThisBatch = Math.min(BATCH_SIZE, aiContentSlidesCount - batchIdx * BATCH_SIZE);
+      const endSlide = startSlide + slidesInThisBatch - 1;
 
-    const cleanedJson = cleanAiJson(aiResText);
-    let blueprint = JSON.parse(cleanedJson);
+      onProgress?.(`Synthesizing slides ${startSlide} to ${endSlide} of ${aiContentSlidesCount}...`);
 
-    if (Array.isArray(blueprint)) {
-      blueprint = { slides: blueprint, citations: [] };
-    } else if (!blueprint.slides && blueprint.deck) {
-      blueprint.slides = blueprint.deck;
-    } else if (!blueprint.slides && blueprint.presentation) {
-      blueprint.slides = blueprint.presentation;
+      const prevTitles = allSlides.map(s => s.title).join(', ');
+
+      const blueprintPrompt = `ACT AS A SENIOR TECHNICAL STRATEGIST.
+      TASK: GENERATE PART ${batchIdx + 1} OF A DEEP ANALYSIS DECK IN ${config.language} BY CROSS-ANALYZING ALL PROVIDED SOURCES.
+      PRECISE INSTRUCTION: GENERATE EXACTLY ${slidesInThisBatch} SLIDES (SLIDES ${startSlide} TO ${endSlide} OF ${aiContentSlidesCount}).
+      ${prevTitles ? `PREVIOUSLY GENERATED SLIDES: [${prevTitles}]. CONTINUE THE NARRATIVE LOGICALLY WITHOUT REPEATING THESE.` : 'THIS IS THE BEGINNING OF THE PRESENTATION. START WITH AN IMPACTFUL OPENING.'}
+      --- USER STRATEGIC GOAL ---
+      ${config.context || "A unified synthesis and technical deep-dive of these collections."}
+      --- MANDATORY JSON RULES ---
+      1. RETURN ROOT OBJECT WITH "slides" (Array) AND "citations" (Array).
+      2. DATA MAPPING RULES:
+         - 1_CARD: "data" must be a STRING.
+         - 2_COL: "data" must { "left": "...", "right": "..." }.
+         - 3_COL, 2X2, STACKING: "data" must be an Array: { "h": "...", "b": "..." }.
+      3. CITATIONS: ${isLastBatch ? "Generate Harvard list ONLY using provided 'COLLECTION METADATA'." : "Leave empty for this part."}
+      4. NO CONVERSATION. ONLY RAW JSON.
+      5. LANGUAGE: ${config.language}.
+      COLLECTION METADATA:
+      ${items.map(it => `- TITLE: ${it.title} | AUTHORS: ${it.authors.join(', ')} | YEAR: ${it.year} | PUB: ${it.publisher}`).join('\n')}
+      SOURCE CONTEXT:
+      ${contextSnippet}
+      SCHEMA_TEMPLATE:
+      {
+        "slides": [ { "layoutType": "1_CARD", "title": "...", "data": "Main analysis text" } ],
+        "citations": ["Surname, I. (Year) 'Title'. Journal."]
+      }`;
+
+      // Loop safety retry for invalid JSON
+      let attempt = 0;
+      let blueprintPart: any = null;
+      let aiResText = "";
+
+      while (attempt < 2 && !blueprintPart) {
+        attempt++;
+        aiResText = await callAiProxy('gemini', blueprintPrompt, undefined, undefined, 'json');
+        if (!aiResText) {
+          if (attempt === 2) throw new Error(`AI Synthesis Interrupt during part ${batchIdx + 1}.`);
+          continue;
+        }
+
+        try {
+          const cleanedJson = cleanAiJson(aiResText);
+          blueprintPart = JSON.parse(cleanedJson);
+        } catch (e) {
+          if (attempt === 2) throw new Error(`JSON Parse Error during part ${batchIdx + 1}.`);
+          console.warn("JSON Parse failed, retrying...");
+          blueprintPart = null;
+        }
+      }
+
+      if (Array.isArray(blueprintPart)) {
+        blueprintPart = { slides: blueprintPart, citations: [] };
+      } else if (blueprintPart && !blueprintPart.slides && blueprintPart.deck) {
+        blueprintPart.slides = blueprintPart.deck;
+      } else if (blueprintPart && !blueprintPart.slides && blueprintPart.presentation) {
+        blueprintPart.slides = blueprintPart.presentation;
+      }
+
+      if (blueprintPart && blueprintPart.slides && Array.isArray(blueprintPart.slides)) {
+        allSlides = allSlides.concat(blueprintPart.slides.slice(0, slidesInThisBatch));
+      }
+
+      if (blueprintPart && blueprintPart.citations && Array.isArray(blueprintPart.citations)) {
+        allCitations = allCitations.concat(blueprintPart.citations);
+      }
     }
 
-    if (!blueprint.slides || !Array.isArray(blueprint.slides)) throw new Error("Invalid Slide Blueprint.");
+    if (allSlides.length === 0) throw new Error("Invalid Slide Blueprint.");
+
+    let blueprint = {
+      slides: allSlides,
+      citations: allCitations
+    };
 
     // RENDERING
     Templates.drawCoverUniversal(pptx.addSlide(), config.title, config.presenters, config.theme, logoBase64);
