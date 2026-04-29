@@ -699,8 +699,8 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
         if (dbSuccess && patchedItem.insightJsonId) {
           // PING / VERIFICATION LOOP - Cara A (Menahan Loading Register)
           Swal.update({
-            title: 'VERIFYING FILE SYSTEM',
-            text: 'Synchronizing generated analytical files...',
+            title: 'VERIFYING',
+            text: 'Final checking...',
             showConfirmButton: false,
           });
 
