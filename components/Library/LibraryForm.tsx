@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { SourceType, FileFormat, LibraryItem, LibraryType, ExtractionResult, SupportingData } from '../../types';
-import { processLibraryFileInCloud, uploadAndStoreFile, extractFromUrl, callIdentifierSearch } from '../../services/gasService';
+import { processLibraryFileInCloud, uploadAndStoreFile, extractFromUrl, callIdentifierSearch, fetchFileContent } from '../../services/gasService';
 import { upsertLibraryItemToSupabase } from '../../services/LibrarySupabaseService';
 import { extractMetadataWithAI } from '../../services/AddCollectionService';
 import { GAS_WEB_APP_URL } from '../../constants';
@@ -695,6 +695,26 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
         };
 
         const dbSuccess = await upsertLibraryItemToSupabase(patchedItem);
+
+        if (dbSuccess && patchedItem.insightJsonId) {
+          // PING / VERIFICATION LOOP - Cara A (Menahan Loading Register)
+          Swal.update({
+            title: 'VERIFYING FILE SYSTEM',
+            text: 'Synchronizing generated analytical files...',
+            showConfirmButton: false,
+          });
+
+          const maxRetries = 4;
+          const delayMs = 1500;
+          
+          for (let i = 0; i < maxRetries; i++) {
+             const check = await fetchFileContent(patchedItem.insightJsonId, patchedItem.storageNodeUrl);
+             if (check && Object.keys(check).length > 0) {
+                break; // File is ready!
+             }
+             await new Promise(r => setTimeout(r, delayMs));
+          }
+        }
 
         Swal.close();
         if (dbSuccess) {
