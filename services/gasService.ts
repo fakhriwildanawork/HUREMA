@@ -380,6 +380,33 @@ export const fetchFileContent = async (fileId: string, nodeUrl?: string): Promis
 };
 
 /**
+ * Save Insight Content back to Drive via GAS (saveJsonFile)
+ */
+export const saveInsightContentToDrive = async (item: LibraryItem, insightsData: any): Promise<boolean> => {
+  try {
+    if (!GAS_WEB_APP_URL || !item.insightJsonId) return false;
+    const targetUrl = item.storageNodeUrl || GAS_WEB_APP_URL;
+    
+    const payload = {
+      action: 'saveJsonFile',
+      fileId: item.insightJsonId,
+      fileName: `insight_${item.id}.json`,
+      content: JSON.stringify(insightsData)
+    };
+
+    const response = await fetch(targetUrl, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    const result = await response.json();
+    return result.status === 'success';
+  } catch (e) {
+    console.error("Failed to save insight to Drive:", e);
+    return false;
+  }
+};
+
+/**
  * Process Library File in Cloud (Heavy Lifting Worker)
  * Delegates complex extraction and file saving to GAS to avoid browser timeouts.
  */

@@ -59,7 +59,7 @@ import { XEENAPS_SWAL_CONFIG } from '../../utils/swalUtils';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
 // Fix: Removed non-existent saveLibraryItem and imported Supabase services
-import { deleteLibraryItem, generateCitations, generateInsight, fetchFileContent, translateInsightSection } from '../../services/gasService';
+import { deleteLibraryItem, generateCitations, generateInsight, fetchFileContent, translateInsightSection, saveInsightContentToDrive } from '../../services/gasService';
 import { upsertLibraryItemToSupabase, deleteLibraryItemFromSupabase } from '../../services/LibrarySupabaseService';
 import { FormDropdown } from '../Common/FormComponents';
 import Header from '../Layout/Header';
@@ -800,6 +800,20 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
     
     try {
       const res = await upsertLibraryItemToSupabase(updatedItem);
+      
+      // Also save to dynamic JSON file on Google Drive if insightJsonId exists
+      if (updatedItem.insightJsonId) {
+        let currentInsights = await fetchFileContent(updatedItem.insightJsonId, updatedItem.storageNodeUrl);
+        if (!currentInsights) {
+          currentInsights = {};
+        }
+        const mergedInsights = {
+          ...currentInsights,
+          [sectionName]: newHtml
+        };
+        await saveInsightContentToDrive(updatedItem, mergedInsights);
+      }
+
       if (res) {
         showXeenapsToast('success', 'Highlight dan catatan berhasil disimpan!');
       } else {
