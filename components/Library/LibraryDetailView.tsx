@@ -369,8 +369,8 @@ const ElegantList: React.FC<{ text?: any; className?: string; isLoading?: boolea
 
   if (text === null || text === undefined || text === 'N/A') return null;
   
-  // NARRATIVE DETECTION: If text contains specific HTML highlight tags or is very long narrative
-  const isNarrative = typeof text === 'string' && (text.includes('<span') || text.includes('<b') || text.length > 500);
+  // NARRATIVE DETECTION: If text is standard paragraphs without newline/bullet list structure
+  const isNarrative = typeof text === 'string' && !text.includes('\n') && !text.includes('•') && (text.includes('<span') || text.includes('<b') || text.length > 500);
 
   if (isNarrative) {
     return (
@@ -418,6 +418,238 @@ const ElegantList: React.FC<{ text?: any; className?: string; isLoading?: boolea
   );
 };
 
+/**
+ * Interactive Highlighter and Formatter Editor component
+ */
+const HighlightWorkspace: React.FC<{
+  initialHtml: string;
+  onSave: (newHtml: string) => void;
+  onCancel: () => void;
+  label: string;
+}> = ({ initialHtml, onSave, onCancel, label }) => {
+  const [html, setHtml] = useState(initialHtml);
+  const [highlightColor, setHighlightColor] = useState('#FED400');
+  const [textColor, setTextColor] = useState('#004A74');
+  const [isBold, setIsBold] = useState(false);
+  const [isItalic, setIsItalic] = useState(false);
+  const [isUnderline, setIsUnderline] = useState(false);
+  const [noteText, setNoteText] = useState('');
+  const editorRef = useRef<HTMLDivElement>(null);
+
+  const applyFormatToSelection = () => {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+      showXeenapsToast('info', 'Silakan pilih kata atau kalimat di dalam teks terlebih dahulu.');
+      return;
+    }
+
+    // Verify selection is within our editable div
+    let node = selection.anchorNode;
+    let isInside = false;
+    while (node) {
+      if (node === editorRef.current) {
+        isInside = true;
+        break;
+      }
+      node = node.parentNode;
+    }
+
+    if (!isInside) {
+      showXeenapsToast('info', 'Silakan pilih teks hanya di dalam area editor.');
+      return;
+    }
+
+    const range = selection.getRangeAt(0);
+    const span = document.createElement('span');
+    span.className = 'xeenaps-highlight relative cursor-pointer border-b border-dashed shadow-sm transition-all duration-200';
+    
+    let styles = [];
+    if (highlightColor) styles.push(`background-color: ${highlightColor} !important`);
+    if (textColor) styles.push(`color: ${textColor} !important`);
+    if (isBold) styles.push(`font-weight: bold !important`);
+    if (isItalic) styles.push(`font-style: italic !important`);
+    if (isUnderline) styles.push(`text-decoration: underline !important`);
+    
+    span.style.cssText = styles.join('; ');
+    
+    if (noteText.trim()) {
+      span.setAttribute('data-note', noteText.trim());
+    }
+
+    try {
+      const contents = range.extractContents();
+      span.appendChild(contents);
+      range.insertNode(span);
+      
+      if (editorRef.current) {
+        setHtml(editorRef.current.innerHTML);
+      }
+      setNoteText(''); // Reset note input
+      showXeenapsToast('success', 'Highlight & format diterapkan!');
+    } catch (e) {
+      console.error(e);
+      showXeenapsToast('error', 'Gagal menerapkan highlight.');
+    }
+  };
+
+  const removeFormatFromSelection = () => {
+    document.execCommand('removeFormat');
+    if (editorRef.current) {
+      setHtml(editorRef.current.innerHTML);
+    }
+    showXeenapsToast('success', 'Format berhasil dibersihkan.');
+  };
+
+  const colors = [
+    { name: 'Yellow', value: '#FED400' },
+    { name: 'Green', value: '#86EFAC' },
+    { name: 'Blue', value: '#93C5FD' },
+    { name: 'Pink/Red', value: '#FCA5A5' },
+    { name: 'Orange', value: '#FDBA74' },
+    { name: 'Clear', value: 'transparent' },
+  ];
+
+  const textColors = [
+    { name: 'Dark Blue', value: '#004A74' },
+    { name: 'Red', value: '#EF4444' },
+    { name: 'Green', value: '#10B981' },
+    { name: 'Black', value: '#000000' },
+    { name: 'White', value: '#FFFFFF' },
+    { name: 'Clear', value: '' },
+  ];
+
+  return (
+    <div className="space-y-4 bg-gray-50/70 p-4 rounded-3xl border border-gray-100 shadow-inner animate-in fade-in duration-200">
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] font-black uppercase text-[#004A74]/60 tracking-wider">Highlighter & Editor Workspace</span>
+        <span className="text-[9px] font-bold text-gray-400">Pilih/seleksi teks lalu terapkan format</span>
+      </div>
+
+      <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-3.5">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-[8px] font-black text-gray-400 uppercase tracking-wider">Highlight:</span>
+            <div className="flex gap-1">
+              {colors.map(c => (
+                <button
+                  key={c.name}
+                  onClick={() => setHighlightColor(c.value)}
+                  className={`w-5 h-5 rounded-full border-2 transition-all ${
+                    highlightColor === c.value ? 'border-[#004A74] scale-110 shadow-sm' : 'border-gray-200 hover:scale-105'
+                  }`}
+                  style={{ backgroundColor: c.value === 'transparent' ? '#F3F4F6' : c.value }}
+                  title={`${c.name} Highlight`}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 border-l border-gray-100 pl-4">
+            <span className="text-[8px] font-black text-gray-400 uppercase tracking-wider">Text:</span>
+            <div className="flex gap-1">
+              {textColors.map(tc => (
+                <button
+                  key={tc.name}
+                  onClick={() => setTextColor(tc.value)}
+                  className={`w-5 h-5 rounded-full border-2 transition-all ${
+                    textColor === tc.value ? 'border-[#004A74] scale-110 shadow-sm' : 'border-gray-200 hover:scale-105'
+                  }`}
+                  style={{ backgroundColor: tc.value || '#F3F4F6' }}
+                  title={`${tc.name} Text`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-gray-100">
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setIsBold(!isBold)}
+              className={`p-2 w-8 h-8 rounded-lg font-black text-xs transition-all ${
+                isBold ? 'bg-[#004A74] text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+              }`}
+              title="Bold"
+            >
+              B
+            </button>
+            <button
+              onClick={() => setIsItalic(!isItalic)}
+              className={`p-2 w-8 h-8 rounded-lg font-black italic text-xs transition-all ${
+                isItalic ? 'bg-[#004A74] text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+              }`}
+              title="Italic"
+            >
+              I
+            </button>
+            <button
+              onClick={() => setIsUnderline(!isUnderline)}
+              className={`p-2 w-8 h-8 rounded-lg font-black underline text-xs transition-all ${
+                isUnderline ? 'bg-[#004A74] text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+              }`}
+              title="Underline"
+            >
+              U
+            </button>
+            <button
+              onClick={removeFormatFromSelection}
+              className="px-2.5 py-2 h-8 rounded-lg bg-red-50 text-red-500 text-[9px] font-black uppercase tracking-tight hover:bg-red-100 transition-all cursor-pointer"
+              title="Hapus Format Seleksi"
+            >
+              Clear Format
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2 flex-grow max-w-md">
+            <div className="relative flex-grow font-sans">
+              <input
+                type="text"
+                value={noteText}
+                onChange={e => setNoteText(e.target.value)}
+                placeholder="Tambahkan catatan opsional..."
+                className="w-full pl-8 pr-3 py-1.5 bg-gray-50 border border-gray-100 rounded-xl text-xs font-semibold focus:bg-white text-[#004A74] outline-none"
+              />
+              <StickyNote className="absolute left-2.5 top-2 w-3.5 h-3.5 text-gray-400 font-bold" />
+            </div>
+            <button
+              onClick={applyFormatToSelection}
+              className="px-4 py-2 bg-[#004A74] text-[#FED400] rounded-xl text-[9px] font-black uppercase tracking-wider hover:scale-105 active:scale-95 transition-all flex items-center gap-1 shrink-0 cursor-pointer"
+            >
+              Apply
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="relative">
+        <div
+          ref={editorRef}
+          contentEditable
+          suppressContentEditableWarning
+          className="w-full min-h-[150px] p-5 bg-white border border-gray-200 rounded-2xl text-sm leading-relaxed text-[#004A74] font-medium outline-none focus:border-[#004A74] transition-all whitespace-pre-wrap"
+          dangerouslySetInnerHTML={{ __html: html }}
+          onInput={(e) => setHtml(e.currentTarget.innerHTML)}
+        />
+      </div>
+
+      <div className="flex justify-end gap-2 pt-2">
+        <button
+          onClick={onCancel}
+          className="px-4 py-2 bg-gray-200 text-gray-600 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-gray-300 transition-all cursor-pointer"
+        >
+          Batal
+        </button>
+        <button
+          onClick={() => onSave(html)}
+          className="px-5 py-2 bg-[#004A74] text-[#FED400] rounded-xl text-xs font-black uppercase tracking-wider hover:scale-105 active:scale-95 transition-all cursor-pointer"
+        >
+          Simpan Highlight
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, isLoading, isMobileSidebarOpen, onRefresh, onUpdateOptimistic, onDeleteOptimistic, isLocalOverlay }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -428,6 +660,91 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
   const [showQuestions, setShowQuestions] = useState(false); 
   const [showConsultations, setShowConsultations] = useState(false); 
   const [showNotebook, setShowNotebook] = useState(false); 
+
+  // Annotations & Highlights state
+  const [editingSection, setEditingSection] = useState<string | null>(null);
+  const [tempHtml, setTempHtml] = useState<string>('');
+  const [hoveredNote, setHoveredNote] = useState<{ text: string; x: number; y: number } | null>(null);
+
+  const handleStartEditing = (sectionName: string) => {
+    setEditingSection(sectionName);
+    let initialValue = '';
+    if (sectionName === 'summary') {
+      initialValue = currentItem.summary || '';
+    } else if (sectionName === 'strength') {
+      initialValue = currentItem.strength || '';
+    } else if (sectionName === 'weakness') {
+      initialValue = currentItem.weakness || '';
+    }
+    setTempHtml(initialValue);
+  };
+
+  const handleSaveSection = async (sectionName: string, newHtml: string) => {
+    const updatedItem = {
+      ...currentItem,
+      [sectionName]: newHtml,
+      updatedAt: new Date().toISOString()
+    };
+    
+    setCurrentItem(updatedItem);
+    setEditingSection(null);
+    showXeenapsToast('info', 'Menyimpan perubahan ke basis data...');
+    
+    if (onUpdateOptimistic) {
+      onUpdateOptimistic(updatedItem);
+    }
+    
+    try {
+      const res = await upsertLibraryItemToSupabase(updatedItem);
+      if (res) {
+        showXeenapsToast('success', 'Highlight dan catatan berhasil disimpan!');
+      } else {
+        showXeenapsToast('error', 'Gagal menyimpan perubahan');
+      }
+    } catch (e) {
+      showXeenapsToast('error', 'Terjadi kesalahan sistem saat menyimpan');
+    }
+  };
+
+  const handleContainerMouseOver = (e: React.MouseEvent) => {
+    const target = (e.target as HTMLElement).closest('.xeenaps-highlight');
+    if (target) {
+      const note = target.getAttribute('data-note');
+      if (note) {
+        const rect = target.getBoundingClientRect();
+        setHoveredNote({
+          text: note,
+          x: rect.left + rect.width / 2,
+          y: rect.top - 8
+        });
+      }
+    }
+  };
+
+  const handleContainerMouseOut = (e: React.MouseEvent) => {
+    const target = (e.target as HTMLElement).closest('.xeenaps-highlight');
+    if (target) {
+      setHoveredNote(null);
+    }
+  };
+
+  const handleContainerClick = (e: React.MouseEvent) => {
+    const target = (e.target as HTMLElement).closest('.xeenaps-highlight');
+    if (target) {
+      const note = target.getAttribute('data-note');
+      if (note && editingSection === null) {
+        Swal.fire({
+          ...XEENAPS_SWAL_CONFIG,
+          title: "Catatan Highlight",
+          html: `<div class="p-3 border-l-4 border-[#004A74] bg-[#004A74]/5 rounded-r-xl text-[#004A74] text-sm font-semibold text-left leading-relaxed">${note}</div>`,
+          icon: "info",
+          confirmButtonText: "Tutup",
+          confirmButtonColor: "#004A74"
+        });
+      }
+    }
+  };
+
   const [isShareModalOpen, setIsShareModalOpen] = useState(false); 
   const [isTracerPickerOpen, setIsTracerPickerOpen] = useState(false);
   const [isTeachingPickerOpen, setIsTeachingPickerOpen] = useState(false);
@@ -788,7 +1105,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
   const hasContent = !!currentItem.extractedJsonId;
   const isAnyLoading = isGeneratingInsights || isFetchingStoredInsights;
 
-  // New Subcomponent for Section Header with Translation Button
+  // New Subcomponent for Section Header with Translation and Highlighting Button
   const SectionHeader: React.FC<{ 
     label: string; 
     icon: React.ReactNode; 
@@ -800,32 +1117,45 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
         {icon} {label}
       </h3>
       {hasContent && !isAnyLoading && (
-        <div className="relative group">
-          <button 
-            onClick={() => setOpenTranslationMenu(openTranslationMenu === sectionName ? null : sectionName)}
-            className="p-1.5 text-[#004A74] bg-white border border-gray-100 rounded-lg shadow-sm hover:scale-110 transition-all z-10"
-          >
-            <LanguageIcon className="w-3.5 h-3.5 stroke-[2.5]" />
-          </button>
-          <MiniTooltip text="Translate Section" />
-          {openTranslationMenu === sectionName && (
-            <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-2xl border border-gray-100 p-1 z-[110] animate-in fade-in zoom-in-95">
-              <div className="p-2 border-b border-gray-50 mb-1">
-                 <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Select Language</p>
+        <div className="flex items-center gap-1.5 relative z-[1002]">
+          {/* Highlight & Edit Button */}
+          <div className="relative group">
+            <button 
+              onClick={() => handleStartEditing(sectionName)}
+              className="p-1.5 text-[#004A74] bg-white border border-gray-100 rounded-lg shadow-sm hover:scale-110 transition-all cursor-pointer"
+            >
+              <PencilIcon className="w-3.5 h-3.5 stroke-[2.5]" />
+            </button>
+            <MiniTooltip text="Highlights & Notes" />
+          </div>
+
+          <div className="relative group">
+            <button 
+              onClick={() => setOpenTranslationMenu(openTranslationMenu === sectionName ? null : sectionName)}
+              className="p-1.5 text-[#004A74] bg-white border border-gray-100 rounded-lg shadow-sm hover:scale-110 transition-all cursor-pointer"
+            >
+              <LanguageIcon className="w-3.5 h-3.5 stroke-[2.5]" />
+            </button>
+            <MiniTooltip text="Translate Section" />
+            {openTranslationMenu === sectionName && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-2xl border border-gray-100 p-1 z-[110] animate-in fade-in zoom-in-95 font-sans">
+                <div className="p-2 border-b border-gray-50 mb-1">
+                   <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Select Language</p>
+                </div>
+                <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                  {LANG_OPTIONS.map((lang) => (
+                    <button 
+                      key={lang.code}
+                      onClick={() => handleTranslateSection(sectionName, lang.code)}
+                      className="w-full text-left px-3 py-2 text-[10px] font-bold text-[#004A74] hover:bg-gray-50 rounded-lg transition-all flex items-center justify-between"
+                    >
+                      {lang.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="max-h-60 overflow-y-auto custom-scrollbar">
-                {LANG_OPTIONS.map((lang) => (
-                  <button 
-                    key={lang.code}
-                    onClick={() => handleTranslateSection(sectionName, lang.code)}
-                    className="w-full text-left px-3 py-2 text-[10px] font-bold text-[#004A74] hover:bg-gray-50 rounded-lg transition-all flex items-center justify-between"
-                  >
-                    {lang.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -1157,14 +1487,27 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                       sectionName="summary"
                       hasContent={!!currentItem.summary}
                     />
-                    {isAnyLoading || translatingSection === 'summary' ? (
+                    {editingSection === 'summary' ? (
+                      <HighlightWorkspace 
+                        initialHtml={tempHtml} 
+                        label="Summary" 
+                        onSave={(newHtml) => handleSaveSection('summary', newHtml)} 
+                        onCancel={() => setEditingSection(null)} 
+                      />
+                    ) : isAnyLoading || translatingSection === 'summary' ? (
                       <div className="space-y-3">
                         <div className="h-4 w-full skeleton rounded-md" />
                         <div className="h-4 w-full skeleton rounded-md" />
                         <div className="h-4 w-3/4 skeleton rounded-md" />
                       </div>
                     ) : (
-                      <div className="text-sm leading-relaxed text-[#004A74] font-medium" dangerouslySetInnerHTML={{ __html: currentItem.summary || 'Summary pending analysis.' }} />
+                      <div 
+                        className="text-sm leading-relaxed text-[#004A74] font-medium transition-all" 
+                        onMouseOver={handleContainerMouseOver}
+                        onMouseOut={handleContainerMouseOut}
+                        onClick={handleContainerClick}
+                        dangerouslySetInnerHTML={{ __html: currentItem.summary || 'Summary pending analysis.' }} 
+                      />
                     )}
                   </div>
 
@@ -1175,10 +1518,24 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                       sectionName="strength"
                       hasContent={!!currentItem.strength}
                     />
-                    {translatingSection === 'strength' ? (
+                    {editingSection === 'strength' ? (
+                      <HighlightWorkspace 
+                        initialHtml={tempHtml} 
+                        label="Strengths" 
+                        onSave={(newHtml) => handleSaveSection('strength', newHtml)} 
+                        onCancel={() => setEditingSection(null)} 
+                      />
+                    ) : translatingSection === 'strength' ? (
                       <div className="h-20 w-full skeleton rounded-xl" />
                     ) : (
-                      <ElegantList text={currentItem.strength} isLoading={isAnyLoading} />
+                      <div 
+                        onMouseOver={handleContainerMouseOver}
+                        onMouseOut={handleContainerMouseOut}
+                        onClick={handleContainerClick}
+                        className="transition-all"
+                      >
+                        <ElegantList text={currentItem.strength} isLoading={isAnyLoading} />
+                      </div>
                     )}
                   </div>
 
@@ -1189,10 +1546,24 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                       sectionName="weakness"
                       hasContent={!!currentItem.weakness}
                     />
-                    {translatingSection === 'weakness' ? (
+                    {editingSection === 'weakness' ? (
+                      <HighlightWorkspace 
+                        initialHtml={tempHtml} 
+                        label="Weaknesses" 
+                        onSave={(newHtml) => handleSaveSection('weakness', newHtml)} 
+                        onCancel={() => setEditingSection(null)} 
+                      />
+                    ) : translatingSection === 'weakness' ? (
                       <div className="h-20 w-full skeleton rounded-xl" />
                     ) : (
-                      <ElegantList text={currentItem.weakness} isLoading={isAnyLoading} />
+                      <div 
+                        onMouseOver={handleContainerMouseOver}
+                        onMouseOut={handleContainerMouseOut}
+                        onClick={handleContainerClick}
+                        className="transition-all"
+                      >
+                        <ElegantList text={currentItem.weakness} isLoading={isAnyLoading} />
+                      </div>
                     )}
                   </div>
 
@@ -1276,6 +1647,15 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
           </div>
         )}
       </div>
+      {hoveredNote && (
+        <div 
+          className="fixed pointer-events-none bg-[#004A74] text-[#FED400] text-xs font-bold px-3 py-1.5 rounded-xl shadow-xl z-[9999] max-w-sm break-words -translate-x-1/2 -translate-y-full flex items-center gap-1.5 font-sans animate-in fade-in duration-100"
+          style={{ left: hoveredNote.x, top: hoveredNote.y }}
+        >
+          <StickyNote className="w-3.5 h-3.5" />
+          <span>{hoveredNote.text}</span>
+        </div>
+      )}
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
