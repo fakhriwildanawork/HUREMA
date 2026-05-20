@@ -85,9 +85,22 @@ export const upsertLibraryItemToSupabase = async (item: LibraryItem): Promise<bo
   const client = getSupabase();
   if (!client) return false;
 
-  // SANITIZE DATA: Remove generated column 'search_all' to prevent Error 428C9
-  // Database will automatically re-calculate this column on server-side.
-  const { search_all, ...cleanItem } = item as any;
+  // SANITIZE DATA: Only send valid Postgres columns to Supabase.
+  // This avoids Error 400 Bad Request regarding unknown columns (e.g., 'quickTipsForYou').
+  const SCHEMA_COLUMNS = [
+    'id', 'title', 'type', 'category', 'topic', 'subTopic', 'authors', 'publisher',
+    'year', 'fullDate', 'pubInfo', 'identifiers', 'source', 'format', 'url',
+    'fileId', 'imageView', 'youtubeId', 'tags', 'abstract', 'mainInfo',
+    'extractedJsonId', 'insightJsonId', 'storageNodeUrl', 'isFavorite', 'isBookmarked',
+    'createdAt', 'updatedAt', 'supportingReferences'
+  ];
+
+  const cleanItem: any = {};
+  SCHEMA_COLUMNS.forEach(col => {
+    if (col in item) {
+      cleanItem[col] = (item as any)[col];
+    }
+  });
 
   const { error } = await client
     .from('library_items')

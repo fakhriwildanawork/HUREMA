@@ -447,6 +447,10 @@ const SelectionPopover: React.FC<{
   const [isItalic, setIsItalic] = useState(false);
   const [isUnderline, setIsUnderline] = useState(false);
   const [noteText, setNoteText] = useState('');
+  
+  // Custom states for the horizontal choice tabs (Highlight, Text Color, TextFormat, Input)
+  const [activeTab, setActiveTab] = useState<'highlight' | 'textColor' | 'format' | 'note' | null>(null);
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -454,7 +458,7 @@ const SelectionPopover: React.FC<{
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
     }
-  }, [noteText]);
+  }, [noteText, activeTab]);
 
   const colors = [
     { name: 'Kuning', value: '#FED400' },
@@ -475,15 +479,20 @@ const SelectionPopover: React.FC<{
 
   return (
     <div 
-      className="fixed z-[10005] bg-white rounded-3xl border border-gray-100 shadow-2xl p-4 w-72 animate-in fade-in duration-150 zoom-in-95 pointer-events-auto font-sans"
-      style={{
-        left: `${Math.max(16, Math.min(window.innerWidth - 304, state.clientX - 144))}px`,
-        top: `${Math.max(16, Math.min(window.innerHeight - 340, state.clientY - 270))}px`
+      className="fixed z-[10005] bg-white rounded-3xl border border-gray-150 shadow-2xl p-4 w-80 animate-in fade-in duration-150 zoom-in-95 pointer-events-auto font-sans"
+      style={window.innerWidth < 768 ? {
+        left: '50%',
+        transform: 'translateX(-50%)',
+        bottom: '24px',
+        top: 'auto'
+      } : {
+        left: `${Math.max(16, Math.min(window.innerWidth - 336, state.clientX - 160))}px`,
+        top: `${Math.max(16, Math.min(window.innerHeight - 340, state.clientY - 120))}px`
       }}
       onMouseDown={(e) => e.stopPropagation()}
       onMouseUp={(e) => e.stopPropagation()}
     >
-      <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-50">
+      <div className="flex items-center justify-between mb-3 pb-1.5 border-b border-gray-50">
         <span className="text-[9px] font-black uppercase text-[#004A74]/50 tracking-wider">Format Selection</span>
         <button 
           onClick={onClose} 
@@ -493,128 +502,183 @@ const SelectionPopover: React.FC<{
         </button>
       </div>
 
+      {/* Sleek Horizontal Choice Tabs */}
+      <div className="flex items-center gap-1.5 bg-gray-50 p-1.5 rounded-2xl mb-3">
+        <button
+          type="button"
+          onClick={() => setActiveTab(activeTab === 'highlight' ? null : 'highlight')}
+          className={`flex-1 py-1 px-0.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all flex flex-col items-center justify-center gap-1 min-h-[42px] cursor-pointer ${
+            activeTab === 'highlight' ? 'bg-[#004A74] text-[#FED400] shadow-sm' : 'hover:bg-white text-gray-500 hover:text-[#004A74]'
+          }`}
+        >
+          <span className="w-3 h-3 rounded-full border border-gray-300 shadow-sm animate-in zoom-in duration-100" style={{ backgroundColor: highlightColor === 'transparent' ? '#E5E7EB' : highlightColor }} />
+          Highlight
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab(activeTab === 'textColor' ? null : 'textColor')}
+          className={`flex-1 py-1 px-0.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all flex flex-col items-center justify-center gap-1 min-h-[42px] cursor-pointer ${
+            activeTab === 'textColor' ? 'bg-[#004A74] text-[#FED400] shadow-sm' : 'hover:bg-white text-gray-500 hover:text-[#004A74]'
+          }`}
+        >
+          <span className="w-3 h-3 rounded-full border border-gray-300 shadow-sm animate-in zoom-in duration-100" style={{ backgroundColor: textColor }} />
+          TextColor
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab(activeTab === 'format' ? null : 'format')}
+          className={`flex-1 py-1 px-0.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all flex flex-col items-center justify-center gap-1 min-h-[42px] cursor-pointer ${
+            activeTab === 'format' ? 'bg-[#004A74] text-[#FED400] shadow-sm' : 'hover:bg-white text-gray-500 hover:text-[#004A74]'
+          }`}
+        >
+          <span className="text-[10px] font-bold leading-none select-none">B/I/U</span>
+          TextFormat
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab(activeTab === 'note' ? null : 'note')}
+          className={`flex-1 py-1 px-0.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all flex flex-col items-center justify-center gap-1 min-h-[42px] cursor-pointer ${
+            activeTab === 'note' ? 'bg-[#004A74] text-[#FED400] shadow-sm' : 'hover:bg-white text-gray-500 hover:text-[#004A74]'
+          }`}
+        >
+          <StickyNote className="w-3.5 h-3.5 shrink-0" />
+          Input
+        </button>
+      </div>
+
       <div className="space-y-3">
-        {/* Highlight Color */}
-        <div>
-          <label className="text-[8px] font-black uppercase text-gray-400 tracking-wider block mb-1">Highlight Color:</label>
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {colors.map(c => (
-              <button
-                key={c.name}
-                type="button"
-                onClick={() => setHighlightColor(c.value)}
-                className={`w-6 h-6 rounded-full border transition-all ${
-                  highlightColor === c.value ? 'border-[#004A74] scale-110 ring-2 ring-[#004A74]/20' : 'border-gray-150 hover:scale-105'
-                }`}
-                style={{ backgroundColor: c.value === 'transparent' ? '#F3F4F6' : c.value }}
-                title={c.name}
-              />
-            ))}
-            <div className="relative w-6 h-6 rounded-full border border-gray-200 overflow-hidden shrink-0 cursor-pointer flex items-center justify-center bg-gray-50 hover:scale-105 transition-all">
-              <input 
-                type="color" 
-                value={highlightColor.startsWith('#') ? highlightColor : '#FED400'} 
-                onChange={(e) => setHighlightColor(e.target.value)} 
-                className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-                title="Warna Kustom"
-              />
-              <span className="text-[9px] font-black text-gray-500">#</span>
+        {/* Dynamic Inner Panels relative to selected tabs */}
+        {activeTab === 'highlight' && (
+          <div className="animate-in slide-in-from-top-1 duration-150 p-2.5 bg-gray-50/70 border border-gray-100 rounded-2xl">
+            <label className="text-[8px] font-black uppercase text-gray-400 tracking-wider block mb-1.5">Pilih Warna Highlight:</label>
+            <div className="flex items-center gap-2 flex-wrap">
+              {colors.map(c => (
+                <button
+                  key={c.name}
+                  type="button"
+                  onClick={() => setHighlightColor(c.value)}
+                  className={`w-6 h-6 rounded-full border transition-all cursor-pointer ${
+                    highlightColor === c.value ? 'border-[#004A74] scale-110 ring-2 ring-[#004A74]/20' : 'border-gray-300 hover:scale-105'
+                  }`}
+                  style={{ backgroundColor: c.value === 'transparent' ? '#F3F4F6' : c.value }}
+                  title={c.name}
+                />
+              ))}
+              <div className="relative w-6 h-6 rounded-full border border-gray-300 overflow-hidden shrink-0 cursor-pointer flex items-center justify-center bg-gray-50 hover:scale-105 transition-all">
+                <input 
+                  type="color" 
+                  value={highlightColor.startsWith('#') ? highlightColor : '#FED400'} 
+                  onChange={(e) => setHighlightColor(e.target.value)} 
+                  className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                  title="Warna Kustom"
+                />
+                <span className="text-[9px] font-black text-gray-400">#</span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Text Color */}
-        <div>
-          <label className="text-[8px] font-black uppercase text-gray-400 tracking-wider block mb-1">Text Color:</label>
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {textColors.map(c => (
-              <button
-                key={c.name}
-                type="button"
-                onClick={() => setTextColor(c.value)}
-                className={`w-6 h-6 rounded-full border transition-all ${
-                  textColor === c.value ? 'border-[#004A74] scale-110 ring-2 ring-[#004A74]/20' : 'border-gray-150 hover:scale-105'
-                }`}
-                style={{ backgroundColor: c.value }}
-                title={c.name}
-              />
-            ))}
-            <div className="relative w-6 h-6 rounded-full border border-gray-200 overflow-hidden shrink-0 cursor-pointer flex items-center justify-center bg-gray-50 hover:scale-105 transition-all">
-              <input 
-                type="color" 
-                value={textColor.startsWith('#') ? textColor : '#004A74'} 
-                onChange={(e) => setTextColor(e.target.value)} 
-                className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-                title="Teks Kustom"
-              />
-              <span className="text-[9px] font-black text-gray-500">T</span>
+        {activeTab === 'textColor' && (
+          <div className="animate-in slide-in-from-top-1 duration-150 p-2.5 bg-gray-50/70 border border-gray-100 rounded-2xl">
+            <label className="text-[8px] font-black uppercase text-gray-400 tracking-wider block mb-1.5">Pilih Warna Teks:</label>
+            <div className="flex items-center gap-2 flex-wrap">
+              {textColors.map(c => (
+                <button
+                  key={c.name}
+                  type="button"
+                  onClick={() => setTextColor(c.value)}
+                  className={`w-6 h-6 rounded-full border transition-all cursor-pointer ${
+                    textColor === c.value ? 'border-[#004A74] scale-110 ring-2 ring-[#004A74]/20' : 'border-gray-300 hover:scale-105'
+                  }`}
+                  style={{ backgroundColor: c.value }}
+                  title={c.name}
+                />
+              ))}
+              <div className="relative w-6 h-6 rounded-full border border-gray-300 overflow-hidden shrink-0 cursor-pointer flex items-center justify-center bg-gray-50 hover:scale-105 transition-all">
+                <input 
+                  type="color" 
+                  value={textColor.startsWith('#') ? textColor : '#004A74'} 
+                  onChange={(e) => setTextColor(e.target.value)} 
+                  className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                  title="Teks Kustom"
+                />
+                <span className="text-[9px] font-black text-gray-400">T</span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Format Font Styles */}
-        <div className="flex items-center gap-1.5 pt-1">
-          <button
-            type="button"
-            onClick={() => setIsBold(!isBold)}
-            className={`w-8 h-8 rounded-xl font-black text-xs transition-all ${
-              isBold ? 'bg-[#004A74] text-[#FED400]' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
-            }`}
-            title="Sangat Tebal (Bold)"
-          >
-            B
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsItalic(!isItalic)}
-            className={`w-8 h-8 rounded-xl font-black italic text-xs transition-all ${
-              isItalic ? 'bg-[#004A74] text-[#FED400]' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
-            }`}
-            title="Miring (Italic)"
-          >
-            I
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsUnderline(!isUnderline)}
-            className={`w-8 h-8 rounded-xl font-black underline text-xs transition-all ${
-              isUnderline ? 'bg-[#004A74] text-[#FED400]' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
-            }`}
-            title="Garis Bawah (Underline)"
-          >
-            U
-          </button>
-        </div>
-
-        {/* Note Area */}
-        <div>
-          <label className="text-[8px] font-black uppercase text-gray-400 tracking-wider block mb-1">Catatan Tambahan:</label>
-          <div className="relative font-sans">
-            <textarea
-              ref={textareaRef}
-              rows={1}
-              value={noteText}
-              onChange={(e) => setNoteText(e.target.value)}
-              placeholder="Tambahkan catatan khusus..."
-              className="w-full pl-7 pr-3 py-2 bg-gray-50 border border-gray-150 rounded-xl text-xs font-semibold focus:bg-white text-[#004A74] outline-none resize-none transition-all duration-150"
-              style={{ minHeight: '36px' }}
-            />
-            <StickyNote className="absolute left-2 top-2.5 w-3.5 h-3.5 text-gray-400" />
+        {activeTab === 'format' && (
+          <div className="animate-in slide-in-from-top-1 duration-150 p-2.5 bg-gray-50/70 border border-gray-100 rounded-2xl">
+            <label className="text-[8px] font-black uppercase text-gray-400 tracking-wider block mb-1.5">Format Gaya Font:</label>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsBold(!isBold)}
+                className={`w-9 h-9 rounded-xl font-black text-xs transition-all cursor-pointer ${
+                  isBold ? 'bg-[#004A74] text-[#FED400]' : 'bg-white text-gray-500 hover:bg-gray-100 border border-gray-200'
+                }`}
+                title="Sangat Tebal (Bold)"
+              >
+                B
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsItalic(!isItalic)}
+                className={`w-9 h-9 rounded-xl font-black italic text-xs transition-all cursor-pointer ${
+                  isItalic ? 'bg-[#004A74] text-[#FED400]' : 'bg-white text-gray-500 hover:bg-gray-100 border border-gray-200'
+                }`}
+                title="Miring (Italic)"
+              >
+                I
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsUnderline(!isUnderline)}
+                className={`w-9 h-9 rounded-xl font-black underline text-xs transition-all cursor-pointer ${
+                  isUnderline ? 'bg-[#004A74] text-[#FED400]' : 'bg-white text-gray-500 hover:bg-gray-100 border border-[#FED400]'
+                }`}
+                title="Garis Bawah (Underline)"
+              >
+                U
+              </button>
+            </div>
           </div>
-        </div>
+        )}
+
+        {activeTab === 'note' && (
+          <div className="animate-in slide-in-from-top-1 duration-150 p-2.5 bg-gray-50/70 border border-gray-100 rounded-2xl">
+            <label className="text-[8px] font-black uppercase text-gray-400 tracking-wider block mb-1.5">Tulis Catatan (Expandable):</label>
+            <div className="relative font-sans">
+              <textarea
+                ref={textareaRef}
+                value={noteText}
+                onChange={(e) => setNoteText(e.target.value)}
+                placeholder="Tulis catatan lengkap di sini..."
+                className="w-full pl-7 pr-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-semibold focus:border-[#004A74] text-[#004A74] outline-none resize-none transition-all duration-150 min-h-[60px]"
+                rows={2}
+                onKeyDown={(e) => e.stopPropagation()}
+              />
+              <StickyNote className="absolute left-2 top-3 w-3.5 h-3.5 text-gray-400" />
+            </div>
+          </div>
+        )}
 
         <div className="pt-2 flex justify-end gap-1.5 border-t border-gray-100">
           <button
             type="button"
             onClick={onClose}
-            className="px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-[10px] font-bold text-gray-600 transition-all cursor-pointer"
+            className="px-3.5 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-[10px] font-bold text-gray-600 transition-all cursor-pointer"
           >
             Batal
           </button>
           <button
             type="button"
             onClick={() => onApply(highlightColor, textColor, isBold, isItalic, isUnderline, noteText)}
-            className="px-4 py-1.5 rounded-xl bg-[#004A74] text-[#FED400] text-[10px] font-black uppercase tracking-wider hover:scale-105 active:scale-95 transition-all cursor-pointer"
+            className="px-4.5 py-1.5 rounded-xl bg-[#004A74] text-[#FED400] text-[10px] font-black uppercase tracking-wider hover:scale-105 active:scale-95 transition-all cursor-pointer"
           >
             Terapkan
           </button>

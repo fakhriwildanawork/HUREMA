@@ -7,6 +7,21 @@
   <link rel="icon" href="https://lh3.googleusercontent.com/d/1ZpVAXWGLDP2C42Fct0bisloaQLf2095_">
   <link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1ZXa5ltVQo_7mnxhA4Iy9e7JMf_IVr1Bx">
   <title>Xeenaps - Smart Scholar Ecosystem</title>
+  <script>
+    (function() {
+      const suppressPatterns = ['cdn.tailwindcss.com', 'should not be used in production'];
+      const patch = (method) => {
+        const original = console[method];
+        console[method] = function(...args) {
+          if (args.some(arg => typeof arg === 'string' && suppressPatterns.some(p => arg.includes(p)))) {
+            return;
+          }
+          if (original) original.apply(console, args);
+        };
+      };
+      ['log', 'info', 'warn', 'error'].forEach(patch);
+    })();
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
