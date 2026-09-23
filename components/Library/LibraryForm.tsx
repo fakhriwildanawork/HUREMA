@@ -6,6 +6,7 @@ import { SourceType, FileFormat, LibraryItem, LibraryType, ExtractionResult, Sup
 import { processLibraryFileInCloud, uploadAndStoreFile, extractFromUrl, callIdentifierSearch, fetchFileContent } from '../../services/gasService';
 import { upsertLibraryItemToSupabase } from '../../services/LibrarySupabaseService';
 import { extractMetadataWithAI } from '../../services/AddCollectionService';
+import { extractTextFromFile } from '../../services/localExtractorService';
 import { GAS_WEB_APP_URL } from '../../constants';
 import { getSupportingReferencesFrontend } from '../../services/LiteratureService';
 import { useAsyncWorkflow } from '../../hooks/useAsyncWorkflow';
@@ -529,24 +530,25 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
     workflow.execute(
       async (signal) => {
         setExtractionStage('READING');
-        const reader = new FileReader();
-        const base64Data = await new Promise<string>((resolve) => {
-          reader.onload = () => resolve((reader.result as string).split(',')[1]);
-          reader.readAsDataURL(file);
-        });
-        const response = await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'extractOnly', fileData: base64Data, fileName: file.name, mimeType: file.type }), signal });
-        const result = await response.json();
-        if (result.status === 'success' && result.extractedText) {
-          const ids = { 
-            doi: result.detectedDoi, 
-            isbn: result.detectedIsbn, 
-            issn: result.detectedIssn, 
-            pmid: result.detectedPmid, 
-            arxivId: result.detectedArxiv 
-          };
-          await runExtractionWorkflow(result.extractedText, chunkifyText(result.extractedText), ids, {}, signal);
-        } else if (result.status === 'error') {
-          throw new Error(result.message);
+        const { extractedText, detectedIdentifiers } = await extractTextFromFile(file);
+        if (signal.aborted) return;
+        if (extractedText) {
+          await runExtractionWorkflow(
+            extractedText, 
+            chunkifyText(extractedText), 
+            detectedIdentifiers, 
+            {}, 
+            signal
+          );
+        } else {
+          // If no selectable text was found, proceed with detected identifiers if any
+          await runExtractionWorkflow(
+            "", 
+            [], 
+            detectedIdentifiers, 
+            {}, 
+            signal
+          );
         }
       },
       () => setExtractionStage('IDLE'),
