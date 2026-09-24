@@ -101,14 +101,16 @@ export const deleteLibraryItem = async (id: string): Promise<boolean> => {
 };
 
 export const callAiProxy = async (
-  provider: 'gemini' | 'groq', 
+  provider: 'gemini' | 'groq' | 'glm' | 'openrouter' | string = 'groq', 
   prompt: string, 
   modelOverride?: string,
   signal?: AbortSignal,
   responseType?: 'json' | 'text' 
 ): Promise<string> => {
-  // 1. FAST DIRECT EXECUTION WITH SUPABASE KEYS & DYNAMIC SHEET MODEL (GEMINI)
-  if (provider === 'gemini') {
+  const normProvider = provider.toLowerCase().trim();
+
+  // 1. DIRECT EXECUTION: GEMINI
+  if (normProvider === 'gemini') {
     try {
       const activeGeminiKeys = await getActiveApiKeys('gemini');
       const targetModel = modelOverride || await getDynamicAiModel('GEMINI');
@@ -155,11 +157,112 @@ export const callAiProxy = async (
     }
   }
 
-  // 2. FAST DIRECT EXECUTION WITH SUPABASE KEYS & DYNAMIC SHEET MODEL (GROQ)
-  if (provider === 'groq' || provider === 'gemini') {
+  // 2. DIRECT EXECUTION: OPENROUTER
+  if (normProvider === 'openrouter') {
+    try {
+      const activeKeys = await getActiveApiKeys('openrouter');
+      const targetModel = modelOverride || await getDynamicAiModel('OpenRouter');
+
+      if (activeKeys.length > 0) {
+        for (let i = 0; i < activeKeys.length; i++) {
+          const key = activeKeys[i];
+          try {
+            const bodyPayload: any = {
+              model: targetModel,
+              messages: [{ role: 'user', content: prompt }],
+              temperature: 0.2
+            };
+            if (responseType === 'json') {
+              bodyPayload.response_format = { type: 'json_object' };
+            }
+
+            const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${key}`,
+                'HTTP-Referer': 'https://xeenaps.app',
+                'X-Title': 'Xeenaps PKM'
+              },
+              body: JSON.stringify(bodyPayload),
+              signal
+            });
+
+            if (res.ok) {
+              const data = await res.json();
+              const textOutput = data.choices?.[0]?.message?.content || '';
+              if (textOutput) return textOutput;
+            } else {
+              const errBody = await res.text();
+              console.warn(`OpenRouter Key #${i + 1} failed (${res.status}):`, errBody);
+              if (res.status === 429 || res.status === 401 || res.status === 402) {
+                continue;
+              }
+            }
+          } catch (keyErr: any) {
+            if (keyErr.name === 'AbortError') return '';
+            console.warn(`OpenRouter Key #${i + 1} error:`, keyErr);
+          }
+        }
+      }
+    } catch (directErr) {
+      console.warn('Direct OpenRouter execution fallback:', directErr);
+    }
+  }
+
+  // 3. DIRECT EXECUTION: GLM (ZHIPU AI)
+  if (normProvider === 'glm') {
+    try {
+      const activeKeys = await getActiveApiKeys('glm');
+      const targetModel = modelOverride || await getDynamicAiModel('GLM');
+
+      if (activeKeys.length > 0) {
+        for (let i = 0; i < activeKeys.length; i++) {
+          const key = activeKeys[i];
+          try {
+            const bodyPayload: any = {
+              model: targetModel,
+              messages: [{ role: 'user', content: prompt }],
+              temperature: 0.2
+            };
+
+            const res = await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${key}`
+              },
+              body: JSON.stringify(bodyPayload),
+              signal
+            });
+
+            if (res.ok) {
+              const data = await res.json();
+              const textOutput = data.choices?.[0]?.message?.content || '';
+              if (textOutput) return textOutput;
+            } else {
+              const errBody = await res.text();
+              console.warn(`GLM Key #${i + 1} failed (${res.status}):`, errBody);
+              if (res.status === 429 || res.status === 401) {
+                continue;
+              }
+            }
+          } catch (keyErr: any) {
+            if (keyErr.name === 'AbortError') return '';
+            console.warn(`GLM Key #${i + 1} error:`, keyErr);
+          }
+        }
+      }
+    } catch (directErr) {
+      console.warn('Direct GLM execution fallback:', directErr);
+    }
+  }
+
+  // 4. DIRECT EXECUTION: GROQ (OR UNIVERSAL GROQ FALLBACK)
+  if (normProvider === 'groq' || normProvider === 'gemini' || normProvider === 'openrouter' || normProvider === 'glm') {
     try {
       const activeKeys = await getActiveApiKeys('groq');
-      const targetModel = (provider === 'groq' && modelOverride) ? modelOverride : await getDynamicAiModel('Groq');
+      const targetModel = (normProvider === 'groq' && modelOverride) ? modelOverride : await getDynamicAiModel('Groq');
 
       if (activeKeys.length > 0) {
         // Iterate through keys (Smart Multi-Key Failover)
@@ -192,7 +295,6 @@ export const callAiProxy = async (
             } else {
               const errBody = await res.text();
               console.warn(`Groq Key #${i + 1} attempt failed (${res.status}):`, errBody);
-              // If rate limited (429) or auth error (401), loop to next key seamlessly
               if (res.status === 429 || res.status === 401) {
                 continue;
               }
@@ -208,10 +310,10 @@ export const callAiProxy = async (
     }
   }
 
-  // 3. FALLBACK TO GAS WEB APP PROXY
+  // 5. FALLBACK TO GAS WEB APP PROXY
   try {
     if (!GAS_WEB_APP_URL) throw new Error('VITE_GAS_URL is missing.');
-    const targetModel = modelOverride || (provider === 'groq' ? await getDynamicAiModel('Groq') : await getDynamicAiModel('GEMINI'));
+    const targetModel = modelOverride || await getDynamicAiModel(provider);
 
     const response = await fetch(GAS_WEB_APP_URL, {
       method: 'POST',

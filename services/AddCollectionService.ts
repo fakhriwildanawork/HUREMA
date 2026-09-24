@@ -8,8 +8,14 @@ import { getSupportingReferencesFrontend } from "./LiteratureService";
  * FOCUS: Verbatim abstract extraction, Parenthetical Harvard citations, and mandatory classification enrichment.
  * IMPORTANT: This service acts ONLY as a Librarian. It does NOT fill Insight fields (Summary, Strength, etc.).
  */
-export const extractMetadataWithAI = async (textSnippet: string, existingData: Partial<LibraryItem> = {}, signal?: AbortSignal): Promise<Partial<LibraryItem>> => {
+export const extractMetadataWithAI = async (
+  textSnippet: string, 
+  existingData: Partial<LibraryItem> = {}, 
+  signal?: AbortSignal,
+  providerOverride?: string
+): Promise<Partial<LibraryItem>> => {
   try {
+    const selectedProvider = (providerOverride || localStorage.getItem('xeenaps_preferred_ai_provider') || 'groq').toLowerCase();
     const truncatedSnippet = textSnippet.substring(0, 7500);
 
     const categories = [
@@ -89,7 +95,7 @@ export const extractMetadataWithAI = async (textSnippet: string, existingData: P
       "labels": ["label1", "label2", "label3", "label4", "label5"]
     }`;
 
-    const response = await callAiProxy('groq', prompt, undefined, signal);
+    const response = await callAiProxy(selectedProvider, prompt, undefined, signal, 'json');
     if (!response) return {};
     
     let cleanJson = response.trim();

@@ -10,7 +10,9 @@ const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1RVYM2-U5LRb8S8JEl
 let cachedModels: Record<string, string> = {
   groq: 'llama-3.3-70b-versatile',
   groqsmart: 'llama-3.3-70b-versatile',
-  gemini: 'gemini-2.5-flash'
+  gemini: 'gemini-2.5-flash',
+  glm: 'glm-4-flash',
+  openrouter: 'meta-llama/llama-3.3-70b-instruct:free'
 };
 let lastFetchedTime = 0;
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes cache
@@ -43,8 +45,12 @@ const parseCsvRows = (csvText: string): [string, string][] => {
  * Validates model name to avoid non-chat models like prompt-guard
  */
 const sanitizeModelName = (provider: string, model: string): string => {
+  const p = provider.toLowerCase();
   if (!model || !model.trim()) {
-    return provider.toLowerCase().includes('gemini') ? 'gemini-2.5-flash' : 'llama-3.3-70b-versatile';
+    if (p.includes('gemini')) return 'gemini-2.5-flash';
+    if (p.includes('glm')) return 'glm-4-flash';
+    if (p.includes('openrouter')) return 'meta-llama/llama-3.3-70b-instruct:free';
+    return 'llama-3.3-70b-versatile';
   }
   let clean = model.trim();
 
@@ -64,10 +70,10 @@ const sanitizeModelName = (provider: string, model: string): string => {
 };
 
 /**
- * Fetches dynamic AI model name for a provider (e.g., 'Groq', 'GroqSmart', 'GEMINI')
+ * Fetches dynamic AI model name for a provider (e.g., 'Groq', 'GEMINI', 'GLM', 'OpenRouter')
  */
 export const getDynamicAiModel = async (provider: string = 'Groq'): Promise<string> => {
-  const normalizedKey = provider.toLowerCase();
+  const normalizedKey = provider.toLowerCase().replace(/[^a-z0-9]/g, '');
   const now = Date.now();
 
   if (now - lastFetchedTime < CACHE_TTL_MS && cachedModels[normalizedKey]) {
@@ -81,7 +87,7 @@ export const getDynamicAiModel = async (provider: string = 'Groq'): Promise<stri
       const rows = parseCsvRows(csvText);
 
       rows.forEach(([prov, model]) => {
-        const key = prov.toLowerCase();
+        const key = prov.toLowerCase().replace(/[^a-z0-9]/g, '');
         if (key && model) {
           cachedModels[key] = sanitizeModelName(key, model);
         }
@@ -92,5 +98,11 @@ export const getDynamicAiModel = async (provider: string = 'Groq'): Promise<stri
     console.warn('Failed to fetch central AI models from sheet, using cached default:', err);
   }
 
-  return cachedModels[normalizedKey] || (normalizedKey.includes('gemini') ? 'gemini-2.5-flash' : 'llama-3.3-70b-versatile');
+  if (cachedModels[normalizedKey]) {
+    return cachedModels[normalizedKey];
+  }
+  if (normalizedKey.includes('gemini')) return 'gemini-2.5-flash';
+  if (normalizedKey.includes('glm')) return 'glm-4-flash';
+  if (normalizedKey.includes('openrouter')) return 'meta-llama/llama-3.3-70b-instruct:free';
+  return 'llama-3.3-70b-versatile';
 };

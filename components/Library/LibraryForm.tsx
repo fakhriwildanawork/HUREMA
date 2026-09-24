@@ -127,6 +127,9 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [extractionStage, setExtractionStage] = useState<'IDLE' | 'READING' | 'BYPASS' | 'AI_ANALYSIS' | 'FETCHING_ID'>('IDLE');
   const [file, setFile] = useState<File | null>(null);
+  const [selectedAiProvider, setSelectedAiProvider] = useState<string>(() => {
+    return localStorage.getItem('xeenaps_preferred_ai_provider') || 'Groq';
+  });
   
   // Validation Modal State
   const [showValidationModal, setShowValidationModal] = useState(false);
@@ -428,7 +431,7 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
       ...XEENAPS_SWAL_CONFIG
     });
 
-    const aiEnriched = await extractMetadataWithAI(extractedText, baseData, signal);
+    const aiEnriched = await extractMetadataWithAI(extractedText, baseData, signal, selectedAiProvider);
     Swal.close();
     
     // YouTube Specific Logic Overrides
@@ -837,10 +840,32 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
       )}
 
       <FormStickyHeader title="Add Collection" subtitle="Expand your digital library" onBack={() => navigate('/library')} rightElement={
-        <div className="flex bg-gray-100/50 p-1.5 rounded-2xl gap-1 w-full md:w-auto">
-          <button type="button" onClick={() => setMode('FILE')} disabled={isFormDisabled} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black transition-all ${formData.addMethod === 'FILE' ? 'bg-[#004A74] text-white shadow-lg' : 'text-gray-400 hover:text-[#004A74]'}`}><DocumentIcon className="w-4 h-4" /> FILE</button>
-          <button type="button" onClick={() => setMode('LINK')} disabled={isFormDisabled} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black transition-all ${formData.addMethod === 'LINK' ? 'bg-[#004A74] text-white shadow-lg' : 'text-gray-400 hover:text-[#004A74]'}`}><LinkIcon className="w-4 h-4" /> LINK</button>
-          <button type="button" onClick={() => setMode('REF')} disabled={isFormDisabled} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-2.5 py-2.5 rounded-xl text-xs font-black transition-all ${formData.addMethod === 'REF' ? 'bg-[#004A74] text-white shadow-lg' : 'text-gray-400 hover:text-[#004A74]'}`}><FingerPrintIcon className="w-4 h-4" /> REF</button>
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+          {/* Clean AI Provider Selector */}
+          <div className="flex items-center gap-2 bg-gray-100/60 px-3 py-1.5 rounded-2xl border border-gray-200/50">
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">AI</span>
+            <select
+              value={selectedAiProvider}
+              onChange={(e) => {
+                setSelectedAiProvider(e.target.value);
+                localStorage.setItem('xeenaps_preferred_ai_provider', e.target.value);
+              }}
+              disabled={isFormDisabled}
+              className="bg-white text-[#004A74] text-xs font-bold px-2.5 py-1 rounded-xl border border-gray-200 outline-none shadow-sm cursor-pointer hover:border-[#004A74] transition-colors"
+            >
+              <option value="Groq">Groq</option>
+              <option value="GEMINI">Gemini</option>
+              <option value="GLM">GLM</option>
+              <option value="OpenRouter">OpenRouter</option>
+            </select>
+          </div>
+
+          {/* Source Type Selector */}
+          <div className="flex bg-gray-100/50 p-1.5 rounded-2xl gap-1 flex-1 md:flex-none">
+            <button type="button" onClick={() => setMode('FILE')} disabled={isFormDisabled} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black transition-all ${formData.addMethod === 'FILE' ? 'bg-[#004A74] text-white shadow-lg' : 'text-gray-400 hover:text-[#004A74]'}`}><DocumentIcon className="w-4 h-4" /> FILE</button>
+            <button type="button" onClick={() => setMode('LINK')} disabled={isFormDisabled} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black transition-all ${formData.addMethod === 'LINK' ? 'bg-[#004A74] text-white shadow-lg' : 'text-gray-400 hover:text-[#004A74]'}`}><LinkIcon className="w-4 h-4" /> LINK</button>
+            <button type="button" onClick={() => setMode('REF')} disabled={isFormDisabled} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-2.5 py-2.5 rounded-xl text-xs font-black transition-all ${formData.addMethod === 'REF' ? 'bg-[#004A74] text-white shadow-lg' : 'text-gray-400 hover:text-[#004A74]'}`}><FingerPrintIcon className="w-4 h-4" /> REF</button>
+          </div>
         </div>
       } />
       <FormContentArea>
