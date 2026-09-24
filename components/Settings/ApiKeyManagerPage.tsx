@@ -15,6 +15,11 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { manageApiKeys } from '../../services/gasService';
+import { 
+  fetchApiKeysFromSupabase, 
+  upsertApiKeyToSupabase, 
+  deleteApiKeyFromSupabase 
+} from '../../services/ApiKeySupabaseService';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
 import { StandardTableContainer, StandardTableWrapper, StandardTh, StandardTr, StandardTd } from '../Common/TableComponents';
@@ -51,11 +56,47 @@ const ApiKeyManagerPage: React.FC = () => {
   const loadKeys = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await manageApiKeys({ subAction: 'get_keys' });
-      if (res.status === 'success' && res.data) {
-        setGeminiKeys(res.data.gemini || []);
-        setGroqKeys(res.data.groq || []);
+      // 1. Try fetching from Supabase first
+      const [supaGemini, supaGroq] = await Promise.all([
+        fetchApiKeysFromSupabase('gemini'),
+        fetchApiKeysFromSupabase('groq')
+      ]);
+
+      let gKeys: GeminiKey[] = supaGemini.map(k => ({
+        id: k.id,
+        key: k.key_value,
+        label: k.label || 'Default Key',
+        status: k.is_active !== false ? 'Active' : 'Inactive',
+        addedAt: k.created_at || new Date().toISOString()
+      }));
+
+      let grKeys: GroqKey[] = supaGroq.map(k => ({
+        id: k.id,
+        api: k.key_value
+      }));
+
+      // 2. If Supabase is empty, fall back to Google Sheets via GAS and auto-seed to Supabase
+      if (gKeys.length === 0 && grKeys.length === 0) {
+        const res = await manageApiKeys({ subAction: 'get_keys' });
+        if (res.status === 'success' && res.data) {
+          const sheetGemini: GeminiKey[] = res.data.gemini || [];
+          const sheetGroq: GroqKey[] = res.data.groq || [];
+          
+          gKeys = sheetGemini;
+          grKeys = sheetGroq;
+
+          // Auto-seed to Supabase in background
+          sheetGemini.forEach(k => {
+            if (k.key) upsertApiKeyToSupabase({ id: k.id, provider: 'gemini', key_value: k.key, label: k.label });
+          });
+          sheetGroq.forEach(k => {
+            if (k.api) upsertApiKeyToSupabase({ id: k.id, provider: 'groq', key_value: k.api, label: 'Groq Key' });
+          });
+        }
       }
+
+      setGeminiKeys(gKeys);
+      setGroqKeys(grKeys);
     } catch (e) {
       showXeenapsToast('error', 'Failed to load keys');
     } finally {
@@ -82,8 +123,18 @@ const ApiKeyManagerPage: React.FC = () => {
   const handleAddGemini = async () => {
     if (!newKey.trim() || !newLabel.trim()) return;
     setIsProcessing(true);
-    const res = await manageApiKeys({ subAction: 'add_gemini', key: newKey, label: newLabel });
-    if (res.status === 'success') {
+    const keyId = crypto.randomUUID();
+    const supaSuccess = await upsertApiKeyToSupabase({ 
+      id: keyId, 
+      provider: 'gemini', 
+      key_value: newKey, 
+      label: newLabel 
+    });
+    
+    // Background sync to GAS
+    manageApiKeys({ subAction: 'add_gemini', key: newKey, label: newLabel }).catch(() => {});
+
+    if (supaSuccess) {
       showXeenapsToast('success', 'Gemini Key Added');
       setNewKey('');
       setNewLabel('');
@@ -97,8 +148,10 @@ const ApiKeyManagerPage: React.FC = () => {
   const handleDeleteGemini = async (id: string) => {
     if (await showXeenapsDeleteConfirm(1)) {
       setIsProcessing(true);
-      const res = await manageApiKeys({ subAction: 'delete_gemini', id });
-      if (res.status === 'success') {
+      const supaSuccess = await deleteApiKeyFromSupabase(id, 'gemini');
+      manageApiKeys({ subAction: 'delete_gemini', id }).catch(() => {});
+
+      if (supaSuccess) {
         showXeenapsToast('success', 'Key Deleted');
         loadKeys();
       } else {
@@ -111,8 +164,17 @@ const ApiKeyManagerPage: React.FC = () => {
   const handleAddGroq = async () => {
     if (!newKey.trim()) return;
     setIsProcessing(true);
-    const res = await manageApiKeys({ subAction: 'add_groq', api: newKey });
-    if (res.status === 'success') {
+    const keyId = crypto.randomUUID();
+    const supaSuccess = await upsertApiKeyToSupabase({ 
+      id: keyId, 
+      provider: 'groq', 
+      key_value: newKey, 
+      label: 'Groq Key' 
+    });
+
+    manageApiKeys({ subAction: 'add_groq', api: newKey }).catch(() => {});
+
+    if (supaSuccess) {
       showXeenapsToast('success', 'Groq Key Added');
       setNewKey('');
       loadKeys();
@@ -125,8 +187,10 @@ const ApiKeyManagerPage: React.FC = () => {
   const handleDeleteGroq = async (id: string) => {
     if (await showXeenapsDeleteConfirm(1)) {
       setIsProcessing(true);
-      const res = await manageApiKeys({ subAction: 'delete_groq', id });
-      if (res.status === 'success') {
+      const supaSuccess = await deleteApiKeyFromSupabase(id, 'groq');
+      manageApiKeys({ subAction: 'delete_groq', id }).catch(() => {});
+
+      if (supaSuccess) {
         showXeenapsToast('success', 'Key Deleted');
         loadKeys();
       } else {

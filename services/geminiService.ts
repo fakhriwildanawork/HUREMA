@@ -1,43 +1,31 @@
 
-import { GoogleGenAI } from "@google/genai";
+import { callAiProxy } from './gasService';
 
 /**
- * Gemini Service using @google/genai SDK for PKM item processing.
+ * AI Service for PKM and Knowledge Base operations.
+ * Uses centralized dynamic models from Google Sheets and multi-key rotation from Supabase.
  */
 
-// Fix: Direct SDK implementation for summarization using gemini-3-flash-preview as recommended
 export const summarizeContent = async (title: string, content: string): Promise<string> => {
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const prompt = `Summarize this PKM item titled "${title}". 
-    Content: ${content.substring(0, 5000)}
-    Provide a concise summary (max 2 sentences). Output only text.`;
+    const prompt = `Summarize this knowledge item titled "${title}". 
+    Content: ${content.substring(0, 8000)}
+    Provide a concise summary (max 2-3 sentences). Output only text.`;
     
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt,
-    });
-    
-    return response.text || 'No summary generated.';
+    const result = await callAiProxy('gemini', prompt, undefined, undefined, 'text');
+    return result || 'No summary generated.';
   } catch (error) {
     console.error("Summarization error:", error);
     return 'AI summary unavailable at the moment.';
   }
 };
 
-// Fix: Direct SDK implementation for tag suggestion using gemini-3-flash-preview
 export const suggestTags = async (title: string, content: string): Promise<string[]> => {
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const prompt = `Suggest exactly 5 relevant short tags for: "${title}" and "${content.substring(0, 1000)}".
+    const prompt = `Suggest exactly 5 relevant short tags for: "${title}" and "${content.substring(0, 2000)}".
     Output only tags separated by commas.`;
     
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt,
-    });
-    
-    const result = response.text;
+    const result = await callAiProxy('gemini', prompt, undefined, undefined, 'text');
     if (!result) return [];
     return result.split(',').map(tag => tag.trim().toLowerCase()).filter(t => t.length > 0);
   } catch (error) {
@@ -45,3 +33,4 @@ export const suggestTags = async (title: string, content: string): Promise<strin
     return [];
   }
 };
+
